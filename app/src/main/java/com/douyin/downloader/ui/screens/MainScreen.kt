@@ -190,8 +190,8 @@ fun MainScreen(
 
                         itemsIndexed(
                             items = uiState.downloadItems,
-                            key = { _, item -> item.url }
-                        } { index, item ->
+                            key = { _, downloadItem -> downloadItem.url }
+                        ) { index, item ->
                             DownloadItemCard(
                                 index = index,
                                 item = item,
