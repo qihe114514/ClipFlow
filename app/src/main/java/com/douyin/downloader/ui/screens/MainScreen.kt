@@ -262,8 +262,7 @@ private fun WallpaperBackground(uiState: MainUiState) {
             modifier = Modifier
                 .fillMaxSize()
                 .then(if (blurRadius > 0.dp) Modifier.blur(blurRadius) else Modifier),
-            contentScale = ContentScale.Crop,
-            crossfade = true
+            contentScale = ContentScale.Crop
         )
     }
 }
