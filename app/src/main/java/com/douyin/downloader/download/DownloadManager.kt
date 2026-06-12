@@ -6,12 +6,10 @@ import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.database.ContentObserver
+import android.database.Cursor
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
-import android.os.Handler
-import android.os.Looper
 import android.provider.MediaStore
 import com.douyin.downloader.model.DownloadItem
 import com.douyin.downloader.model.DownloadType
@@ -26,12 +24,12 @@ class DownloadManager(private val context: Context) {
 
     /**
      * 通过系统 DownloadManager 下载并拷贝到相册。
-     * 返回 Flow 发出：(进度 0~1, 速度字符串), 完成后 emit null 并结束。
+     * 返回 Flow：每500ms 发出 (进度 0~1, 速度字符串)；完成后 emit null 并结束。
      */
     fun downloadWithProgress(
         item: DownloadItem,
         savePath: String?
-    ): Flow<Pair<Float, String>?> = callbackFlow {
+    ): Flow<Pair<Float, String>?> = flow {
         val extension = when (item.type) {
             DownloadType.VIDEO, DownloadType.LIVE_PHOTO -> ".mp4"
             DownloadType.IMAGE -> ".jpg"
@@ -47,128 +45,137 @@ class DownloadManager(private val context: Context) {
             .setAllowedOverRoaming(true)
 
         val downloadId = sysDownloadManager.enqueue(request)
-
         var finished = false
-        val handler = Handler(Looper.getMainLooper())
+        var lastBytes = 0L
+        var lastTime = System.currentTimeMillis()
 
-        // 注册下载完成广播
-        val receiver = object : BroadcastReceiver() {
-            override fun onReceive(context: Context?, intent: Intent?) {
-                val id = intent?.getLongExtra(SysDownloadManager.EXTRA_DOWNLOAD_ID, -1) ?: -1
-                if (id == downloadId && !finished) {
-                    finished = true
-                    trySend(null)
+        try {
+            while (!finished) {
+                delay(500)
+                val (progress, speed, status, localUri) = withContext(Dispatchers.IO) {
+                    queryProgress(downloadId)
+                }
 
-                    // 后台拷贝到相册
-                    CoroutineScope(Dispatchers.IO).launch {
-                        try {
-                            val query = SysDownloadManager.Query().setFilterById(downloadId)
-                            val cursor = sysDownloadManager.query(query)
-                            var localUri: String? = null
-
-                            if (cursor?.moveToFirst() == true) {
-                                val status = cursor.getInt(cursor.getColumnIndexOrThrow(SysDownloadManager.COLUMN_STATUS))
-                                if (status == SysDownloadManager.STATUS_SUCCESSFUL) {
-                                    val filePath = cursor.getString(cursor.getColumnIndexOrThrow(SysDownloadManager.COLUMN_LOCAL_URI))
-                                    if (filePath != null) {
-                                        val file = File(Uri.parse(filePath).path ?: return@launch)
-                                        if (!file.exists()) return@launch
-
-                                        localUri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                                            saveToMediaStore(file, fileName, item.type)
-                                        } else {
-                                            copyLegacy(file, fileName, savePath)
-                                        }
-                                    }
-                                }
+                if (status != null) {
+                    when (status) {
+                        SysDownloadManager.STATUS_SUCCESSFUL -> {
+                            finished = true
+                            // 拷贝到相册
+                            val savedUri = withContext(Dispatchers.IO) {
+                                moveToGallery(downloadId, localUri, fileName, item.type, savePath)
                             }
-                            cursor?.close()
-
-                            // 移除系统下载条目
+                            emit(null)  // 完成信号
+                            return@flow
+                        }
+                        SysDownloadManager.STATUS_FAILED -> {
+                            finished = true
                             sysDownloadManager.remove(downloadId)
-                        } catch (_: Exception) {}
+                            throw RuntimeException("系统下载失败")
+                        }
+                    }
+                }
+
+                if (!finished && progress.second > 0) {
+                    val currentBytes = progress.second.toLong()
+                    val total = progress.third.toLong()
+                    val fraction = if (total > 0) (currentBytes.toFloat() / total).coerceIn(0f, 1f) else -1f
+                    val now = System.currentTimeMillis()
+                    val elapsed = now - lastTime
+                    val speedStr = if (elapsed > 0) {
+                        val bytesDelta = currentBytes - lastBytes
+                        val bytesPerSecond = (bytesDelta * 1000L / elapsed)
+                        formatSpeed(bytesPerSecond)
+                    } else "—"
+                    lastBytes = currentBytes
+                    lastTime = now
+                    emit(fraction to speedStr)
+                }
+            }
+        } catch (e: Exception) {
+            if (!finished) {
+                sysDownloadManager.remove(downloadId)
+            }
+            throw e
+        }
+    }
+
+    private fun queryProgress(downloadId: Long): Triple<Int?, Long, Long> {
+        val query = SysDownloadManager.Query().setFilterById(downloadId)
+        var cursor: Cursor? = null
+        try {
+            cursor = sysDownloadManager.query(query)
+            if (cursor?.moveToFirst() == true) {
+                val statusCol = cursor.getColumnIndexOrThrow(SysDownloadManager.COLUMN_STATUS)
+                val bytesCol = cursor.getColumnIndexOrThrow(SysDownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR)
+                val totalCol = cursor.getColumnIndexOrThrow(SysDownloadManager.COLUMN_TOTAL_SIZE_BYTES)
+                val status = cursor.getInt(statusCol)
+                val bytes = cursor.getLong(bytesCol)
+                val total = cursor.getLong(totalCol)
+                val localUri = cursor.getString(cursor.getColumnIndexOrThrow(SysDownloadManager.COLUMN_LOCAL_URI))
+                return Triple(status, bytes, total)
+            }
+        } finally {
+            cursor?.close()
+        }
+        return Triple(null, 0L, 0L)
+    }
+
+    private suspend fun moveToGallery(
+        downloadId: Long,
+        localUri: String?,
+        fileName: String,
+        type: DownloadType,
+        savePath: String?
+    ): String? {
+        try {
+            // 先查文件路径
+            val query = SysDownloadManager.Query().setFilterById(downloadId)
+            val cursor = sysDownloadManager.query(query)
+            var filePath: String? = null
+            if (cursor?.moveToFirst() == true) {
+                filePath = cursor.getString(cursor.getColumnIndexOrThrow(SysDownloadManager.COLUMN_LOCAL_URI))
+            }
+            cursor?.close()
+
+            if (filePath == null) return null
+            val file = File(Uri.parse(filePath).path ?: return null)
+            if (!file.exists()) return null
+
+            val mime = when (type) {
+                DownloadType.VIDEO, DownloadType.LIVE_PHOTO -> "video/mp4"
+                DownloadType.IMAGE -> "image/jpeg"
+            }
+            val cv = ContentValues().apply {
+                put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
+                put(MediaStore.MediaColumns.MIME_TYPE, mime)
+                if (type == DownloadType.IMAGE) put(MediaStore.MediaColumns.RELATIVE_PATH, "Pictures/Douyin")
+                else put(MediaStore.Video.Media.RELATIVE_PATH, "Movies/Douyin")
+            }
+            val collection = if (type == DownloadType.IMAGE) MediaStore.Images.Media.EXTERNAL_CONTENT_URI
+                             else MediaStore.Video.Media.EXTERNAL_CONTENT_URI
+            val uri = context.contentResolver.insert(collection, cv) ?: return null
+            context.contentResolver.openOutputStream(uri)?.use { out ->
+                val buf = ByteArray(8192)
+                FileInputStream(file).use { fis ->
+                    var read: Int
+                    while (fis.read(buf).also { read = it } != -1) {
+                        out.write(buf, 0, read)
                     }
                 }
             }
-        }
-
-        context.registerReceiver(
-            receiver,
-            IntentFilter(SysDownloadManager.ACTION_DOWNLOAD_COMPLETE),
-            Context.RECEIVER_NOT_EXPORTED
-        )
-
-        // 轮询进度
-        val observer = object : ContentObserver(handler) {
-            override fun onChange(selfChange: Boolean) {
-                if (finished) return
-                try {
-                    val query = SysDownloadManager.Query().setFilterById(downloadId)
-                    val cursor = sysDownloadManager.query(query)
-                    if (cursor?.moveToFirst() == true) {
-                        val bytes = cursor.getLong(cursor.getColumnIndexOrThrow(SysDownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR))
-                        val total = cursor.getLong(cursor.getColumnIndexOrThrow(SysDownloadManager.COLUMN_TOTAL_SIZE_BYTES))
-                        val progress = if (total > 0) (bytes.toFloat() / total).coerceIn(0f, 1f) else -1f
-                        val speed = formatSpeed(bytes, null)
-                        trySend(progress to speed)
-                    }
-                    cursor?.close()
-                } catch (_: Exception) {}
-            }
-        }
-        context.contentResolver.registerContentObserver(
-            Uri.parse("content://downloads/my_downloads"),
-            true,
-            observer
-        )
-
-        awaitClose {
-            context.unregisterReceiver(receiver)
-            context.contentResolver.unregisterContentObserver(observer)
-            if (!finished) sysDownloadManager.remove(downloadId)
+            file.delete()
+            sysDownloadManager.remove(downloadId)
+            return uri.toString()
+        } catch (_: Exception) {
+            sysDownloadManager.remove(downloadId)
+            return null
         }
     }
 
-    private fun saveToMediaStore(file: File, fileName: String, type: DownloadType): String? {
-        val mime = when (type) {
-            DownloadType.VIDEO, DownloadType.LIVE_PHOTO -> "video/mp4"
-            DownloadType.IMAGE -> "image/jpeg"
-        }
-        val cv = ContentValues().apply {
-            put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
-            put(MediaStore.MediaColumns.MIME_TYPE, mime)
-            if (type == DownloadType.IMAGE) put(MediaStore.MediaColumns.RELATIVE_PATH, "Pictures/Douyin")
-            else put(MediaStore.Video.Media.RELATIVE_PATH, "Movies/Douyin")
-        }
-        val collection = if (type == DownloadType.IMAGE) MediaStore.Images.Media.EXTERNAL_CONTENT_URI
-                        else MediaStore.Video.Media.EXTERNAL_CONTENT_URI
-        val uri = context.contentResolver.insert(collection, cv) ?: return null
-        context.contentResolver.openOutputStream(uri)?.use { out ->
-            val buf = ByteArray(8192)
-            FileInputStream(file).use { fis ->
-                var read: Int
-                while (fis.read(buf).also { read = it } != -1) {
-                    out.write(buf, 0, read)
-                }
-            }
-        }
-        file.delete()
-        return uri.toString()
-    }
-
-    private fun copyLegacy(file: File, fileName: String, savePath: String?): String {
-        val dir = if (!savePath.isNullOrEmpty() && File(savePath).exists()) File(savePath)
-                  else File(context.getExternalFilesDir(null), "DouyinDownloads").also { it.mkdirs() }
-        val dest = File(dir, fileName)
-        file.copyTo(dest, overwrite = true)
-        file.delete()
-        return dest.absolutePath
-    }
-
-    private fun formatSpeed(bytesDownloaded: Long, elapsedMs: Long?): String = when {
-        bytesDownloaded < 1024 -> "$bytesDownloaded B/s"
-        bytesDownloaded < 1024 * 1024 -> "${"%.1f".format(bytesDownloaded / 1024.0)} KB/s"
-        bytesDownloaded < 1024 * 1024 * 1024 -> "${"%.1f".format(bytesDownloaded / (1024.0 * 1024))} MB/s"
-        else -> "${"%.2f".format(bytesDownloaded / (1024.0 * 1024 * 1024))} GB/s"
+    private fun formatSpeed(bytesPerSecond: Long): String = when {
+        bytesPerSecond < 1024 -> "$bytesPerSecond B/s"
+        bytesPerSecond < 1024 * 1024 -> "${"%.1f".format(bytesPerSecond / 1024.0)} KB/s"
+        bytesPerSecond < 1024 * 1024 * 1024 -> "${"%.1f".format(bytesPerSecond / (1024.0 * 1024))} MB/s"
+        else -> "${"%.2f".format(bytesPerSecond / (1024.0 * 1024 * 1024))} GB/s"
     }
 }
