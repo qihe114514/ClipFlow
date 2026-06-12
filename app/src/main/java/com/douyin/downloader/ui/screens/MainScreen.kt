@@ -327,7 +327,6 @@ private fun VideoBackground(uri: Uri, blurRadiusPx: Float) {
             PlayerView(ctx).apply {
                 this.player = player
                 useController = false
-                keepContentOnPlayerReset = true
             }
         },
         modifier = modifier
