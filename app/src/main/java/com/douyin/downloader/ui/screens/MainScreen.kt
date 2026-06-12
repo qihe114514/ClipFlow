@@ -37,6 +37,7 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import coil.size.Size
 import com.douyin.downloader.model.*
+import com.douyin.downloader.ui.DownloadStatus
 import com.douyin.downloader.ui.MainUiState
 
 @OptIn(ExperimentalMaterial3Api::class)
