@@ -7,7 +7,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 
-private val LightColorScheme = lightColorScheme(
+private val FallbackLightColorScheme = lightColorScheme(
     primary = Color(0xFFE91E63),
     onPrimary = Color.White,
     primaryContainer = Color(0xFFFFCDD2),
@@ -25,7 +25,7 @@ private val LightColorScheme = lightColorScheme(
     onSurfaceVariant = Color(0xFF616161),
 )
 
-private val DarkColorScheme = darkColorScheme(
+private val FallbackDarkColorScheme = darkColorScheme(
     primary = Color(0xFFFF80AB),
     onPrimary = Color(0xFF5C0029),
     primaryContainer = Color(0xFFAD1457),
@@ -46,9 +46,18 @@ private val DarkColorScheme = darkColorScheme(
 @Composable
 fun DouyinDownloaderTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
+    dynamicColor: Boolean = true,
     content: @Composable () -> Unit
 ) {
-    val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
+    val context = LocalContext.current
+
+    val colorScheme = when {
+        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
+            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+        }
+        darkTheme -> FallbackDarkColorScheme
+        else -> FallbackLightColorScheme
+    }
 
     MaterialTheme(
         colorScheme = colorScheme,
@@ -56,3 +65,4 @@ fun DouyinDownloaderTheme(
         content = content
     )
 }
+

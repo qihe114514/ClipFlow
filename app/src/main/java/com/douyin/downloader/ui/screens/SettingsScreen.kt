@@ -4,6 +4,7 @@ import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
 import androidx.compose.foundation.layout.*
@@ -46,15 +47,14 @@ fun SettingsScreen(
         uri?.let { onSetSavePath(it) }
     }
 
-    // 图片/视频选择器
+    // 图片/视频选择器（相册）
     val bgImageLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocument()
+        contract = ActivityResultContracts.PickVisualMedia()
     ) { uri ->
         uri?.let { onSetBgWallpaper(it, "image") }
     }
-
     val bgVideoLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocument()
+        contract = ActivityResultContracts.PickVisualMedia()
     ) { uri ->
         uri?.let { onSetBgWallpaper(it, "video") }
     }
@@ -157,22 +157,26 @@ fun SettingsScreen(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        FilledTonalButton(
-                            onClick = { bgImageLauncher.launch(arrayOf("image/*")) },
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Icon(Icons.Default.Image, "图片", modifier = Modifier.size(18.dp))
-                            Spacer(Modifier.width(4.dp))
-                            Text("选择图片", fontSize = 13.sp)
-                        }
-                        FilledTonalButton(
-                            onClick = { bgVideoLauncher.launch(arrayOf("video/*")) },
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Icon(Icons.Default.VideoFile, "视频", modifier = Modifier.size(18.dp))
-                            Spacer(Modifier.width(4.dp))
-                            Text("选择视频", fontSize = 13.sp)
-                        }
+                                FilledTonalButton(
+                                    onClick = { bgImageLauncher.launch(
+                                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                                    ) },
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Icon(Icons.Default.Image, "图片", modifier = Modifier.size(18.dp))
+                                    Spacer(Modifier.width(4.dp))
+                                    Text("选择图片", fontSize = 13.sp)
+                                }
+                                FilledTonalButton(
+                                    onClick = { bgVideoLauncher.launch(
+                                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.VideoOnly)
+                                    ) },
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Icon(Icons.Default.VideoFile, "视频", modifier = Modifier.size(18.dp))
+                                    Spacer(Modifier.width(4.dp))
+                                    Text("选择视频", fontSize = 13.sp)
+                                }
                     }
 
                     if (bgWallpaperType != "none") {

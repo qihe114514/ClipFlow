@@ -19,6 +19,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
@@ -261,7 +262,8 @@ private fun WallpaperBackground(uiState: MainUiState) {
             contentDescription = "背景壁纸",
             modifier = Modifier
                 .fillMaxSize()
-                .then(if (blurRadius > 0.dp) Modifier.blur(blurRadius) else Modifier),
+                .then(if (blurRadius > 0.dp) Modifier.blur(blurRadius) else Modifier)
+                .alpha(opacity),
             contentScale = ContentScale.Crop
         )
     }

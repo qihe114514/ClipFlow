@@ -19,11 +19,17 @@ data class VideoData(
     val cover: String = "",
     val url: String? = null,
     @SerialName("video_backup")
-    val videoBackup: String? = null,
+    val videoBackup: List<VideoBackupItem> = emptyList(),
     val images: List<String> = emptyList(),
     @SerialName("live_photo")
     val livePhoto: List<LivePhoto> = emptyList(),
     val music: Music? = null
+)
+
+@Serializable
+data class VideoBackupItem(
+    val label: String = "",
+    val url: String = ""
 )
 
 @Serializable
@@ -61,10 +67,12 @@ fun VideoData.getAllVideoUrls(): List<DownloadItem> {
                     type = DownloadType.VIDEO
                 ))
             }
-            videoBackup?.let {
+            videoBackup.forEach { backup ->
+                val label = backup.label.ifEmpty { "" }
                 items.add(DownloadItem(
-                    url = it,
-                    title = title.ifEmpty { "${author?.name ?: "视频"}_${System.currentTimeMillis()}" } + "_备份",
+                    url = backup.url,
+                    title = title.ifEmpty { "${author?.name ?: "视频"}_${System.currentTimeMillis()}" } +
+                        if (label.isNotEmpty()) "_${label}" else "_备份",
                     type = DownloadType.VIDEO
                 ))
             }
