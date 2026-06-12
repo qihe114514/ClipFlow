@@ -67,7 +67,7 @@ fun VideoData.getAllVideoUrls(): List<DownloadItem> {
                     url = it,
                     title = baseTitle,
                     type = DownloadType.VIDEO,
-                    displayInfo = buildDisplayInfo(label = null)
+                    displayInfo = buildDisplayInfo(label = null).ifEmpty { "源视频文件" }
                 ))
             }
             videoBackup.forEach { backup ->

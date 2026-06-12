@@ -4,11 +4,11 @@ import android.net.Uri
 import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -23,7 +23,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -54,10 +53,8 @@ fun MainScreen(
     modifier: Modifier = Modifier
 ) {
     Box(modifier = modifier.fillMaxSize()) {
-        // 背景壁纸
         WallpaperBackground(uiState)
 
-        // 前景内容（半透明遮罩，透明度随设置而变）
         Surface(
             modifier = Modifier.fillMaxSize(),
             color = MaterialTheme.colorScheme.background.copy(alpha = uiState.bgOpacity * 0.7f)
@@ -65,9 +62,7 @@ fun MainScreen(
             Scaffold(
                 topBar = {
                     TopAppBar(
-                        title = {
-                            Text("抖音视频下载", fontWeight = FontWeight.Bold)
-                        },
+                        title = { Text("抖音视频下载", fontWeight = FontWeight.Bold) },
                         actions = {
                             IconButton(onClick = onHistoryClick) {
                                 Icon(Icons.Default.History, "历史记录")
@@ -83,128 +78,114 @@ fun MainScreen(
                 },
                 containerColor = Color.Transparent
             ) { paddingValues ->
-                LazyColumn(
+                Column(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(paddingValues)
-                        .padding(horizontal = 24.dp),
+                        .padding(horizontal = 24.dp)
+                        .verticalScroll(rememberScrollState()),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    item(key = "spacer_top") { Spacer(Modifier.height(40.dp)) }
+                    Spacer(Modifier.height(40.dp))
 
-                    item(key = "title") {
-                        Text(
-                            text = "抖音无水印解析",
-                            style = MaterialTheme.typography.headlineMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onBackground
-                        )
-                    }
+                    Text(
+                        text = "抖音无水印解析",
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
 
-                    item(key = "subtitle") {
-                        Spacer(Modifier.height(8.dp))
-                        Text(
-                            text = "粘贴抖音分享链接，一键下载无水印视频",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        text = "粘贴抖音分享链接，一键下载无水印视频",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
 
-                    item(key = "url_field") {
-                        Spacer(Modifier.height(32.dp))
-                        UrlInputField(
-                            url = uiState.shareUrl,
-                            onUrlChange = onUrlChange,
-                            onParseClick = onParseClick
-                        )
-                    }
+                    Spacer(Modifier.height(32.dp))
 
-                    item(key = "parse_btn") {
-                        Spacer(Modifier.height(16.dp))
-                        Button(
-                            onClick = onParseClick,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(56.dp),
-                            shape = RoundedCornerShape(16.dp),
-                            enabled = !uiState.isLoading
-                        ) {
-                            if (uiState.isLoading) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(24.dp),
-                                    color = MaterialTheme.colorScheme.onPrimary,
-                                    strokeWidth = 2.dp
-                                )
-                                Spacer(Modifier.width(8.dp))
-                                Text("解析中...")
-                            } else {
-                                Icon(Icons.Default.Search, "解析")
-                                Spacer(Modifier.width(8.dp))
-                                Text("解析视频", fontSize = 16.sp, fontWeight = FontWeight.Medium)
-                            }
+                    UrlInputField(
+                        url = uiState.shareUrl,
+                        onUrlChange = onUrlChange,
+                        onParseClick = onParseClick
+                    )
+
+                    Spacer(Modifier.height(16.dp))
+
+                    Button(
+                        onClick = onParseClick,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        enabled = !uiState.isLoading
+                    ) {
+                        if (uiState.isLoading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(24.dp),
+                                color = MaterialTheme.colorScheme.onPrimary,
+                                strokeWidth = 2.dp
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text("解析中...")
+                        } else {
+                            Icon(Icons.Default.Search, "解析")
+                            Spacer(Modifier.width(8.dp))
+                            Text("解析视频", fontSize = 16.sp, fontWeight = FontWeight.Medium)
                         }
                     }
 
                     if (uiState.error != null) {
-                        item(key = "error") {
-                            Card(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(top = 16.dp),
-                                colors = CardDefaults.cardColors(
-                                    containerColor = MaterialTheme.colorScheme.errorContainer
-                                ),
-                                shape = RoundedCornerShape(12.dp)
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 16.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.errorContainer
+                            ),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(16.dp),
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Row(
-                                    modifier = Modifier.padding(16.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Icon(Icons.Default.Error, "错误", tint = MaterialTheme.colorScheme.onErrorContainer)
-                                    Spacer(Modifier.width(12.dp))
-                                    Text(
-                                        text = uiState.error ?: "",
-                                        color = MaterialTheme.colorScheme.onErrorContainer,
-                                        style = MaterialTheme.typography.bodyMedium
-                                    )
-                                }
+                                Icon(Icons.Default.Error, "错误", tint = MaterialTheme.colorScheme.onErrorContainer)
+                                Spacer(Modifier.width(12.dp))
+                                Text(
+                                    text = uiState.error ?: "",
+                                    color = MaterialTheme.colorScheme.onErrorContainer,
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
                             }
                         }
                     }
 
                     if (uiState.downloadItems.isNotEmpty()) {
-                        item(key = "video_info") {
-                            Spacer(Modifier.height(24.dp))
-                            uiState.parsedData?.let { data -> VideoInfoCard(data) }
-                        }
+                        Spacer(Modifier.height(24.dp))
 
-                        item(key = "download_label") {
-                            Spacer(Modifier.height(16.dp))
-                            Text(
-                                text = "可下载内容 (${uiState.downloadItems.size})",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.padding(bottom = 8.dp)
-                            )
-                        }
+                        uiState.parsedData?.let { data -> VideoInfoCard(data) }
 
-                        itemsIndexed(
-                            items = uiState.downloadItems,
-                            key = { _, downloadItem -> downloadItem.url }
-                        ) { index, item ->
+                        Spacer(Modifier.height(16.dp))
+                        Text(
+                            text = "可下载内容 (${uiState.downloadItems.size})",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
+
+                        uiState.downloadItems.forEachIndexed { index, item ->
                             DownloadItemCard(
                                 index = index,
                                 item = item,
                                 status = uiState.downloadStatus[index],
                                 progress = uiState.downloadProgress[index] ?: 0f,
-                                speed = uiState.downloadSpeed[index] ?: "",
                                 onDownload = { onDownloadClick(index, item) }
                             )
                             Spacer(Modifier.height(8.dp))
                         }
                     }
 
-                    item(key = "spacer_bottom") { Spacer(Modifier.height(80.dp)) }
+                    Spacer(Modifier.height(80.dp))
                 }
             }
         }
@@ -313,7 +294,6 @@ private fun VideoBackground(
         }
     }
 
-    // 更新音量
     LaunchedEffect(soundEnabled) {
         player.volume = if (soundEnabled) 0.4f else 0f
     }
@@ -322,7 +302,6 @@ private fun VideoBackground(
         onDispose { player.release() }
     }
 
-    // 模糊只在最外层 Box 应用
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -333,7 +312,7 @@ private fun VideoBackground(
                 PlayerView(ctx).apply {
                     this.player = player
                     useController = false
-                    resizeMode = 3
+                    resizeMode = 1 // FIT 保持比例不拉伸
                 }
             },
             modifier = Modifier.fillMaxSize()
@@ -409,7 +388,6 @@ private fun DownloadItemCard(
     item: DownloadItem,
     status: DownloadStatus?,
     progress: Float,
-    speed: String,
     onDownload: () -> Unit
 ) {
     Card(
@@ -469,31 +447,31 @@ private fun DownloadItemCard(
 
             when (val s = status) {
                 is DownloadStatus.Downloading -> {
-                    Box(
-                        contentAlignment = Alignment.Center,
-                        modifier = Modifier.size(42.dp)
-                    ) {
+                    if (progress >= 0f) {
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier.size(42.dp)
+                        ) {
+                            CircularProgressIndicator(
+                                progress = { progress },
+                                modifier = Modifier.size(36.dp),
+                                strokeWidth = 3.dp,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            Text(
+                                text = "${(progress * 100).toInt()}%",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontSize = 10.sp,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    } else {
                         CircularProgressIndicator(
-                            progress = { progress },
-                            modifier = Modifier.size(36.dp),
+                            modifier = Modifier.size(28.dp),
                             strokeWidth = 3.dp,
                             color = MaterialTheme.colorScheme.primary
                         )
-                        Text(
-                            text = "${(progress * 100).toInt()}%",
-                            style = MaterialTheme.typography.labelSmall,
-                            fontSize = 10.sp,
-                            color = MaterialTheme.colorScheme.primary
-                        )
                     }
-                    Spacer(Modifier.width(4.dp))
-                    Text(
-                        text = speed,
-                        style = MaterialTheme.typography.labelSmall,
-                        fontSize = 10.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1
-                    )
                 }
                 is DownloadStatus.Success -> {
                     Icon(
