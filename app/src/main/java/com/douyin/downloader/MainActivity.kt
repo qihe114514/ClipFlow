@@ -54,10 +54,12 @@ class MainActivity : ComponentActivity() {
                             bgWallpaperType = uiState.bgWallpaperType,
                             bgBlurRadius = uiState.bgBlurRadius,
                             bgOpacity = uiState.bgOpacity,
+                            videoSoundEnabled = uiState.videoSoundEnabled,
                             onSetSavePath = { viewModel.setSavePath(it) },
                             onSetBgWallpaper = { uri, type -> viewModel.setBgWallpaper(uri, type) },
                             onSetBgBlurRadius = { viewModel.setBgBlurRadius(it) },
                             onSetBgOpacity = { viewModel.setBgOpacity(it) },
+                            onSetVideoSoundEnabled = { viewModel.setVideoSoundEnabled(it) },
                             onClearBgWallpaper = { viewModel.clearBgWallpaper() },
                             onBack = { navController.popBackStack() }
                         )

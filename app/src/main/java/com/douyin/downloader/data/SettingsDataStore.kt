@@ -21,6 +21,7 @@ class SettingsDataStore(private val context: Context) {
         val BG_WALLPAPER_TYPE = stringPreferencesKey("bg_wallpaper_type")
         val BG_BLUR_RADIUS = floatPreferencesKey("bg_blur_radius")
         val BG_OPACITY = floatPreferencesKey("bg_opacity")
+        val VIDEO_SOUND_ENABLED = booleanPreferencesKey("video_sound_enabled")
         val PARSE_HISTORY = stringPreferencesKey("parse_history")
     }
 
@@ -42,6 +43,10 @@ class SettingsDataStore(private val context: Context) {
 
     val bgOpacity: Flow<Float> = context.dataStore.data.map { prefs ->
         prefs[BG_OPACITY] ?: 0.5f
+    }
+
+    val videoSoundEnabled: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[VIDEO_SOUND_ENABLED] ?: false
     }
 
     val parseHistory: Flow<List<HistoryEntry>> = context.dataStore.data.map { prefs ->
@@ -78,6 +83,12 @@ class SettingsDataStore(private val context: Context) {
         }
     }
 
+    suspend fun setVideoSoundEnabled(enabled: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[VIDEO_SOUND_ENABLED] = enabled
+        }
+    }
+
     suspend fun addParseHistory(entry: HistoryEntry) {
         context.dataStore.edit { prefs ->
             val json = prefs[PARSE_HISTORY] ?: "[]"
@@ -86,10 +97,8 @@ class SettingsDataStore(private val context: Context) {
             } catch (_: Exception) {
                 mutableListOf()
             }
-            // 去重：相同URL只保留最新
             list.removeAll { it.url == entry.url }
             list.add(0, entry)
-            // 最多保留50条
             if (list.size > 50) {
                 list.removeAt(list.lastIndex)
             }
@@ -103,4 +112,3 @@ class SettingsDataStore(private val context: Context) {
         }
     }
 }
-

@@ -46,6 +46,7 @@ data class MainUiState(
     val bgWallpaperType: String = "none",
     val bgBlurRadius: Float = 0f,
     val bgOpacity: Float = 0.5f,
+    val videoSoundEnabled: Boolean = false,
     // 历史记录
     val parseHistory: List<HistoryEntry> = emptyList()
 )
@@ -94,6 +95,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
         viewModelScope.launch {
+            settingsStore.videoSoundEnabled.collect { enabled ->
+                _uiState.update { it.copy(videoSoundEnabled = enabled) }
+            }
+        }
+        viewModelScope.launch {
             settingsStore.parseHistory.collect { history ->
                 _uiState.update { it.copy(parseHistory = history) }
             }
@@ -121,7 +127,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     val data = response.data
                     if (data != null) {
                         val items = data.getAllVideoUrls()
-                        // 记录解析历史
                         settingsStore.addParseHistory(
                             HistoryEntry(
                                 url = url,
@@ -166,7 +171,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         statusMap[index] = DownloadStatus.Downloading
         _uiState.update { it.copy(downloadStatus = statusMap) }
 
-        // 震动反馈
         triggerLightHaptic()
 
         viewModelScope.launch {
@@ -245,6 +249,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun setBgOpacity(opacity: Float) {
         viewModelScope.launch {
             settingsStore.setBgOpacity(opacity)
+        }
+    }
+
+    fun setVideoSoundEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsStore.setVideoSoundEnabled(enabled)
         }
     }
 

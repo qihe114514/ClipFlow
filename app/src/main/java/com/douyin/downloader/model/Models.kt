@@ -52,6 +52,8 @@ data class Music(
     val url: String = ""
 )
 
+import kotlin.math.absoluteValue
+
 /**
  * 获取所有可下载的URL（含分辨率/码率/帧率信息）
  */
@@ -67,21 +69,15 @@ fun VideoData.getAllVideoUrls(): List<DownloadItem> {
                     url = it,
                     title = baseTitle,
                     type = DownloadType.VIDEO,
-                    resolution = "原画",
-                    bitrate = null,
-                    fps = null,
-                    fileSize = null
+                    displayInfo = buildDisplayInfo(label = null)
                 ))
             }
             videoBackup.forEach { backup ->
                 items.add(DownloadItem(
                     url = backup.url,
-                    title = "$baseTitle _ ${backup.label}",
+                    title = baseTitle,
                     type = DownloadType.VIDEO,
-                    resolution = backup.label,
-                    bitrate = null,
-                    fps = null,
-                    fileSize = null
+                    displayInfo = buildDisplayInfo(label = backup.label)
                 ))
             }
         }
@@ -91,10 +87,7 @@ fun VideoData.getAllVideoUrls(): List<DownloadItem> {
                     url = imgUrl,
                     title = "${baseTitle}_图${index + 1}",
                     type = DownloadType.IMAGE,
-                    resolution = null,
-                    bitrate = null,
-                    fps = null,
-                    fileSize = null
+                    displayInfo = "图片"
                 ))
             }
         }
@@ -104,19 +97,13 @@ fun VideoData.getAllVideoUrls(): List<DownloadItem> {
                     url = lp.video,
                     title = "${baseTitle}_实况${index + 1}",
                     type = DownloadType.LIVE_PHOTO,
-                    resolution = null,
-                    bitrate = null,
-                    fps = null,
-                    fileSize = null
+                    displayInfo = "实况视频"
                 ))
                 items.add(DownloadItem(
                     url = lp.image,
                     title = "${baseTitle}_实况${index + 1}_封面",
                     type = DownloadType.IMAGE,
-                    resolution = null,
-                    bitrate = null,
-                    fps = null,
-                    fileSize = null
+                    displayInfo = "实况封面"
                 ))
             }
         }
@@ -125,14 +112,68 @@ fun VideoData.getAllVideoUrls(): List<DownloadItem> {
     return items
 }
 
+/**
+ * 将 API 返回的 label 解析成用户可读的显示字符串。
+ * 例如：adapt_lowest_1440_112560pl → 2K · 30fps · 14.4Mbps
+ */
+private fun buildDisplayInfo(label: String?): String {
+    if (label.isNullOrBlank()) return ""
+
+    val parts = mutableListOf<String>()
+
+    // 分辨率提取
+    val resPattern = Regex("""(\d{3,4})p""", RegexOption.IGNORE_CASE)
+    val resMatch = resPattern.find(label)
+    if (resMatch != null) {
+        val height = resMatch.groupValues[1].toInt()
+        parts.add(when {
+            height >= 2160 -> "4K"
+            height >= 1440 -> "2K"
+            height >= 1080 -> "1080p"
+            height >= 720 -> "720p"
+            height >= 480 -> "480p"
+            else -> "${height}p"
+        })
+    }
+
+    // 帧率提取
+    val fpsPattern = Regex("""(\d{2,3})fps""", RegexOption.IGNORE_CASE)
+    val fpsMatch = fpsPattern.find(label)
+    if (fpsMatch != null) {
+        parts.add("${fpsMatch.groupValues[1]}fps")
+    }
+
+    // 码率提取 (kbps)
+    val brPattern = Regex("""(\d{3,6})kbps""", RegexOption.IGNORE_CASE)
+    val brMatch = brPattern.find(label)
+    if (brMatch != null) {
+        val kbps = brMatch.groupValues[1].toDouble()
+        parts.add("${"%.1f".format(kbps / 1000)}Mbps")
+    }
+
+    // 编码格式
+    if (label.contains("h265", ignoreCase = true) || label.contains("hevc", ignoreCase = true)) {
+        parts.add("HEVC")
+    } else if (label.contains("h264", ignoreCase = true) || label.contains("avc", ignoreCase = true)) {
+        parts.add("H.264")
+    }
+
+    // 如果没有匹配到任何模式，则显示简化 label（去掉前缀）
+    if (parts.isEmpty()) {
+        val simplified = label
+            .replace(Regex("adapt_\\w+_", RegexOption.IGNORE_CASE), "")
+            .replace("_", " ")
+        return simplified.ifBlank { label }
+    }
+
+    return parts.joinToString(" · ")
+}
+
 data class DownloadItem(
     val url: String,
     val title: String,
     val type: DownloadType,
-    val resolution: String? = null,
-    val bitrate: Double? = null,
-    val fps: Int? = null,
-    val fileSize: String? = null
+    val displayInfo: String = ""
 )
 
 enum class DownloadType {

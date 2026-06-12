@@ -33,10 +33,12 @@ fun SettingsScreen(
     bgWallpaperType: String,
     bgBlurRadius: Float,
     bgOpacity: Float,
+    videoSoundEnabled: Boolean,
     onSetSavePath: (Uri) -> Unit,
     onSetBgWallpaper: (Uri, String) -> Unit,
     onSetBgBlurRadius: (Float) -> Unit,
     onSetBgOpacity: (Float) -> Unit,
+    onSetVideoSoundEnabled: (Boolean) -> Unit,
     onClearBgWallpaper: () -> Unit,
     onBack: () -> Unit
 ) {
@@ -85,9 +87,7 @@ fun SettingsScreen(
         ) {
             Spacer(Modifier.height(16.dp))
 
-            // ==== 下载设置 ====
             SettingsSectionTitle("下载设置")
-
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
@@ -128,9 +128,7 @@ fun SettingsScreen(
 
             Spacer(Modifier.height(24.dp))
 
-            // ==== 背景壁纸 ====
             SettingsSectionTitle("背景壁纸")
-
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
@@ -187,12 +185,26 @@ fun SettingsScreen(
                         }
                     }
 
+                    if (bgWallpaperType == "video") {
+                        Spacer(Modifier.height(12.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text("播放背景声音", style = MaterialTheme.typography.bodyMedium)
+                            Switch(
+                                checked = videoSoundEnabled,
+                                onCheckedChange = onSetVideoSoundEnabled
+                            )
+                        }
+                    }
+
                     if (bgWallpaperType != "none") {
                         Spacer(Modifier.height(16.dp))
                         HorizontalDivider()
                         Spacer(Modifier.height(16.dp))
 
-                        // 模糊度（0~10）
                         Text("模糊度", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
                         Spacer(Modifier.height(4.dp))
                         Row(
@@ -216,7 +228,6 @@ fun SettingsScreen(
 
                         Spacer(Modifier.height(12.dp))
 
-                        // 透明度（0~100%，但100%表示背景完全不透明/即关闭遮罩）
                         Text("背景透明度", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
                         Spacer(Modifier.height(4.dp))
                         Row(
@@ -243,7 +254,6 @@ fun SettingsScreen(
 
             Spacer(Modifier.height(24.dp))
 
-            // ==== 关于 ====
             SettingsSectionTitle("关于")
             Card(
                 modifier = Modifier.fillMaxWidth(),
@@ -253,11 +263,7 @@ fun SettingsScreen(
                 )
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        "抖音视频下载器 v1.3",
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.Medium
-                    )
+                    Text("抖音视频下载器 v1.3", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
                     Spacer(Modifier.height(4.dp))
                     Text(
                         "基于 BugPk-Api 提供的抖音无水印解析服务\n支持视频、图集和实况照片下载",
@@ -265,17 +271,12 @@ fun SettingsScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Spacer(Modifier.height(4.dp))
-                    Text(
-                        "API: api.bugpk.com",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.primary
-                    )
+                    Text("API: api.bugpk.com", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
 
                     Spacer(Modifier.height(12.dp))
                     HorizontalDivider()
                     Spacer(Modifier.height(12.dp))
 
-                    // 开发者信息
                     Text("开发者", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
                     Spacer(Modifier.height(6.dp))
 
@@ -283,19 +284,13 @@ fun SettingsScreen(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(
-                            Icons.Default.Person,
-                            contentDescription = null,
-                            modifier = Modifier.size(20.dp),
-                            tint = MaterialTheme.colorScheme.primary
-                        )
+                        Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.primary)
                         Spacer(Modifier.width(8.dp))
                         Text("其核 (@qihe114514)", style = MaterialTheme.typography.bodyMedium)
                     }
 
                     Spacer(Modifier.height(8.dp))
 
-                    // B站链接
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -306,22 +301,11 @@ fun SettingsScreen(
                             .padding(vertical = 4.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(
-                            Icons.Default.PlayArrow,
-                            contentDescription = null,
-                            modifier = Modifier.size(20.dp),
-                            tint = MaterialTheme.colorScheme.secondary
-                        )
+                        Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.secondary)
                         Spacer(Modifier.width(8.dp))
-                        Text(
-                            "B站主页",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.primary,
-                            textDecoration = TextDecoration.Underline
-                        )
+                        Text("B站主页", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary, textDecoration = TextDecoration.Underline)
                     }
 
-                    // 抖音链接
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -332,19 +316,9 @@ fun SettingsScreen(
                             .padding(vertical = 4.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(
-                            Icons.Default.MusicNote,
-                            contentDescription = null,
-                            modifier = Modifier.size(20.dp),
-                            tint = MaterialTheme.colorScheme.tertiary
-                        )
+                        Icon(Icons.Default.MusicNote, contentDescription = null, modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.tertiary)
                         Spacer(Modifier.width(8.dp))
-                        Text(
-                            "抖音主页",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.primary,
-                            textDecoration = TextDecoration.Underline
-                        )
+                        Text("抖音主页", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary, textDecoration = TextDecoration.Underline)
                     }
                 }
             }

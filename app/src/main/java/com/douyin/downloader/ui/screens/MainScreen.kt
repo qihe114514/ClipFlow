@@ -31,6 +31,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.media3.common.AspectRatioFrameLayout
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
@@ -90,9 +91,9 @@ fun MainScreen(
                         .padding(horizontal = 24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    item { Spacer(Modifier.height(40.dp)) }
+                    item(key = "spacer_top") { Spacer(Modifier.height(40.dp)) }
 
-                    item {
+                    item(key = "title") {
                         Text(
                             text = "抖音无水印解析",
                             style = MaterialTheme.typography.headlineMedium,
@@ -101,7 +102,7 @@ fun MainScreen(
                         )
                     }
 
-                    item {
+                    item(key = "subtitle") {
                         Spacer(Modifier.height(8.dp))
                         Text(
                             text = "粘贴抖音分享链接，一键下载无水印视频",
@@ -110,10 +111,8 @@ fun MainScreen(
                         )
                     }
 
-                    item {
+                    item(key = "url_field") {
                         Spacer(Modifier.height(32.dp))
-
-                        // 输入框
                         UrlInputField(
                             url = uiState.shareUrl,
                             onUrlChange = onUrlChange,
@@ -121,10 +120,8 @@ fun MainScreen(
                         )
                     }
 
-                    item {
+                    item(key = "parse_btn") {
                         Spacer(Modifier.height(16.dp))
-
-                        // 解析按钮
                         Button(
                             onClick = onParseClick,
                             modifier = Modifier
@@ -149,9 +146,8 @@ fun MainScreen(
                         }
                     }
 
-                    // 错误提示
                     if (uiState.error != null) {
-                        item {
+                        item(key = "error") {
                             Card(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -165,11 +161,7 @@ fun MainScreen(
                                     modifier = Modifier.padding(16.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Icon(
-                                        Icons.Default.Error,
-                                        "错误",
-                                        tint = MaterialTheme.colorScheme.onErrorContainer
-                                    )
+                                    Icon(Icons.Default.Error, "错误", tint = MaterialTheme.colorScheme.onErrorContainer)
                                     Spacer(Modifier.width(12.dp))
                                     Text(
                                         text = uiState.error ?: "",
@@ -181,18 +173,13 @@ fun MainScreen(
                         }
                     }
 
-                    // 解析结果
                     if (uiState.downloadItems.isNotEmpty()) {
-                        item {
+                        item(key = "video_info") {
                             Spacer(Modifier.height(24.dp))
-
-                            // 视频信息卡片
-                            uiState.parsedData?.let { data ->
-                                VideoInfoCard(data)
-                            }
+                            uiState.parsedData?.let { data -> VideoInfoCard(data) }
                         }
 
-                        item {
+                        item(key = "download_label") {
                             Spacer(Modifier.height(16.dp))
                             Text(
                                 text = "可下载内容 (${uiState.downloadItems.size})",
@@ -202,7 +189,10 @@ fun MainScreen(
                             )
                         }
 
-                        itemsIndexed(uiState.downloadItems) { index, item ->
+                        itemsIndexed(
+                            items = uiState.downloadItems,
+                            key = { index, item -> "${item.url}_$index" }
+                        ) { index, item ->
                             DownloadItemCard(
                                 index = index,
                                 item = item,
@@ -215,7 +205,7 @@ fun MainScreen(
                         }
                     }
 
-                    item { Spacer(Modifier.height(80.dp)) }
+                    item(key = "spacer_bottom") { Spacer(Modifier.height(80.dp)) }
                 }
             }
         }
@@ -297,40 +287,59 @@ private fun WallpaperBackground(uiState: MainUiState) {
         "video" -> {
             if (uiState.bgWallpaperUri.isNotBlank()) {
                 val uri = remember(uiState.bgWallpaperUri) { Uri.parse(uiState.bgWallpaperUri) }
-                VideoBackground(uri = uri, blurRadiusPx = if (uiState.bgBlurRadius > 0) blurRadius.value else 0f)
+                VideoBackground(
+                    uri = uri,
+                    blurRadiusDp = blurRadius,
+                    soundEnabled = uiState.videoSoundEnabled
+                )
             }
         }
     }
 }
 
 @Composable
-private fun VideoBackground(uri: Uri, blurRadiusPx: Float) {
+private fun VideoBackground(
+    uri: Uri,
+    blurRadiusDp: androidx.compose.ui.unit.Dp,
+    soundEnabled: Boolean
+) {
     val context = LocalContext.current
-    val player = remember {
+    val player = remember(uri, soundEnabled) {
         ExoPlayer.Builder(context).build().apply {
             setMediaItem(MediaItem.fromUri(uri))
             repeatMode = Player.REPEAT_MODE_ALL
-            volume = 0f
+            volume = if (soundEnabled) 0.4f else 0f
             playWhenReady = true
             prepare()
         }
     }
 
-    DisposableEffect(Unit) {
+    // 更新音量
+    LaunchedEffect(soundEnabled) {
+        player.volume = if (soundEnabled) 0.4f else 0f
+    }
+
+    DisposableEffect(uri) {
         onDispose { player.release() }
     }
 
-    val modifier = if (blurRadiusPx > 0) Modifier.fillMaxSize().blur(blurRadiusPx.dp) else Modifier.fillMaxSize()
-
-    AndroidView(
-        factory = { ctx ->
-            PlayerView(ctx).apply {
-                this.player = player
-                useController = false
-            }
-        },
-        modifier = modifier
-    )
+    // 模糊只在最外层 Box 应用
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .then(if (blurRadiusDp > 0.dp) Modifier.blur(blurRadiusDp) else Modifier)
+    ) {
+        AndroidView(
+            factory = { ctx ->
+                PlayerView(ctx).apply {
+                    this.player = player
+                    useController = false
+                    resizeMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM
+                }
+            },
+            modifier = Modifier.fillMaxSize()
+        )
+    }
 }
 
 @Composable
@@ -443,7 +452,12 @@ private fun DownloadItemCard(
                         maxLines = 1
                     )
                     Text(
-                        text = formatVideoInfo(item),
+                        text = item.displayInfo.ifBlank {
+                            when (item.type) {
+                                DownloadType.VIDEO, DownloadType.LIVE_PHOTO -> "视频文件"
+                                DownloadType.IMAGE -> "图片文件"
+                            }
+                        },
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
@@ -517,24 +531,4 @@ private fun DownloadItemCard(
             }
         }
     }
-}
-
-/**
- * 格式化视频信息：分辨率/码率/帧率/文件大小
- */
-private fun formatVideoInfo(item: DownloadItem): String {
-    val parts = mutableListOf<String>()
-
-    item.resolution?.let { if (it.isNotBlank()) parts.add(it) }
-    item.bitrate?.let { if (it > 0) parts.add("${String.format("%.1f", it / 1000f)}Mbps") }
-    item.fps?.let { if (it > 0) parts.add("${it}fps") }
-    item.fileSize?.let { if (it.isNotBlank()) parts.add(it) }
-
-    if (parts.isEmpty()) {
-        return when (item.type) {
-            DownloadType.VIDEO, DownloadType.LIVE_PHOTO -> "视频文件"
-            DownloadType.IMAGE -> "图片文件"
-        }
-    }
-    return parts.joinToString(" · ")
 }
