@@ -257,13 +257,13 @@ private fun WallpaperBackground(uiState: MainUiState) {
             model = ImageRequest.Builder(context)
                 .data(uri)
                 .size(Size.ORIGINAL)
-                .crossfade(true)
                 .build(),
             contentDescription = "背景壁纸",
             modifier = Modifier
                 .fillMaxSize()
                 .then(if (blurRadius > 0.dp) Modifier.blur(blurRadius) else Modifier),
-            contentScale = ContentScale.Crop
+            contentScale = ContentScale.Crop,
+            crossfade = true
         )
     }
 }
