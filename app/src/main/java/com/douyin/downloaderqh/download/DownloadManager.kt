@@ -1,12 +1,12 @@
-package com.douyin.downloader.download
+package com.douyin.downloaderqh.download
 
 import android.content.ContentValues
 import android.content.Context
 import android.net.Uri
 import android.os.Build
 import android.provider.MediaStore
-import com.douyin.downloader.model.DownloadItem
-import com.douyin.downloader.model.DownloadType
+import com.douyin.downloaderqh.model.DownloadItem
+import com.douyin.downloaderqh.model.DownloadType
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import okhttp3.OkHttpClient

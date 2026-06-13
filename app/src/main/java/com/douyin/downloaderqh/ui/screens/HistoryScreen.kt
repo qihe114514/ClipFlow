@@ -1,4 +1,4 @@
-package com.douyin.downloader.ui.screens
+package com.douyin.downloaderqh.ui.screens
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -15,7 +15,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.douyin.downloader.ui.HistoryEntry
+import com.douyin.downloaderqh.ui.HistoryEntry
 import java.text.SimpleDateFormat
 import java.util.*
 

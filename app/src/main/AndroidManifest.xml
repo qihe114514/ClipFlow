@@ -18,7 +18,7 @@
         android:icon="@mipmap/ic_launcher"
         android:label="抖音视频下载"
         android:supportsRtl="true"
-        android:theme="@style/Theme.DouyinDownloader"
+        android:theme="@style/Theme.DouyinDownloaderqh"
         android:requestLegacyExternalStorage="true">
 
         <activity

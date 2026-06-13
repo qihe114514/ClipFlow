@@ -6,15 +6,15 @@ plugins {
 }
 
 android {
-    namespace = "com.douyin.downloader"
+    namespace = "com.douyin.downloaderqh"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.douyin.downloader"
+        applicationId = "com.douyin.downloaderqh"
         minSdk = 36
         targetSdk = 36
-        versionCode = 4
-        versionName = "1.5"
+        versionCode = 5
+        versionName = "2.0"
     }
 
     buildTypes {

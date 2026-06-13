@@ -1,4 +1,4 @@
-package com.douyin.downloader
+package com.douyin.downloaderqh
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -15,11 +15,11 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.douyin.downloader.ui.MainViewModel
-import com.douyin.downloader.ui.screens.HistoryScreen
-import com.douyin.downloader.ui.screens.MainScreen
-import com.douyin.downloader.ui.screens.SettingsScreen
-import com.douyin.downloader.ui.theme.DouyinDownloaderTheme
+import com.douyin.downloaderqh.ui.MainViewModel
+import com.douyin.downloaderqh.ui.screens.HistoryScreen
+import com.douyin.downloaderqh.ui.screens.MainScreen
+import com.douyin.downloaderqh.ui.screens.SettingsScreen
+import com.douyin.downloaderqh.ui.theme.DouyinDownloaderTheme
 
 class MainActivity : ComponentActivity() {
 

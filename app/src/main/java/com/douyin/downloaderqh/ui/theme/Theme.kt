@@ -1,4 +1,4 @@
-package com.douyin.downloader.ui.theme
+package com.douyin.downloaderqh.ui.theme
 
 import android.app.Activity
 import android.os.Build

@@ -1,4 +1,4 @@
-# 抖音无水印视频下载器 v1.5
+# 抖音无水印视频下载器 v2.0
 
 基于 [BugPk-Api](https://api.bugpk.com) 提供的抖音无水印解析服务，支持**视频、图集、实况（Live Photo）** 的解析与下载。采用 **Jetpack Compose + Material 3** 构建，适配 **Android 16（API 36）**，原生沉浸式体验。
 
@@ -17,7 +17,6 @@
 - **解析历史** — 自动记录解析过的链接，可回溯重解析
 - **页面导航** — Navigation Compose 实现页面切换，带淡入淡出过渡动画
 - **按钮动画** — 下载/解析按钮按压缩放，圆形进度条平滑过渡
-- **全新图标** — 音符 + 水波纹下载自适应图标，适配 Material 3 动态取色
 - **沉浸状态栏** — 自动适配亮暗主题，背景透明无黑条
 
 ## 🛠️ 技术栈
@@ -57,7 +56,7 @@ cd qihe-douyin
 ## 📁 项目结构
 
 ```
-├── app/src/main/java/com/douyin/downloader/
+├── app/src/main/java/com/douyin/downloaderqh/
 │   ├── MainActivity.kt           # 入口 + NavHost 导航
 │   ├── api/
 │   │   └── DouyinApiClient.kt    # BugPk API 客户端
@@ -89,7 +88,8 @@ cd qihe-douyin
 | v1.1 | 解析历史、下载进度/网速、震动反馈、粘贴按钮、视频背景 |
 | v1.2 | Material You 动态取色、模糊度/透明度调节、文件属性可读显示、滚动优化 |
 | v1.3 | 下载器全面重写（OkHttp 流式 + MediaStore 相册入库）、防 OOM、进度实时显示 |
-| **v1.5** | 🎨 **全面美化**：全新矢量图标、蓝紫主题、沉浸状态栏、按压缩放动画、列表淡入、进度平滑过渡 |
+| v1.5 | 🎨 全面美化：全新矢量图标、蓝紫主题、沉浸状态栏、按压缩放动画、列表淡入、进度平滑过渡 |
+| **v2.0** | 🚀 大版本更新：包名升级 `com.douyin.downloaderqh`，全新定制应用图标，正式版发布 |
 
 ## 🙋 关于
 

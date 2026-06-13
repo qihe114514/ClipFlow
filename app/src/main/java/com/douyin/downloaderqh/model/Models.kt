@@ -1,4 +1,4 @@
-package com.douyin.downloader.model
+package com.douyin.downloaderqh.model
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable

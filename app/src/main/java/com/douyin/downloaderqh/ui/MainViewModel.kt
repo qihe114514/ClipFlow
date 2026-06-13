@@ -1,4 +1,4 @@
-package com.douyin.downloader.ui
+package com.douyin.downloaderqh.ui
 
 import android.app.Application
 import android.content.Context
@@ -9,10 +9,10 @@ import android.os.Vibrator
 import android.os.VibratorManager
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.douyin.downloader.api.DouyinApiClient
-import com.douyin.downloader.data.SettingsDataStore
-import com.douyin.downloader.download.DownloadManager
-import com.douyin.downloader.model.*
+import com.douyin.downloaderqh.api.DouyinApiClient
+import com.douyin.downloaderqh.data.SettingsDataStore
+import com.douyin.downloaderqh.download.DownloadManager
+import com.douyin.downloaderqh.model.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch

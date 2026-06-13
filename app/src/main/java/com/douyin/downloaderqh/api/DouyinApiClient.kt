@@ -1,6 +1,6 @@
-package com.douyin.downloader.api
+package com.douyin.downloaderqh.api
 
-import com.douyin.downloader.model.ApiResponse
+import com.douyin.downloaderqh.model.ApiResponse
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json

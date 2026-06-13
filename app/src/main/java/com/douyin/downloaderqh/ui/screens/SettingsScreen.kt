@@ -1,4 +1,4 @@
-package com.douyin.downloader.ui.screens
+package com.douyin.downloaderqh.ui.screens
 
 import android.content.Intent
 import android.net.Uri

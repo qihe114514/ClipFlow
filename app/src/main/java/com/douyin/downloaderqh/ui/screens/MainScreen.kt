@@ -1,4 +1,4 @@
-package com.douyin.downloader.ui.screens
+package com.douyin.downloaderqh.ui.screens
 
 import android.net.Uri
 import androidx.compose.animation.*
@@ -38,9 +38,9 @@ import androidx.media3.ui.PlayerView
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.size.Size
-import com.douyin.downloader.model.*
-import com.douyin.downloader.ui.DownloadStatus
-import com.douyin.downloader.ui.MainUiState
+import com.douyin.downloaderqh.model.*
+import com.douyin.downloaderqh.ui.DownloadStatus
+import com.douyin.downloaderqh.ui.MainUiState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
