@@ -9,6 +9,15 @@ android {
     namespace = "com.douyin.downloaderqh"
     compileSdk = 36
 
+    signingConfigs {
+        debug {
+            storeFile file("${System.getProperty("user.home")}/.android/debug.keystore")
+            storePassword "android"
+            keyAlias "androiddebugkey"
+            keyPassword "android"
+        }
+    }
+
     defaultConfig {
         applicationId = "com.douyin.downloaderqh"
         minSdk = 36
@@ -19,11 +28,15 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = true
+            isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            signingConfig = signingConfigs.debug
+        }
+        debug {
+            isMinifyEnabled = false
         }
     }
 
