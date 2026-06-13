@@ -1,16 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
+
+    <!-- 音符主体 -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M54,28 L54,68 M54,28 C46,36 38,44 30,52 M54,28 C62,36 70,44 78,52 M54,68 L38,56 M54,68 L70,56"
+        android:pathData="M52,30 C52,28 54,24 58,24 C62,24 64,28 64,30 L64,52 C64,54 62,58 58,58 C54,58 52,54 52,52 Z"/>
+    <!-- 音符头部圆 -->
+    <path
+        android:fillColor="#CCCCCC"
+        android:pathData="M42,58 C42,64 47,68 53,68 C59,68 64,64 64,58 C64,52 59,48 53,48 C47,48 42,52 42,58 Z"/>
+    <!-- 音符旗杆 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M64,24 L64,60"
         android:strokeColor="#FFFFFF"
-        android:strokeWidth="4"
-        android:strokeLineCap="round"
-        android:strokeLineJoin="round"/>
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round"/>
+    <!-- 音符旗 -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M44,46 L38,64 L50,58 L62,64 L68,46 L54,48 Z"/>
+        android:pathData="M64,24 Q74,28 78,34 Q82,28 84,24"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="2"/>
+
+    <!-- 下载箭头 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M52,18 L56,18 L56,28 L60,28 L54,36 L48,28 L52,28 Z"/>
 </vector>

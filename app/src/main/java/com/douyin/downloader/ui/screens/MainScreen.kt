@@ -2,6 +2,7 @@ package com.douyin.downloader.ui.screens
 
 import android.net.Uri
 import androidx.compose.animation.*
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -18,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalClipboardManager
@@ -112,13 +114,21 @@ fun MainScreen(
 
                     Spacer(Modifier.height(16.dp))
 
+                    // 解析按钮带按压缩放动画
+                    val buttonInteraction = remember { MutableInteractionSource() }
+                    val buttonScale by animateFloatAsState(
+                        if (buttonInteraction.collectIsPressedAsState().value) 0.96f else 1f,
+                        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy)
+                    )
                     Button(
                         onClick = onParseClick,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(56.dp),
+                            .height(56.dp)
+                            .scale(buttonScale),
                         shape = RoundedCornerShape(16.dp),
-                        enabled = !uiState.isLoading
+                        enabled = !uiState.isLoading,
+                        interactionSource = buttonInteraction
                     ) {
                         if (uiState.isLoading) {
                             CircularProgressIndicator(
@@ -135,27 +145,34 @@ fun MainScreen(
                         }
                     }
 
-                    if (uiState.error != null) {
-                        Card(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(top = 16.dp),
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.errorContainer
-                            ),
-                            shape = RoundedCornerShape(12.dp)
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(16.dp),
-                                verticalAlignment = Alignment.CenterVertically
+                    // 错误信息淡入
+                    AnimatedVisibility(
+                        visible = uiState.error != null,
+                        enter = fadeIn() + slideInVertically(initialOffsetY = { -20 }),
+                        exit = fadeOut()
+                    ) {
+                        uiState.error?.let { errMsg ->
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 16.dp),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.errorContainer
+                                ),
+                                shape = RoundedCornerShape(12.dp)
                             ) {
-                                Icon(Icons.Default.Error, "错误", tint = MaterialTheme.colorScheme.onErrorContainer)
-                                Spacer(Modifier.width(12.dp))
-                                Text(
-                                    text = uiState.error ?: "",
-                                    color = MaterialTheme.colorScheme.onErrorContainer,
-                                    style = MaterialTheme.typography.bodyMedium
-                                )
+                                Row(
+                                    modifier = Modifier.padding(16.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(Icons.Default.Error, "错误", tint = MaterialTheme.colorScheme.onErrorContainer)
+                                    Spacer(Modifier.width(12.dp))
+                                    Text(
+                                        text = errMsg,
+                                        color = MaterialTheme.colorScheme.onErrorContainer,
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
+                                }
                             }
                         }
                     }
@@ -173,14 +190,21 @@ fun MainScreen(
                             modifier = Modifier.padding(bottom = 8.dp)
                         )
 
+                        // 列表项淡入+滑入
                         uiState.downloadItems.forEachIndexed { index, item ->
-                            DownloadItemCard(
-                                index = index,
-                                item = item,
-                                status = uiState.downloadStatus[index],
-                                progress = uiState.downloadProgress[index] ?: 0f,
-                                onDownload = { onDownloadClick(index, item) }
-                            )
+                            AnimatedVisibility(
+                                visible = true,
+                                enter = fadeIn(animationSpec = tween(300, delayMillis = index * 50)) +
+                                        slideInVertically(initialOffsetY = { 20 })
+                            ) {
+                                DownloadItemCard(
+                                    index = index,
+                                    item = item,
+                                    status = uiState.downloadStatus[index],
+                                    progress = uiState.downloadProgress[index] ?: 0f,
+                                    onDownload = { onDownloadClick(index, item) }
+                                )
+                            }
                             Spacer(Modifier.height(8.dp))
                         }
                     }
@@ -452,8 +476,13 @@ private fun DownloadItemCard(
                             contentAlignment = Alignment.Center,
                             modifier = Modifier.size(42.dp)
                         ) {
+                            // 带过渡动画的进度条
+                            val animatedProgress by animateFloatAsState(
+                                targetValue = progress,
+                                animationSpec = tween(300)
+                            )
                             CircularProgressIndicator(
-                                progress = { progress },
+                                progress = { animatedProgress },
                                 modifier = Modifier.size(36.dp),
                                 strokeWidth = 3.dp,
                                 color = MaterialTheme.colorScheme.primary
@@ -496,9 +525,17 @@ private fun DownloadItemCard(
                     }
                 }
                 else -> {
+                    // 下载按钮带缩放动画
+                    val downloadInteraction = remember { MutableInteractionSource() }
+                    val downloadScale by animateFloatAsState(
+                        if (downloadInteraction.collectIsPressedAsState().value) 0.92f else 1f,
+                        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy)
+                    )
                     Button(
                         onClick = onDownload,
-                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+                        interactionSource = downloadInteraction,
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                        modifier = Modifier.scale(downloadScale)
                     ) {
                         Icon(Icons.Default.Download, "下载", modifier = Modifier.size(18.dp))
                         Spacer(Modifier.width(4.dp))
