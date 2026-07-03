@@ -177,15 +177,6 @@ fun DouyinScreen(viewModel: DouyinViewModel = viewModel()) {
             }
         }
 
-        // 灵动岛药丸
-        DownloadPill(
-            progress = uiState.downloadStates[uiState.downloadingItemId]?.progress ?: 0f,
-            speedText = uiState.downloadStates[uiState.downloadingItemId]?.speedText ?: "",
-            visible = uiState.isBackgroundDownload,
-            onClick = { viewModel.showDialogFromPill() },
-            modifier = Modifier.align(Alignment.TopStart)
-        )
-
         // 下载进度弹窗
         if (uiState.showDownloadDialog && uiState.downloadingItemId != null) {
             val downloadState = uiState.downloadStates[uiState.downloadingItemId]

@@ -35,6 +35,8 @@ import com.qihe.clipflow.BuildConfig
 import com.qihe.clipflow.data.preferences.AppPreferences
 import com.qihe.clipflow.ui.components.PrivacyConsentDialog
 import com.qihe.clipflow.ui.components.UpdateDialog
+import com.qihe.clipflow.ui.components.DownloadPill
+import com.qihe.clipflow.ui.components.DownloadPillState
 import com.qihe.clipflow.util.UpdateManager
 import com.qihe.clipflow.ui.douyin.DouyinScreen
 import com.qihe.clipflow.ui.history.HistoryScreen
@@ -184,6 +186,18 @@ fun ClipFlowNavHost() {
                     modifier = Modifier.align(Alignment.BottomCenter)
                 )
             }
+
+            // 全局下载药丸（跨页面持久）
+            val pillVisible by DownloadPillState.visible.collectAsState()
+            val pillProgress by DownloadPillState.progress.collectAsState()
+            val pillSpeed by DownloadPillState.speedText.collectAsState()
+            DownloadPill(
+                progress = pillProgress,
+                speedText = pillSpeed,
+                visible = pillVisible,
+                onClick = { DownloadPillState.performClick() },
+                modifier = Modifier.align(Alignment.TopStart)
+            )
         }
     }
 }
@@ -201,6 +215,7 @@ fun ClipFlowTopBar(
     val showSettings = !isSpecialPage
     val showBack = currentRoute == Screen.History.route
         || currentRoute == Screen.Settings.route
+        || currentRoute == Screen.About.route
 
     CenterAlignedTopAppBar(
         navigationIcon = {

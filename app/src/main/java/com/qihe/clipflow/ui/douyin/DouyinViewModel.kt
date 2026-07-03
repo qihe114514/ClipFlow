@@ -8,6 +8,7 @@ import com.qihe.clipflow.data.local.AppDatabase
 import com.qihe.clipflow.data.local.HistoryEntity
 import com.qihe.clipflow.data.repository.HistoryRepository
 import com.qihe.clipflow.data.repository.ParseRepository
+import com.qihe.clipflow.ui.components.DownloadPillState
 import com.qihe.clipflow.util.DownloadManager
 import com.qihe.clipflow.util.DownloadState
 import com.qihe.clipflow.util.MediaStoreHelper
@@ -120,6 +121,11 @@ class DouyinViewModel(application: Application) : AndroidViewModel(application) 
                     states[item.id] = state
                     _uiState.value = _uiState.value.copy(downloadStates = states)
 
+                    // 更新全局药丸
+                    if (_uiState.value.isBackgroundDownload) {
+                        DownloadPillState.update(state.progress, state.speedText)
+                    }
+
                     if (state.isComplete) {
                         _uiState.value = _uiState.value.copy(
                             showDownloadDialog = false,
@@ -143,9 +149,18 @@ class DouyinViewModel(application: Application) : AndroidViewModel(application) 
             downloadingItemId = if (background) _uiState.value.downloadingItemId else null,
             isBackgroundDownload = background
         )
+        if (background) {
+            val state = _uiState.value.downloadStates[_uiState.value.downloadingItemId]
+            if (state != null) {
+                DownloadPillState.show(state.progress, state.speedText) { showDialogFromPill() }
+            }
+        } else {
+            DownloadPillState.hide()
+        }
     }
 
     fun showDialogFromPill() {
+        DownloadPillState.hide()
         val itemId = _uiState.value.downloadingItemId
         if (itemId != null) {
             _uiState.value = _uiState.value.copy(

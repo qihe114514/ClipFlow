@@ -103,7 +103,75 @@ fun AboutScreen(navController: NavHostController) {
             }
         }
 
+
+        // ========== 开发者信息 ==========
+        Text(
+            text = "开发者",
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 8.dp)
+        )
+
+        GlassCard(modifier = Modifier.fillMaxWidth()) {
+            Column {
+                AboutInfoRow(label = "开发者", value = "其核")
+                HorizontalDivider(
+                    modifier = Modifier.padding(vertical = 8.dp),
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.15f)
+                )
+                Text(
+                    text = "感谢使用 ClipFlow！ 关注其核谢谢喵~",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+
         Spacer(Modifier.height(16.dp))
+
+        // ========== 链接 ==========
+        Text(
+            text = "链接",
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 8.dp)
+        )
+
+        GlassCard(modifier = Modifier.fillMaxWidth()) {
+            Column {
+                // B站
+                LinkRow(
+                    icon = Icons.Filled.SmartDisplay,
+                    label = "B站主页",
+                    url = "https://space.bilibili.com/1049283248",
+                    context = context
+                )
+                Spacer(Modifier.height(10.dp))
+                // 抖音
+                LinkRow(
+                    icon = Icons.Filled.MusicNote,
+                    label = "抖音主页",
+                    url = "https://www.douyin.com/user/MS4wLjABAAAAuUtKOArTFKTBm4C6o5MwDQuGMNZ9-0CWZfUay6U9wUI",
+                    context = context
+                )
+                Spacer(Modifier.height(10.dp))
+                // GitHub
+                LinkRow(
+                    icon = Icons.Filled.Code,
+                    label = "GitHub 开源仓库",
+                    url = "https://github.com/qihe114514/qihe-douyin",
+                    context = context
+                )
+            }
+        }
+
+        Spacer(Modifier.height(32.dp))
 
         // ========== 更新检测 ==========
         Text(
@@ -324,75 +392,6 @@ fun AboutScreen(navController: NavHostController) {
         }
 
         Spacer(Modifier.height(16.dp))
-
-        // ========== 开发者信息 ==========
-        Text(
-            text = "开发者",
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 8.dp)
-        )
-
-        GlassCard(modifier = Modifier.fillMaxWidth()) {
-            Column {
-                AboutInfoRow(label = "开发者", value = "其核")
-                HorizontalDivider(
-                    modifier = Modifier.padding(vertical = 8.dp),
-                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.15f)
-                )
-                Text(
-                    text = "感谢使用 ClipFlow！ 关注其核谢谢喵~",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
-
-        Spacer(Modifier.height(16.dp))
-
-        // ========== 链接 ==========
-        Text(
-            text = "链接",
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 8.dp)
-        )
-
-        GlassCard(modifier = Modifier.fillMaxWidth()) {
-            Column {
-                // B站
-                LinkRow(
-                    icon = Icons.Filled.SmartDisplay,
-                    label = "B站主页",
-                    url = "https://space.bilibili.com/1049283248",
-                    context = context
-                )
-                Spacer(Modifier.height(10.dp))
-                // 抖音
-                LinkRow(
-                    icon = Icons.Filled.MusicNote,
-                    label = "抖音主页",
-                    url = "https://www.douyin.com/user/MS4wLjABAAAAuUtKOArTFKTBm4C6o5MwDQuGMNZ9-0CWZfUay6U9wUI",
-                    context = context
-                )
-                Spacer(Modifier.height(10.dp))
-                // GitHub
-                LinkRow(
-                    icon = Icons.Filled.Code,
-                    label = "GitHub 开源仓库",
-                    url = "https://github.com/qihe114514/qihe-douyin",
-                    context = context
-                )
-            }
-        }
-
-        Spacer(Modifier.height(32.dp))
 
         Text(
             text = "Made with ❤️ by 其核",
