@@ -18,11 +18,18 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import com.qihe.clipflow.ClipFlowApp
+import com.qihe.clipflow.data.preferences.AppPreferences
 import com.qihe.clipflow.ui.components.GlassCard
+import com.qihe.clipflow.ui.components.PrivacyConsentDialog
+import kotlinx.coroutines.launch
 
 @Composable
 fun AboutScreen(navController: NavHostController) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val prefs = remember { AppPreferences(context) }
+    var showPrivacy by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -62,7 +69,7 @@ fun AboutScreen(navController: NavHostController) {
         Spacer(Modifier.height(4.dp))
 
         Text(
-            text = "版本 2.0.0",
+            text = "版本 2.4.0",
             style = MaterialTheme.typography.labelLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
         )
@@ -77,7 +84,7 @@ fun AboutScreen(navController: NavHostController) {
                     modifier = Modifier.padding(vertical = 8.dp),
                     color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.15f)
                 )
-                AboutInfoRow(label = "版本号", value = "2.0.0 (2)")
+                AboutInfoRow(label = "版本号", value = "2.4.0 (4)")
                 HorizontalDivider(
                     modifier = Modifier.padding(vertical = 8.dp),
                     color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.15f)
@@ -89,6 +96,106 @@ fun AboutScreen(navController: NavHostController) {
                 )
                 AboutInfoRow(label = "技术栈", value = "Jetpack Compose + Material 3")
             }
+        }
+
+        Spacer(Modifier.height(16.dp))
+
+        // ========== 隐私 ==========
+        Text(
+            text = "隐私",
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 8.dp)
+        )
+
+        GlassCard(modifier = Modifier.fillMaxWidth()) {
+            Column {
+                // 查看隐私政策
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Description,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(22.dp)
+                    )
+                    Spacer(Modifier.width(14.dp))
+                    Text(
+                        text = "查看隐私政策",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium,
+                        modifier = Modifier.weight(1f)
+                    )
+                    FilledTonalIconButton(
+                        onClick = { showPrivacy = true },
+                        modifier = Modifier.size(36.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.OpenInNew,
+                            contentDescription = "查看",
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                }
+
+                HorizontalDivider(
+                    modifier = Modifier.padding(vertical = 8.dp),
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.15f)
+                )
+
+                // 撤销隐私同意
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.GppBad,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(22.dp)
+                    )
+                    Spacer(Modifier.width(14.dp))
+                    Text(
+                        text = "撤销隐私同意",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.weight(1f)
+                    )
+                    FilledTonalIconButton(
+                        onClick = {
+                            scope.launch {
+                                prefs.setPrivacyAgreed(false)
+                            }
+                            (context as? android.app.Activity)?.finishAffinity()
+                        },
+                        modifier = Modifier.size(36.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Close,
+                            contentDescription = "撤销",
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                }
+            }
+        }
+
+        // 隐私政策只读弹窗
+        if (showPrivacy) {
+            PrivacyConsentDialog(
+                viewOnly = true,
+                onDisagree = { showPrivacy = false }
+            )
         }
 
         Spacer(Modifier.height(16.dp))

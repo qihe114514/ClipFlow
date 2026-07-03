@@ -12,8 +12,8 @@ android {
         applicationId = "com.qihe.clipflow"
         minSdk = 31
         targetSdk = 36
-        versionCode = 2
-        versionName = "2.0.0"
+        versionCode = 6
+        versionName = "2.6.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -53,6 +53,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 
     composeOptions {
@@ -67,6 +68,10 @@ android {
 }
 
 dependencies {
+    // Umeng Analytics
+    implementation("com.umeng.umsdk:common:9.9.2")
+    implementation("com.umeng.umsdk:asms:1.8.2")
+
     // Compose BOM
     val composeBom = platform("androidx.compose:compose-bom:2024.04.00")
     implementation(composeBom)

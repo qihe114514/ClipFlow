@@ -35,6 +35,9 @@ class AppPreferences(private val context: Context) {
 
         // 是否启用壁纸（关闭则完全不显示）
         val KEY_WALLPAPER_ENABLED = booleanPreferencesKey("wallpaper_enabled")
+
+        // 用户是否已同意隐私政策
+        val KEY_PRIVACY_AGREED = booleanPreferencesKey("privacy_agreed")
     }
 
     val savePath: Flow<String> = context.dataStore.data.map { prefs ->
@@ -76,6 +79,10 @@ class AppPreferences(private val context: Context) {
 
     val wallpaperEnabled: Flow<Boolean> = context.dataStore.data.map { prefs ->
         prefs[KEY_WALLPAPER_ENABLED] ?: true
+    }
+
+    val privacyAgreed: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[KEY_PRIVACY_AGREED] ?: false
     }
 
     // ========== Setters ==========
@@ -126,6 +133,12 @@ class AppPreferences(private val context: Context) {
     suspend fun setWallpaperEnabled(enabled: Boolean) {
         context.dataStore.edit { prefs ->
             prefs[KEY_WALLPAPER_ENABLED] = enabled
+        }
+    }
+
+    suspend fun setPrivacyAgreed(agreed: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_PRIVACY_AGREED] = agreed
         }
     }
 }

@@ -29,7 +29,12 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.qihe.clipflow.ClipFlowApp
+import com.qihe.clipflow.BuildConfig
 import com.qihe.clipflow.data.preferences.AppPreferences
+import com.qihe.clipflow.ui.components.PrivacyConsentDialog
+import com.qihe.clipflow.ui.components.UpdateDialog
+import com.qihe.clipflow.util.UpdateManager
 import com.qihe.clipflow.ui.douyin.DouyinScreen
 import com.qihe.clipflow.ui.history.HistoryScreen
 import com.qihe.clipflow.ui.home.HomeScreen
@@ -37,6 +42,7 @@ import com.qihe.clipflow.ui.settings.SettingsScreen
 import com.qihe.clipflow.ui.about.AboutScreen
 import com.qihe.clipflow.ui.xiaohongshu.XiaohongshuScreen
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -47,6 +53,53 @@ fun ClipFlowNavHost() {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
     val currentRoute = currentDestination?.route
+
+    // ========== 隐私政策同意检查 ==========
+    val privacyAgreed by produceState(initialValue = false) {
+        prefs.privacyAgreed.collect { value = it }
+    }
+
+    // 已同意则初始化友盟 SDK（首次同意 + 后续每次冷启动）
+    LaunchedEffect(privacyAgreed) {
+        if (privacyAgreed) {
+            (context.applicationContext as ClipFlowApp).initUmengIfNeeded()
+        }
+    }
+
+    if (!privacyAgreed) {
+        val scope = rememberCoroutineScope()
+        PrivacyConsentDialog(
+            onAgree = {
+                scope.launch {
+                    prefs.setPrivacyAgreed(true)
+                }
+            },
+            onDisagree = {
+                (context as? android.app.Activity)?.finishAffinity()
+            }
+        )
+    }
+
+    // ========== 更新检测 ==========
+    var updateInfo by remember { mutableStateOf<UpdateManager.UpdateInfo?>(null) }
+    LaunchedEffect(privacyAgreed) {
+        if (privacyAgreed) {
+            val result = UpdateManager.checkUpdate(BuildConfig.VERSION_NAME)
+            updateInfo = result.getOrNull()
+        }
+    }
+
+    updateInfo?.let { info ->
+        UpdateDialog(
+            info = info,
+            onDownload = {
+                UpdateManager.downloadAndInstall(context, info.downloadUrl, info.fileName) {
+                    updateInfo = null
+                }
+            },
+            onDismiss = { updateInfo = null }
+        )
+    }
 
     val defaultPage by produceState(initialValue = "home") {
         value = prefs.defaultPage.first()
@@ -140,8 +193,9 @@ fun ClipFlowTopBar(
     currentRoute: String?,
     navController: NavHostController
 ) {
-    val showHistory = currentRoute != Screen.History.route
-    val showSettings = currentRoute != Screen.Settings.route
+    val isSpecialPage = currentRoute == Screen.History.route || currentRoute == Screen.Settings.route
+    val showHistory = !isSpecialPage
+    val showSettings = !isSpecialPage
 
     CenterAlignedTopAppBar(
         title = {

@@ -1,60 +1,24 @@
-# ============================
-# CRITICAL: Keep ALL bytecode attributes for Gson + Retrofit generic type resolution
-# Without this, R8 strips generic signatures → ParameterizedType cast crash
-# ============================
--keepattributes *
-
-# ============================
-# ApiService — Retrofit needs full generic return type info
-# ============================
--keep interface com.qihe.clipflow.data.api.ApiService { *; }
--keep class com.qihe.clipflow.data.api.RetrofitClient { *; }
-
-# ============================
-# All data models — full preservation
-# ============================
--keep class com.qihe.clipflow.data.api.model.** {
-    <init>(...);
-    <fields>;
-}
-
-# ============================
-# Gson: prevent reflection-based deserialization crashes
-# ============================
+# Gson 泛型保护（R8 full mode 会删除泛型签名，导致 Class→ParameterizedType 转换失败）
+-keepattributes Signature
+-keepattributes *Annotation*
 -keep class com.google.gson.** { *; }
--keep class com.google.gson.reflect.** { *; }
--keep class com.google.gson.internal.** { *; }
--keep class com.google.gson.stream.** { *; }
--keep class * extends com.google.gson.reflect.TypeToken
--keepclassmembers,allowobfuscation class * {
-    @com.google.gson.annotations.SerializedName <fields>;
+-keep class * extends com.google.gson.TypeAdapter
+-keep class * implements com.google.gson.TypeAdapterFactory
+-keep class * implements com.google.gson.JsonSerializer
+-keep class * implements com.google.gson.JsonDeserializer
+
+# 友盟统计混淆规则
+-keep class com.umeng.** {*;}
+-keep class org.repackage.** {*;}
+-keep class com.uyumao.** { *; }
+-keepclassmembers class * {
+   public <init> (org.json.JSONObject);
 }
--dontwarn com.google.gson.**
--dontwarn sun.misc.**
-
-# ============================
-# Retrofit — keep interface methods with full signatures
-# ============================
--keepclassmembers,allowshrinking,allowobfuscation interface * {
-    @retrofit2.http.* <methods>;
+-keepclassmembers enum * {
+    public static **[] values();
+    public static ** valueOf(java.lang.String);
 }
--keep class retrofit2.** { *; }
--keep class okhttp3.** { *; }
--keep class okio.** { *; }
--dontwarn retrofit2.**
--dontwarn okhttp3.**
--dontwarn okio.**
--dontwarn javax.annotation.**
--dontwarn kotlin.Unit
-
-# ============================
-# Room
-# ============================
--keep class com.qihe.clipflow.data.local.** { *; }
-
-# ============================
-# Kotlin
-# ============================
--keep class kotlin.Metadata { *; }
--keep class kotlin.coroutines.Continuation
--dontwarn kotlin.**
+# 保护 R 文件不被混淆删除
+-keep public class com.qihe.clipflow.R$*{
+    public static final int *;
+}
