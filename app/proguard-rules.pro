@@ -1,4 +1,5 @@
-# Gson 泛型保护（R8 full mode 会删除泛型签名，导致 Class→ParameterizedType 转换失败）
+# Gson 泛型保护：R8 full mode 优化会破坏泛型，禁用优化但保留混淆
+-dontoptimize
 -keepattributes Signature
 -keepattributes *Annotation*
 -keepattributes InnerClasses
