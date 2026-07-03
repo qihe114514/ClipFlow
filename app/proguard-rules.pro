@@ -7,6 +7,10 @@
 -keep class * implements com.google.gson.JsonSerializer
 -keep class * implements com.google.gson.JsonDeserializer
 
+# 保护所有 API Model 不被混淆（Gson 反序列化依赖原名）
+-keep class com.qihe.clipflow.data.api.model.** { *; }
+-keep class com.qihe.clipflow.data.repository.ParseResult { *; }
+
 # 友盟统计混淆规则
 -keep class com.umeng.** {*;}
 -keep class org.repackage.** {*;}
