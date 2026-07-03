@@ -5,24 +5,10 @@
 ClipFlow 是一款 Android 平台的无水印短视频/图集解析下载工具，支持**抖音**和**小红书**两大平台。粘贴分享链接即可解析出无水印视频、图片和实况照片，一键下载到本地相册。
 
 <p align="center">
-  <table>
-    <tr>
-      <td align="center"><b>📜 解析历史</b></td>
-      <td align="center"><b>🏠 首页</b></td>
-    </tr>
-    <tr>
-      <td><img src="screenshots/1-history.jpg" width="100%" alt="解析历史" /></td>
-      <td><img src="screenshots/2-home.jpg" width="100%" alt="首页" /></td>
-    </tr>
-    <tr>
-      <td align="center"><b>🔍 解析结果</b></td>
-      <td align="center"><b>ℹ️ 关于页面</b></td>
-    </tr>
-    <tr>
-      <td><img src="screenshots/3-parse.jpg" width="100%" alt="解析结果" /></td>
-      <td><img src="screenshots/4-about.jpg" width="100%" alt="关于页面" /></td>
-    </tr>
-  </table>
+  <img src="screenshots/1-home.jpg" width="24%" alt="首页" />
+  <img src="screenshots/2-parse.jpg" width="24%" alt="解析结果" />
+  <img src="screenshots/3-history.jpg" width="24%" alt="解析历史" />
+  <img src="screenshots/4-about.jpg" width="24%" alt="关于页面" />
 </p>
 
 ---

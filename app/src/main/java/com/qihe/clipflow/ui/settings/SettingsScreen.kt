@@ -34,7 +34,8 @@ data class SettingsUiState(
     val savePath: String = "",
     val wallpaperUri: String = "",
     val wallpaperType: String = "image",
-    val wallpaperOpacity: Float = 60f,
+    val wallpaperOpacity: Float = 75f,
+    val wallpaperEnabled: Boolean = true,
     val defaultPage: String = "home",
     val bottomBarOrder: List<String> = listOf("home", "douyin", "xiaohongshu")
 )
@@ -51,6 +52,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             launch { prefs.wallpaperUri.collect { _uiState.value = _uiState.value.copy(wallpaperUri = it) } }
             launch { prefs.wallpaperType.collect { _uiState.value = _uiState.value.copy(wallpaperType = it) } }
             launch { prefs.wallpaperOpacity.collect { _uiState.value = _uiState.value.copy(wallpaperOpacity = it) } }
+            launch { prefs.wallpaperEnabled.collect { _uiState.value = _uiState.value.copy(wallpaperEnabled = it) } }
             launch { prefs.defaultPage.collect { _uiState.value = _uiState.value.copy(defaultPage = it) } }
             launch { prefs.bottomBarOrder.collect { _uiState.value = _uiState.value.copy(bottomBarOrder = it) } }
         }
@@ -60,6 +62,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun setWallpaperUri(uri: String) { viewModelScope.launch { prefs.setWallpaperUri(uri) } }
     fun setWallpaperType(type: String) { viewModelScope.launch { prefs.setWallpaperType(type) } }
     fun setWallpaperOpacity(o: Float) { viewModelScope.launch { prefs.setWallpaperOpacity(o) } }
+    fun setWallpaperEnabled(e: Boolean) { viewModelScope.launch { prefs.setWallpaperEnabled(e) } }
     fun setDefaultPage(page: String) { viewModelScope.launch { prefs.setDefaultPage(page) } }
     fun setBottomBarOrder(order: List<String>) { viewModelScope.launch { prefs.setBottomBarOrder(order) } }
 }
@@ -153,10 +156,16 @@ fun SettingsScreen(
                         FilterChip(
                             selected = false,
                             onClick = { viewModel.setWallpaperUri("") },
-                            label = { Text("清除") },
-                            leadingIcon = { Icon(Icons.Filled.Close, null, Modifier.size(16.dp)) }
+                            label = { Text("恢复默认") },
+                            leadingIcon = { Icon(Icons.Filled.Restore, null, Modifier.size(16.dp)) }
                         )
                     }
+                    FilterChip(
+                        selected = !uiState.wallpaperEnabled,
+                        onClick = { viewModel.setWallpaperEnabled(!uiState.wallpaperEnabled) },
+                        label = { Text(if (uiState.wallpaperEnabled) "关闭壁纸" else "已关闭") },
+                        leadingIcon = { Icon(if (uiState.wallpaperEnabled) Icons.Filled.Wallpaper else Icons.Filled.HideImage, null, Modifier.size(16.dp)) }
+                    )
                 }
 
                 Spacer(Modifier.height(14.dp))

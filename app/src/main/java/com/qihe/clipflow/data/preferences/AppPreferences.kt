@@ -32,6 +32,9 @@ class AppPreferences(private val context: Context) {
 
         // 背景壁纸类型: image / video
         val KEY_WALLPAPER_TYPE = stringPreferencesKey("wallpaper_type")
+
+        // 是否启用壁纸（关闭则完全不显示）
+        val KEY_WALLPAPER_ENABLED = booleanPreferencesKey("wallpaper_enabled")
     }
 
     val savePath: Flow<String> = context.dataStore.data.map { prefs ->
@@ -64,11 +67,15 @@ class AppPreferences(private val context: Context) {
     }
 
     val wallpaperOpacity: Flow<Float> = context.dataStore.data.map { prefs ->
-        prefs[KEY_WALLPAPER_OPACITY] ?: 60f
+        prefs[KEY_WALLPAPER_OPACITY] ?: 75f
     }
 
     val wallpaperType: Flow<String> = context.dataStore.data.map { prefs ->
         prefs[KEY_WALLPAPER_TYPE] ?: "image"
+    }
+
+    val wallpaperEnabled: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[KEY_WALLPAPER_ENABLED] ?: true
     }
 
     // ========== Setters ==========
@@ -113,6 +120,12 @@ class AppPreferences(private val context: Context) {
     suspend fun setWallpaperType(type: String) {
         context.dataStore.edit { prefs ->
             prefs[KEY_WALLPAPER_TYPE] = type
+        }
+    }
+
+    suspend fun setWallpaperEnabled(enabled: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_WALLPAPER_ENABLED] = enabled
         }
     }
 }
