@@ -3,6 +3,7 @@ package com.qihe.clipflow.ui.about
 import android.content.Intent
 import android.net.Uri
 import androidx.browser.customtabs.CustomTabsIntent
+import java.io.File
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -35,6 +36,10 @@ fun AboutScreen(navController: NavHostController) {
     var updateInfo by remember { mutableStateOf<UpdateManager.UpdateInfo?>(null) }
     var checkingUpdate by remember { mutableStateOf(false) }
     var autoCheckEnabled by remember { mutableStateOf(false) }
+    var updateStatus by remember { mutableStateOf("") } // "" / "checking" / "已是最新版本" / "检查失败"
+    var downloadedApk by remember { mutableStateOf<File?>(null) }
+    val downloadManager = remember { com.qihe.clipflow.util.DownloadManager(context) }
+    val downloadState by downloadManager.downloadState.collectAsState()
 
     Column(
         modifier = Modifier
@@ -236,6 +241,14 @@ fun AboutScreen(navController: NavHostController) {
                             text = "当前版本 v${BuildConfig.VERSION_NAME}",
                             style = MaterialTheme.typography.bodyMedium
                         )
+                        if (updateStatus.isNotEmpty()) {
+                            Text(
+                                text = updateStatus,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = if (updateStatus == "已是最新版本") MaterialTheme.colorScheme.primary
+                                    else MaterialTheme.colorScheme.error
+                            )
+                        }
                         updateInfo?.let {
                             Text(
                                 text = "发现新版本 v${it.latestVersion}",
@@ -248,9 +261,22 @@ fun AboutScreen(navController: NavHostController) {
                         onClick = {
                             if (!checkingUpdate) {
                                 checkingUpdate = true
+                                updateStatus = ""
+                                updateInfo = null
                                 scope.launch {
                                     val result = UpdateManager.checkUpdate(BuildConfig.VERSION_NAME)
-                                    updateInfo = result.getOrNull()
+                                    result.fold(
+                                        onSuccess = { info ->
+                                            if (info == null) {
+                                                updateStatus = "已是最新版本"
+                                            } else {
+                                                updateInfo = info
+                                            }
+                                        },
+                                        onFailure = {
+                                            updateStatus = "检查失败: ${it.message}"
+                                        }
+                                    )
                                     checkingUpdate = false
                                 }
                             }
@@ -273,19 +299,50 @@ fun AboutScreen(navController: NavHostController) {
                     }
                 }
 
-                // 有更新时显示下载按钮
+                // 有更新时显示下载/安装按钮
                 updateInfo?.let { info ->
                     HorizontalDivider(
                         modifier = Modifier.padding(vertical = 8.dp),
                         color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.15f)
                     )
-                    Button(
-                        onClick = {
-                            UpdateManager.downloadAndInstall(context, info.downloadUrl, info.fileName) {}
-                        },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text("下载更新 v${info.latestVersion}")
+                    if (downloadedApk != null) {
+                        Button(
+                            onClick = {
+                                downloadedApk?.let { UpdateManager.installApk(context, it) }
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.tertiary
+                            )
+                        ) {
+                            Text("安装更新")
+                        }
+                    } else if (downloadState.isDownloading) {
+                        Column(modifier = Modifier.fillMaxWidth()) {
+                            LinearProgressIndicator(
+                                progress = { downloadState.progress },
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            Spacer(Modifier.height(4.dp))
+                            Text(
+                                text = "${(downloadState.progress * 100).toInt()}%  ${downloadState.speedText}",
+                                style = MaterialTheme.typography.labelSmall
+                            )
+                        }
+                    } else {
+                        Button(
+                            onClick = {
+                                downloadManager.reset()
+                                scope.launch {
+                                    downloadManager.download(info.downloadUrl, info.fileName) { file ->
+                                        downloadedApk = file
+                                    }
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("下载更新 v${info.latestVersion}")
+                        }
                     }
                 }
             }

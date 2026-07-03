@@ -1,12 +1,8 @@
 package com.qihe.clipflow.util
 
-import android.app.DownloadManager
-import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
 import android.net.Uri
-import android.os.Environment
 import androidx.core.content.FileProvider
 import com.google.gson.Gson
 import com.qihe.clipflow.data.api.model.GitHubRelease
@@ -21,7 +17,7 @@ object UpdateManager {
 
     private const val REPO = "qihe114514/ClipFlow"
     private const val GITHUB_API = "https://api.github.com/repos/$REPO/releases/latest"
-    private const val GH_PROXY = "https://gh-proxy.com/"
+    const val GH_PROXY = "https://gh-proxy.com/"
 
     data class UpdateInfo(
         val latestVersion: String,
@@ -37,6 +33,12 @@ object UpdateManager {
 
     private val gson = Gson()
 
+    /**
+     * 检查更新。返回:
+     * - Result.success(UpdateInfo): 有新版本
+     * - Result.success(null): 已是最新
+     * - Result.failure(...): 检查失败
+     */
     suspend fun checkUpdate(localVersion: String): Result<UpdateInfo?> {
         return withContext(Dispatchers.IO) {
             val release = fetchRelease()
@@ -54,7 +56,7 @@ object UpdateManager {
                 UpdateInfo(
                     latestVersion = latest,
                     releaseNotes = release.body.ifEmpty { release.name },
-                    downloadUrl = apk.downloadUrl,
+                    downloadUrl = "${GH_PROXY}${apk.downloadUrl}",
                     fileName = apk.name
                 )
             )
@@ -62,13 +64,11 @@ object UpdateManager {
     }
 
     private suspend fun fetchRelease(): GitHubRelease? {
-        // 直连
         val resp = client.newCall(Request.Builder().url(GITHUB_API).build()).execute()
         if (resp.isSuccessful) {
             val body = resp.body?.string()
             if (body != null) return gson.fromJson(body, GitHubRelease::class.java)
         }
-        // 加速站
         val proxyResp = client.newCall(
             Request.Builder().url("${GH_PROXY}$GITHUB_API").build()
         ).execute()
@@ -79,7 +79,7 @@ object UpdateManager {
         return null
     }
 
-    private fun compareVersion(v1: String, v2: String): Int {
+    fun compareVersion(v1: String, v2: String): Int {
         val p1 = v1.split(".").map { it.toIntOrNull() ?: 0 }
         val p2 = v2.split(".").map { it.toIntOrNull() ?: 0 }
         for (i in 0 until maxOf(p1.size, p2.size)) {
@@ -90,44 +90,8 @@ object UpdateManager {
         return 0
     }
 
-    fun downloadAndInstall(context: Context, url: String, fileName: String, onComplete: () -> Unit) {
-        val proxyUrl = "${GH_PROXY}$url"
-
-        val request = DownloadManager.Request(Uri.parse(proxyUrl))
-            .setTitle("ClipFlow 更新下载中")
-            .setDescription("正在下载 $fileName")
-            .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-            .setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, fileName)
-
-        val dm = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
-        val downloadId = dm.enqueue(request)
-
-        val receiver = object : BroadcastReceiver() {
-            override fun onReceive(ctx: Context?, intent: Intent?) {
-                val id = intent?.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1) ?: -1
-                if (id != downloadId) return
-
-                context.unregisterReceiver(this)
-                onComplete()
-
-                val file = File(
-                    Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
-                    fileName
-                )
-                if (file.exists()) {
-                    installApk(context, file)
-                }
-            }
-        }
-
-        context.registerReceiver(
-            receiver,
-            IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE),
-            Context.RECEIVER_NOT_EXPORTED
-        )
-    }
-
-    private fun installApk(context: Context, file: File) {
+    /** 通过 FileProvider 安装 APK */
+    fun installApk(context: Context, file: File) {
         val uri = FileProvider.getUriForFile(
             context,
             "${context.packageName}.fileprovider",
