@@ -1,7 +1,7 @@
 # Gson 泛型保护（R8 full mode 会删除泛型签名，导致 Class→ParameterizedType 转换失败）
 -keepattributes Signature
 -keepattributes *Annotation*
--keep class com.google.gson.** { *; }
+-keep class com.google.gson.reflect.TypeToken { *; }
 -keep class * extends com.google.gson.TypeAdapter
 -keep class * implements com.google.gson.TypeAdapterFactory
 -keep class * implements com.google.gson.JsonSerializer

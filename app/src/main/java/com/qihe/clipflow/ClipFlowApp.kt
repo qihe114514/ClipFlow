@@ -34,9 +34,6 @@ class ClipFlowApp : Application() {
         if (umengInitialized) return
         umengInitialized = true
 
-        // 上报隐私授权结果
-        UMConfigure.submitPolicyGrantResult(this, true)
-
         Thread {
             UMConfigure.init(
                 this,
