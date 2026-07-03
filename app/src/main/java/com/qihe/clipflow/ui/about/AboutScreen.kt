@@ -35,7 +35,6 @@ fun AboutScreen(navController: NavHostController) {
     var showPrivacy by remember { mutableStateOf(false) }
     var updateInfo by remember { mutableStateOf<UpdateManager.UpdateInfo?>(null) }
     var checkingUpdate by remember { mutableStateOf(false) }
-    var autoCheckEnabled by remember { mutableStateOf(false) }
     var updateStatus by remember { mutableStateOf("") } // "" / "checking" / "已是最新版本" / "检查失败"
     var downloadedApk by remember { mutableStateOf<File?>(null) }
     val downloadManager = remember { com.qihe.clipflow.util.DownloadManager(context) }
@@ -191,37 +190,6 @@ fun AboutScreen(navController: NavHostController) {
 
         GlassCard(modifier = Modifier.fillMaxWidth()) {
             Column {
-                // 自动检测开关
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(4.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.Sync,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(22.dp)
-                    )
-                    Spacer(Modifier.width(14.dp))
-                    Text(
-                        text = "打开软件自动检测更新",
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Medium,
-                        modifier = Modifier.weight(1f)
-                    )
-                    Switch(
-                        checked = autoCheckEnabled,
-                        onCheckedChange = { autoCheckEnabled = it }
-                    )
-                }
-
-                HorizontalDivider(
-                    modifier = Modifier.padding(vertical = 8.dp),
-                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.15f)
-                )
-
                 // 当前版本 + 手动检查
                 Row(
                     modifier = Modifier
@@ -263,20 +231,16 @@ fun AboutScreen(navController: NavHostController) {
                                 checkingUpdate = true
                                 updateStatus = ""
                                 updateInfo = null
+                                downloadedApk = null
                                 scope.launch {
-                                    val result = UpdateManager.checkUpdate(BuildConfig.VERSION_NAME)
-                                    result.fold(
-                                        onSuccess = { info ->
-                                            if (info == null) {
-                                                updateStatus = "已是最新版本"
-                                            } else {
-                                                updateInfo = info
-                                            }
-                                        },
-                                        onFailure = {
-                                            updateStatus = "检查失败: ${it.message}"
-                                        }
-                                    )
+                                    try {
+                                        val result = UpdateManager.checkUpdate(BuildConfig.VERSION_NAME)
+                                        val info = result.getOrNull()
+                                        if (info == null) updateStatus = "已是最新版本"
+                                        else updateInfo = info
+                                    } catch (e: Exception) {
+                                        updateStatus = "检查失败"
+                                    }
                                     checkingUpdate = false
                                 }
                             }
@@ -299,7 +263,7 @@ fun AboutScreen(navController: NavHostController) {
                     }
                 }
 
-                // 有更新时显示下载/安装按钮
+                // 有更新时显示下载/安装
                 updateInfo?.let { info ->
                     HorizontalDivider(
                         modifier = Modifier.padding(vertical = 8.dp),
@@ -348,6 +312,7 @@ fun AboutScreen(navController: NavHostController) {
             }
         }
 
+        Spacer(Modifier.height(16.dp))
         Spacer(Modifier.height(16.dp))
 
         // ========== 隐私 ==========
