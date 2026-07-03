@@ -18,10 +18,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import com.qihe.clipflow.BuildConfig
 import com.qihe.clipflow.ClipFlowApp
 import com.qihe.clipflow.data.preferences.AppPreferences
 import com.qihe.clipflow.ui.components.GlassCard
 import com.qihe.clipflow.ui.components.PrivacyConsentDialog
+import com.qihe.clipflow.util.UpdateManager
 import kotlinx.coroutines.launch
 
 @Composable
@@ -30,6 +32,9 @@ fun AboutScreen(navController: NavHostController) {
     val scope = rememberCoroutineScope()
     val prefs = remember { AppPreferences(context) }
     var showPrivacy by remember { mutableStateOf(false) }
+    var updateInfo by remember { mutableStateOf<UpdateManager.UpdateInfo?>(null) }
+    var checkingUpdate by remember { mutableStateOf(false) }
+    var autoCheckEnabled by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -69,7 +74,7 @@ fun AboutScreen(navController: NavHostController) {
         Spacer(Modifier.height(4.dp))
 
         Text(
-            text = "版本 2.4.0",
+            text = "版本 ${BuildConfig.VERSION_NAME}",
             style = MaterialTheme.typography.labelLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
         )
@@ -84,7 +89,7 @@ fun AboutScreen(navController: NavHostController) {
                     modifier = Modifier.padding(vertical = 8.dp),
                     color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.15f)
                 )
-                AboutInfoRow(label = "版本号", value = "2.4.0 (4)")
+                AboutInfoRow(label = "版本号", value = "${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})")
                 HorizontalDivider(
                     modifier = Modifier.padding(vertical = 8.dp),
                     color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.15f)
@@ -95,6 +100,126 @@ fun AboutScreen(navController: NavHostController) {
                     color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.15f)
                 )
                 AboutInfoRow(label = "技术栈", value = "Jetpack Compose + Material 3")
+            }
+        }
+
+        Spacer(Modifier.height(16.dp))
+
+        // ========== 更新检测 ==========
+        Text(
+            text = "更新",
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 8.dp)
+        )
+
+        GlassCard(modifier = Modifier.fillMaxWidth()) {
+            Column {
+                // 自动检测开关
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Sync,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(22.dp)
+                    )
+                    Spacer(Modifier.width(14.dp))
+                    Text(
+                        text = "打开软件自动检测更新",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Switch(
+                        checked = autoCheckEnabled,
+                        onCheckedChange = { autoCheckEnabled = it }
+                    )
+                }
+
+                HorizontalDivider(
+                    modifier = Modifier.padding(vertical = 8.dp),
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.15f)
+                )
+
+                // 当前版本 + 手动检查
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.SystemUpdate,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(22.dp)
+                    )
+                    Spacer(Modifier.width(14.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "当前版本 v${BuildConfig.VERSION_NAME}",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        updateInfo?.let {
+                            Text(
+                                text = "发现新版本 v${it.latestVersion}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+                    FilledTonalIconButton(
+                        onClick = {
+                            if (!checkingUpdate) {
+                                checkingUpdate = true
+                                scope.launch {
+                                    val result = UpdateManager.checkUpdate(BuildConfig.VERSION_NAME)
+                                    updateInfo = result.getOrNull()
+                                    checkingUpdate = false
+                                }
+                            }
+                        },
+                        modifier = Modifier.size(36.dp),
+                        enabled = !checkingUpdate
+                    ) {
+                        if (checkingUpdate) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(16.dp),
+                                strokeWidth = 2.dp
+                            )
+                        } else {
+                            Icon(
+                                imageVector = Icons.Filled.Refresh,
+                                contentDescription = "检查更新",
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    }
+                }
+
+                // 有更新时显示下载按钮
+                updateInfo?.let { info ->
+                    HorizontalDivider(
+                        modifier = Modifier.padding(vertical = 8.dp),
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.15f)
+                    )
+                    Button(
+                        onClick = {
+                            UpdateManager.downloadAndInstall(context, info.downloadUrl, info.fileName) {}
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("下载更新 v${info.latestVersion}")
+                    }
+                }
             }
         }
 

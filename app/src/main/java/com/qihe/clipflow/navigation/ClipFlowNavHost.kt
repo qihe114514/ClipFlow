@@ -12,6 +12,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -193,11 +194,22 @@ fun ClipFlowTopBar(
     currentRoute: String?,
     navController: NavHostController
 ) {
-    val isSpecialPage = currentRoute == Screen.History.route || currentRoute == Screen.Settings.route
+    val isSpecialPage = currentRoute == Screen.History.route
+        || currentRoute == Screen.Settings.route
+        || currentRoute == Screen.About.route
     val showHistory = !isSpecialPage
     val showSettings = !isSpecialPage
+    val showBack = currentRoute == Screen.History.route
+        || currentRoute == Screen.Settings.route
 
     CenterAlignedTopAppBar(
+        navigationIcon = {
+            if (showBack) {
+                IconButton(onClick = { navController.popBackStack() }) {
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
+                }
+            }
+        },
         title = {
             Text(
                 text = when (currentRoute) {
