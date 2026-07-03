@@ -81,25 +81,25 @@ fun ClipFlowNavHost() {
     }
 
     // ========== 更新检测 ==========
-    var updateInfo by remember { mutableStateOf<UpdateManager.UpdateInfo?>(null) }
-    LaunchedEffect(privacyAgreed) {
-        if (privacyAgreed) {
-            val result = UpdateManager.checkUpdate(BuildConfig.VERSION_NAME)
-            updateInfo = result.getOrNull()
-        }
-    }
+    // var updateInfo by remember { mutableStateOf<UpdateManager.UpdateInfo?>(null) }
+    // LaunchedEffect(privacyAgreed) {
+    //     if (privacyAgreed) {
+    //         val result = UpdateManager.checkUpdate(BuildConfig.VERSION_NAME)
+    //         updateInfo = result.getOrNull()
+    //     }
+    // }
 
-    updateInfo?.let { info ->
-        UpdateDialog(
-            info = info,
-            onDownload = {
-                UpdateManager.downloadAndInstall(context, info.downloadUrl, info.fileName) {
-                    updateInfo = null
-                }
-            },
-            onDismiss = { updateInfo = null }
-        )
-    }
+    // updateInfo?.let { info ->
+    //     UpdateDialog(
+    //         info = info,
+    //         onDownload = {
+    //             UpdateManager.downloadAndInstall(context, info.downloadUrl, info.fileName) {
+    //                 updateInfo = null
+    //             }
+    //         },
+    //         onDismiss = { updateInfo = null }
+    //     )
+    // }
 
     val defaultPage by produceState(initialValue = "home") {
         value = prefs.defaultPage.first()
