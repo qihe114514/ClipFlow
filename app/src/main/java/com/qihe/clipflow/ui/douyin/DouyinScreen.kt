@@ -159,7 +159,9 @@ fun DouyinScreen(viewModel: DouyinViewModel = viewModel()) {
                         desc = uiState.parseDesc,
                         authorName = uiState.authorName,
                         authorAvatar = uiState.authorAvatar,
-                        contentType = uiState.contentType
+                        contentType = uiState.contentType,
+                        shareUrl = uiState.shareUrl,
+                        stats = uiState.stats
                     )
                 }
                 // 下载卡片

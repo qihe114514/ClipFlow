@@ -13,7 +13,12 @@ data class ParseResult(
     val cover: String = "",
     val authorName: String = "",
     val authorAvatar: String = "",
-    val contentType: String = ""
+    val contentType: String = "",
+    val musicUrl: String = "",
+    val musicTitle: String = "",
+    val shareUrl: String = "",
+    val stats: DouyinStatistics? = null,
+    val videoBackups: List<VideoBackupItem> = emptyList()
 )
 
 class ParseRepository {
@@ -57,31 +62,20 @@ class ParseRepository {
                             )
                             index++
                         }
-                        data.videoBackup?.forEach { backupItem ->
-                            backupItem.url?.let { backupUrl ->
-                            val codec = detectCodec(backupUrl)
-                            val quality = backupItem.quality ?: ""
-                            val descParts = mutableListOf<String>()
-                            if (quality.isNotEmpty()) descParts.add(quality)
-                            if (codec.isNotEmpty()) descParts.add(codec)
-                            val desc = if (descParts.isNotEmpty()) descParts.joinToString(" · ") else "备用链接 $index"
+                        // 音乐
+                        data.music?.url?.let { musicUrl ->
                             items.add(
                                 ContentItem(
-                                    id = "dy_video_$index",
+                                    id = "dy_music_$index",
                                     type = ContentType.VIDEO,
-                                    url = backupUrl,
-                                    thumbnailUrl = data.cover,
-                                    mediaInfo = MediaInfo(
-                                        format = "MP4",
-                                        codec = codec.ifEmpty { null },
-                                        resolution = quality.ifEmpty { null }
-                                    ),
-                                    description = desc
+                                    url = musicUrl,
+                                    thumbnailUrl = data.music?.cover ?: data.cover,
+                                    mediaInfo = MediaInfo(format = "MP3"),
+                                    description = "[音乐] ${(data.music?.title ?: "").take(20)}"
                                 )
                             )
                             index++
-                            }
-                    }
+                        }
                     }
                     "image" -> {
                         // 图集
@@ -140,7 +134,12 @@ class ParseRepository {
                     cover = data.cover ?: "",
                     authorName = data.author?.name ?: "",
                     authorAvatar = data.author?.avatar ?: "",
-                    contentType = data.type ?: ""
+                    contentType = data.type ?: "",
+                    musicUrl = data.music?.url ?: "",
+                    musicTitle = data.music?.title ?: "",
+                    shareUrl = data.extra?.shareUrl ?: "",
+                    stats = data.extra?.statistics,
+                    videoBackups = data.videoBackup ?: emptyList()
                 ))
             } catch (e: Exception) {
                 Result.failure(e)

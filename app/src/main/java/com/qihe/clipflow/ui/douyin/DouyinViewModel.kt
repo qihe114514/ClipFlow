@@ -26,6 +26,8 @@ data class DouyinUiState(
     val authorName: String = "",
     val authorAvatar: String = "",
     val contentType: String = "",
+    val shareUrl: String = "",
+    val stats: com.qihe.clipflow.data.api.model.DouyinStatistics? = null,
     val isBackgroundDownload: Boolean = false,
     val error: String? = null,
     val downloadStates: Map<String, DownloadState> = emptyMap(),
@@ -87,7 +89,9 @@ class DouyinViewModel(application: Application) : AndroidViewModel(application) 
                         parseCover = result.cover,
                         authorName = result.authorName,
                         authorAvatar = result.authorAvatar,
-                        contentType = result.contentType
+                        contentType = result.contentType,
+                        shareUrl = result.shareUrl,
+                        stats = result.stats
                     )
                     saveHistory(url, result)
                 },

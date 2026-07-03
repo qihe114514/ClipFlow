@@ -28,6 +28,7 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.qihe.clipflow.data.api.model.ContentItem
 import com.qihe.clipflow.data.api.model.ContentType
+import com.qihe.clipflow.data.api.model.DouyinStatistics
 import com.qihe.clipflow.ui.douyin.formatFileSize
 import com.qihe.clipflow.ui.theme.*
 import com.qihe.clipflow.util.DownloadState
@@ -51,6 +52,8 @@ fun ParseInfoCard(
     authorName: String,
     authorAvatar: String,
     contentType: String,
+    shareUrl: String = "",
+    stats: DouyinStatistics? = null,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -162,6 +165,31 @@ fun ParseInfoCard(
                         else -> contentType to VideoTypeBadge
                     }
                     TypeBadge(text = typeLabel, color = typeColor)
+                }
+                if (shareUrl.isNotEmpty()) {
+                    Spacer(Modifier.weight(1f))
+                    FilledTonalIconButton(
+                        onClick = {
+                            val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(shareUrl))
+                            context.startActivity(intent)
+                        },
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(Icons.Filled.OpenInBrowser, contentDescription = "打开原链接", modifier = Modifier.size(16.dp))
+                    }
+                }
+            }
+            // 统计数据
+            if (stats != null) {
+                Spacer(Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    StatItem(icon = Icons.Filled.Favorite, text = formatCount(stats.diggCount))
+                    StatItem(icon = Icons.Filled.ChatBubbleOutline, text = formatCount(stats.commentCount))
+                    StatItem(icon = Icons.Filled.BookmarkBorder, text = formatCount(stats.collectCount))
+                    StatItem(icon = Icons.Filled.Share, text = formatCount(stats.shareCount))
                 }
             }
         }
@@ -320,4 +348,19 @@ fun DownloadOptionsCard(
             }
         }
     }
+}
+
+@Composable
+private fun StatItem(icon: androidx.compose.ui.graphics.vector.ImageVector, text: String) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Icon(icon, null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        Spacer(Modifier.width(4.dp))
+        Text(text, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+}
+
+private fun formatCount(count: Long): String = when {
+    count >= 10000 -> "${count / 10000}.${(count % 10000) / 1000}w"
+    count >= 1000 -> "${count / 1000}.${(count % 1000) / 100}k"
+    else -> count.toString()
 }

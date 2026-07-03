@@ -20,12 +20,28 @@ data class DouyinData(
     val author: DouyinAuthor? = null,
     val cover: String? = null,
     val url: String? = null,
+    val quality: String? = null,
     @SerializedName("video_backup")
     val videoBackup: List<VideoBackupItem>? = null,
     val images: List<String>? = null,
     @SerializedName("live_photo")
     val livePhoto: List<DouyinLivePhoto>? = null,
-    val music: DouyinMusic? = null
+    val music: DouyinMusic? = null,
+    val extra: DouyinExtra? = null
+)
+
+@Keep
+data class DouyinExtra(
+    @SerializedName("share_url") val shareUrl: String? = null,
+    val statistics: DouyinStatistics? = null
+)
+
+@Keep
+data class DouyinStatistics(
+    @SerializedName("digg_count") val diggCount: Long = 0,
+    @SerializedName("comment_count") val commentCount: Long = 0,
+    @SerializedName("collect_count") val collectCount: Long = 0,
+    @SerializedName("share_count") val shareCount: Long = 0
 )
 
 @Keep
@@ -52,7 +68,13 @@ data class DouyinLivePhoto(
 @Keep
 data class VideoBackupItem(
     val url: String? = null,
-    val quality: String? = null
+    val quality: String? = null,
+    val label: String? = null,
+    val format: String? = null,
+    val codec: String? = null,
+    @SerializedName("bit_rate") val bitRate: Long = 0,
+    val width: Int = 0,
+    val height: Int = 0
 )
 
 @Keep
