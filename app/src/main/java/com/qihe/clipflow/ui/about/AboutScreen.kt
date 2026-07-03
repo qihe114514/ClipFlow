@@ -2,8 +2,10 @@ package com.qihe.clipflow.ui.about
 
 import android.content.Intent
 import android.net.Uri
+import android.provider.Settings
 import androidx.browser.customtabs.CustomTabsIntent
 import java.io.File
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
@@ -228,7 +230,7 @@ fun AboutScreen(navController: NavHostController) {
                             )
                         }
                     }
-                    Box(
+                    Surface(
                         modifier = Modifier
                             .size(36.dp)
                             .combinedClickable(
@@ -276,8 +278,14 @@ fun AboutScreen(navController: NavHostController) {
                                     }
                                 }
                             ),
-                        contentAlignment = Alignment.Center
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.surfaceVariant,
+                        tonalElevation = 3.dp
                     ) {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
                         if (checkingUpdate) {
                             CircularProgressIndicator(
                                 modifier = Modifier.size(16.dp),
@@ -291,6 +299,7 @@ fun AboutScreen(navController: NavHostController) {
                             )
                         }
                     }
+                    }
                 }
 
                 // 有更新时显示下载/安装
@@ -302,7 +311,17 @@ fun AboutScreen(navController: NavHostController) {
                     if (downloadedApk != null) {
                         Button(
                             onClick = {
-                                downloadedApk?.let { UpdateManager.installApk(context, it) }
+                                downloadedApk?.let { file ->
+                                    if (context.packageManager.canRequestPackageInstalls()) {
+                                        UpdateManager.installApk(context, file)
+                                    } else {
+                                        val intent = Intent(
+                                            Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
+                                            Uri.parse("package:${context.packageName}")
+                                        )
+                                        context.startActivity(intent)
+                                    }
+                                }
                             },
                             modifier = Modifier.fillMaxWidth(),
                             colors = ButtonDefaults.buttonColors(

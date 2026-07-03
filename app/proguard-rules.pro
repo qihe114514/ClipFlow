@@ -1,11 +1,17 @@
 # Gson 泛型保护（R8 full mode 会删除泛型签名，导致 Class→ParameterizedType 转换失败）
 -keepattributes Signature
 -keepattributes *Annotation*
--keep class com.google.gson.reflect.TypeToken { *; }
+-keepattributes InnerClasses
+-keepattributes EnclosingMethod
+-keep class com.google.gson.** { *; }
+-dontwarn com.google.gson.**
 -keep class * extends com.google.gson.TypeAdapter
 -keep class * implements com.google.gson.TypeAdapterFactory
 -keep class * implements com.google.gson.JsonSerializer
 -keep class * implements com.google.gson.JsonDeserializer
+-keepclassmembers,allowobfuscation class * {
+    @com.google.gson.annotations.SerializedName <fields>;
+}
 
 # 保护所有 API Model 不被混淆（Gson 反序列化依赖原名）
 -keep class com.qihe.clipflow.data.api.model.** { *; }
