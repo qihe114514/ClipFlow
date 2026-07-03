@@ -11,6 +11,13 @@
 -keep class com.qihe.clipflow.data.api.model.** { *; }
 -keep class com.qihe.clipflow.data.repository.ParseResult { *; }
 
+# Retrofit 保护
+-dontwarn retrofit2.**
+-keep class retrofit2.** { *; }
+-keepclasseswithmembers class * {
+    @retrofit2.http.* <methods>;
+}
+
 # 友盟统计混淆规则
 -keep class com.umeng.** {*;}
 -keep class org.repackage.** {*;}

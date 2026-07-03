@@ -4,6 +4,8 @@ import android.content.Intent
 import android.net.Uri
 import androidx.browser.customtabs.CustomTabsIntent
 import java.io.File
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -27,6 +29,7 @@ import com.qihe.clipflow.ui.components.PrivacyConsentDialog
 import com.qihe.clipflow.util.UpdateManager
 import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun AboutScreen(navController: NavHostController) {
     val context = LocalContext.current
@@ -225,28 +228,55 @@ fun AboutScreen(navController: NavHostController) {
                             )
                         }
                     }
-                    FilledTonalIconButton(
-                        onClick = {
-                            if (!checkingUpdate) {
-                                checkingUpdate = true
-                                updateStatus = ""
-                                updateInfo = null
-                                downloadedApk = null
-                                scope.launch {
-                                    try {
-                                        val result = UpdateManager.checkUpdate(BuildConfig.VERSION_NAME)
-                                        val info = result.getOrNull()
-                                        if (info == null) updateStatus = "已是最新版本"
-                                        else updateInfo = info
-                                    } catch (e: Exception) {
-                                        updateStatus = "检查失败"
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .combinedClickable(
+                                enabled = !checkingUpdate,
+                                onClick = {
+                                    if (!checkingUpdate) {
+                                        checkingUpdate = true
+                                        updateStatus = ""
+                                        updateInfo = null
+                                        downloadedApk = null
+                                        scope.launch {
+                                            try {
+                                                val result = UpdateManager.checkUpdate(BuildConfig.VERSION_NAME)
+                                                val info = result.getOrNull()
+                                                if (info == null) updateStatus = "已是最新版本"
+                                                else updateInfo = info
+                                            } catch (e: Exception) {
+                                                updateStatus = "检查失败"
+                                            }
+                                            checkingUpdate = false
+                                        }
                                     }
-                                    checkingUpdate = false
+                                },
+                                onLongClick = {
+                                    if (!checkingUpdate) {
+                                        checkingUpdate = true
+                                        updateStatus = ""
+                                        updateInfo = null
+                                        downloadedApk = null
+                                        scope.launch {
+                                            try {
+                                                val result = UpdateManager.checkUpdate("0.0.0")
+                                                val info = result.getOrNull()
+                                                if (info != null) {
+                                                    updateInfo = info
+                                                    updateStatus = "强制下载 v${info.latestVersion}"
+                                                } else {
+                                                    updateStatus = "未找到发布版本"
+                                                }
+                                            } catch (e: Exception) {
+                                                updateStatus = "检查失败"
+                                            }
+                                            checkingUpdate = false
+                                        }
+                                    }
                                 }
-                            }
-                        },
-                        modifier = Modifier.size(36.dp),
-                        enabled = !checkingUpdate
+                            ),
+                        contentAlignment = Alignment.Center
                     ) {
                         if (checkingUpdate) {
                             CircularProgressIndicator(
@@ -256,7 +286,7 @@ fun AboutScreen(navController: NavHostController) {
                         } else {
                             Icon(
                                 imageVector = Icons.Filled.Refresh,
-                                contentDescription = "检查更新",
+                                contentDescription = "检查更新（长按强制下载）",
                                 modifier = Modifier.size(16.dp)
                             )
                         }
