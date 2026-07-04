@@ -22,7 +22,7 @@ class ClipFlowApp : Application() {
         super.onCreate()
         createNotificationChannels()
         // 预初始化：每次冷启动必须调用（主线程），不含 init，不采集数据
-        UMConfigure.setLogEnabled(true)
+        UMConfigure.setLogEnabled(false)
         UMConfigure.preInit(this, UMENG_APPKEY, UMENG_CHANNEL)
     }
 

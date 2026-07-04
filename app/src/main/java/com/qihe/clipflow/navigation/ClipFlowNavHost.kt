@@ -1,7 +1,6 @@
 package com.qihe.clipflow.navigation
 
 import androidx.compose.animation.*
-import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -31,14 +30,11 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.qihe.clipflow.ClipFlowApp
-import com.qihe.clipflow.BuildConfig
 import com.qihe.clipflow.data.preferences.AppPreferences
 import com.qihe.clipflow.ui.components.PrivacyConsentDialog
-import com.qihe.clipflow.ui.components.UpdateDialog
 import com.qihe.clipflow.ui.components.DownloadPill
+import com.qihe.clipflow.ClipFlowApp
 import com.qihe.clipflow.ui.components.DownloadPillState
-import com.qihe.clipflow.util.UpdateManager
 import com.qihe.clipflow.ui.douyin.DouyinScreen
 import com.qihe.clipflow.ui.history.HistoryScreen
 import com.qihe.clipflow.ui.home.HomeScreen
@@ -47,7 +43,6 @@ import com.qihe.clipflow.ui.about.AboutScreen
 import com.qihe.clipflow.ui.xiaohongshu.XiaohongshuScreen
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import android.os.Build
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -86,27 +81,6 @@ fun ClipFlowNavHost() {
         )
     }
 
-
-    // ========== 更新检测 ==========
-    // var updateInfo by remember { mutableStateOf<UpdateManager.UpdateInfo?>(null) }
-    // LaunchedEffect(privacyAgreed) {
-    //     if (privacyAgreed) {
-    //         val result = UpdateManager.checkUpdate(BuildConfig.VERSION_NAME)
-    //         updateInfo = result.getOrNull()
-    //     }
-    // }
-
-    // updateInfo?.let { info ->
-    //     UpdateDialog(
-    //         info = info,
-    //         onDownload = {
-    //             UpdateManager.downloadAndInstall(context, info.downloadUrl, info.fileName) {
-    //                 updateInfo = null
-    //             }
-    //         },
-    //         onDismiss = { updateInfo = null }
-    //     )
-    // }
 
     val defaultPage by produceState(initialValue = "home") {
         value = prefs.defaultPage.first()

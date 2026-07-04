@@ -203,9 +203,6 @@ class DouyinViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
-    fun clearError() {
-        _uiState.value = _uiState.value.copy(error = null)
-    }
 
     private suspend fun saveHistory(url: String, result: com.qihe.clipflow.data.repository.ParseResult) {
         val existing = historyRepository.getByUrl(url)

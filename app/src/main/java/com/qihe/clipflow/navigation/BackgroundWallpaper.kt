@@ -45,7 +45,7 @@ fun BackgroundWallpaperLayer(content: @Composable () -> Unit) {
         launch { prefs.wallpaperEnabled.collect { enabled = it } }
     }
 
-    val showWallpaper = enabled && (wallpaperUri.isNotEmpty() || wallpaperUri.isEmpty())
+    val showWallpaper = enabled
     // 有自定义壁纸或内置默认壁纸 → 显示
     val hasWallpaper = showWallpaper
     // opacityAmount: 10=almost transparent, 100=fully opaque wall → overlay alpha inverted
@@ -57,7 +57,7 @@ fun BackgroundWallpaperLayer(content: @Composable () -> Unit) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .then(if (useCustom || true) Modifier.blur(25.dp) else Modifier)
+                    .then(Modifier.blur(25.dp))
                     .clipToBounds()
             ) {
                 if (useCustom && wallpaperType == "video") {

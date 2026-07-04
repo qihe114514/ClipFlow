@@ -1,10 +1,7 @@
 package com.qihe.clipflow.ui.history
 
 import android.app.Application
-import android.content.ContentValues
 import android.net.Uri
-import android.os.Build
-import android.provider.MediaStore
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.qihe.clipflow.data.local.AppDatabase

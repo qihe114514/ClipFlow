@@ -24,7 +24,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.qihe.clipflow.BuildConfig
-import com.qihe.clipflow.ClipFlowApp
 import com.qihe.clipflow.data.preferences.AppPreferences
 import com.qihe.clipflow.ui.components.GlassCard
 import com.qihe.clipflow.ui.components.PrivacyConsentDialog
@@ -32,8 +31,9 @@ import com.qihe.clipflow.util.UpdateManager
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalFoundationApi::class)
+@Suppress("DEPRECATION")
 @Composable
-fun AboutScreen(navController: NavHostController) {
+fun AboutScreen(_navController: NavHostController) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val prefs = remember { AppPreferences(context) }
@@ -475,6 +475,7 @@ fun AboutScreen(navController: NavHostController) {
     }
 }
 
+@Suppress("DEPRECATION")
 @Composable
 private fun AboutInfoRow(
     label: String,
@@ -499,6 +500,7 @@ private fun AboutInfoRow(
     }
 }
 
+@Suppress("DEPRECATION")
 @Composable
 private fun LinkRow(
     icon: androidx.compose.ui.graphics.vector.ImageVector,

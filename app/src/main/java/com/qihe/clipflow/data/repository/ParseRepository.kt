@@ -154,7 +154,6 @@ class ParseRepository {
         return withContext(Dispatchers.IO) {
             try {
                 val response = api.parseXiaohongshu(url)
-                android.util.Log.e("ParseRepo", "XHS code=${response.code} msg=${response.msg} dataType=${response.data?.javaClass?.simpleName}")
 
                 if ((response.code != 200 && response.code != 0) || response.data == null || response.data.isJsonNull) {
                     val detail = if (response.msg.isNotEmpty()) "(${response.msg})" else "(code=${response.code})"
@@ -165,7 +164,6 @@ class ParseRepository {
 
                 // data 可能是对象或数组
                 val jsonElement = response.data!!
-                android.util.Log.e("ParseRepo", "XHS data isArray=${jsonElement.isJsonArray} isObj=${jsonElement.isJsonObject} size=${if (jsonElement.isJsonArray) jsonElement.asJsonArray.size() else -1}")
                 val jsonObj = when {
                     jsonElement.isJsonObject -> jsonElement.asJsonObject
                     jsonElement.isJsonArray && jsonElement.asJsonArray.size() > 0 ->
@@ -362,15 +360,4 @@ class ParseRepository {
         }
     }
 
-    /**
-     * 从 URL 检测视频编码格式
-     */
-    private fun detectCodec(url: String): String {
-        val lower = url.lowercase()
-        return when {
-            lower.contains("h265") || lower.contains("hevc") -> "H.265"
-            lower.contains("h264") || lower.contains("avc") -> "H.264"
-            else -> ""
-        }
-    }
 }
