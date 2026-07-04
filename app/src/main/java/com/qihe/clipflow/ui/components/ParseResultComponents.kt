@@ -18,6 +18,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -79,27 +80,27 @@ fun TutorialOverlay(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = "↓",
+                text = "2193",
                 fontSize = 40.sp,
                 color = Color.White,
                 modifier = Modifier.offset(y = arrowOffset.dp)
             )
             Spacer(Modifier.height(8.dp))
             Text(
-                text = "点击封面在线播放",
+                text = "\u70b9\u51fb\u5c01\u9762\u5728\u7ebf\u64ad\u653e",
                 color = Color.White,
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold
             )
             Spacer(Modifier.height(6.dp))
             Text(
-                text = "长按封面保存到相册",
+                text = "\u957f\u6309\u5c01\u9762\u4fdd\u5b58\u5230\u76f8\u518c",
                 color = Color.White.copy(alpha = 0.8f),
                 fontSize = 14.sp
             )
             Spacer(Modifier.height(120.dp))
             Text(
-                text = "点任意位置关闭",
+                text = "\u70b9\u4efb\u610f\u4f4d\u7f6e\u5173\u95ed",
                 color = Color.White.copy(alpha = 0.4f),
                 fontSize = 12.sp
             )
@@ -127,10 +128,10 @@ fun ParseInfoCard(
     var showSaveDialog by remember { mutableStateOf(false) }
     var showVideoPlayer by remember { mutableStateOf(false) }
     var isExpanded by remember { mutableStateOf(false) }
+    var isFullscreen by rememberSaveable { mutableStateOf(false) }
 
-    // 视频播放弹窗
+    // 视频播放弹窗（普通模式）
     if (showVideoPlayer && videoUrl.isNotEmpty()) {
-        var isFullscreen by remember { mutableStateOf(false) }
         val player = remember {
             androidx.media3.exoplayer.ExoPlayer.Builder(context).build().apply {
                 setMediaItem(androidx.media3.common.MediaItem.fromUri(android.net.Uri.parse(videoUrl)))
@@ -138,93 +139,69 @@ fun ParseInfoCard(
                 playWhenReady = true
             }
         }
-        // 页面隐藏时释放
-        DisposableEffect(Unit) {
-            onDispose { player.release() }
-        }
-        if (isFullscreen) {
-            // 全屏沉浸式播放
-            val activity = context as? android.app.Activity
-            SideEffect {
-                activity?.requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
-                activity?.window?.insetsController?.apply {
-                    hide(android.view.WindowInsets.Type.statusBars() or android.view.WindowInsets.Type.navigationBars())
-                    systemBarsBehavior = android.view.WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-                }
-            }
-            Dialog(
-                onDismissRequest = {
-                    activity?.requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
-                    activity?.window?.insetsController?.show(android.view.WindowInsets.Type.statusBars() or android.view.WindowInsets.Type.navigationBars())
-                    isFullscreen = false
-                },
-                properties = DialogProperties(
-                    usePlatformDefaultWidth = false,
-                    dismissOnBackPress = true,
-                    dismissOnClickOutside = false
-                )
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color.Black)
-                ) {
+        DisposableEffect(Unit) { onDispose { player.release() } }
+        AlertDialog(
+            onDismissRequest = { showVideoPlayer = false; player.release() },
+            title = { Text("在线播放", style = MaterialTheme.typography.titleSmall) },
+            text = {
+                Box(modifier = Modifier.fillMaxWidth().height(280.dp)) {
                     androidx.compose.ui.viewinterop.AndroidView(
-                        factory = { viewCtx ->
-                            androidx.media3.ui.PlayerView(viewCtx).apply {
-                                this.player = player
-                                useController = true
-                            }
-                        },
+                        factory = { ctx -> androidx.media3.ui.PlayerView(ctx).apply { this.player = player; useController = true } },
                         modifier = Modifier.fillMaxSize()
                     )
-                    // 退出全屏按钮
-                    IconButton(
-                        onClick = {
-                            activity?.requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
-                            activity?.window?.insetsController?.show(android.view.WindowInsets.Type.statusBars() or android.view.WindowInsets.Type.navigationBars())
-                            isFullscreen = false
-                        },
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .statusBarsPadding()
-                            .padding(8.dp)
-                    ) {
-                        Icon(
-                            Icons.Filled.Close,
-                            contentDescription = "退出全屏",
-                            tint = Color.White,
-                            modifier = Modifier.size(28.dp)
-                        )
-                    }
+                }
+            },
+            confirmButton = {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    TextButton(onClick = { showVideoPlayer = false; isFullscreen = true }) { Text("全屏") }
+                    TextButton(onClick = { showVideoPlayer = false; player.release() }) { Text("关闭") }
                 }
             }
-        } else {
-            AlertDialog(
-                onDismissRequest = { showVideoPlayer = false; player.release() },
-                title = { Text("在线播放", style = MaterialTheme.typography.titleSmall) },
-                text = {
-                    Box(
-                        modifier = Modifier.fillMaxWidth().height(280.dp)
-                    ) {
-                        androidx.compose.ui.viewinterop.AndroidView(
-                            factory = { ctx ->
-                                androidx.media3.ui.PlayerView(ctx).apply {
-                                    this.player = player
-                                    useController = true
-                                }
-                            },
-                            modifier = Modifier.fillMaxSize()
-                        )
-                    }
-                },
-                confirmButton = {
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        TextButton(onClick = { isFullscreen = true }) { Text("全屏") }
-                        TextButton(onClick = { showVideoPlayer = false; player.release() }) { Text("关闭") }
-                    }
+        )
+    }
+
+    // 全屏播放（独立于普通弹窗，旋转不丢失）
+    if (isFullscreen && videoUrl.isNotEmpty()) {
+        val fullscreenPlayer = remember {
+            androidx.media3.exoplayer.ExoPlayer.Builder(context).build().apply {
+                setMediaItem(androidx.media3.common.MediaItem.fromUri(android.net.Uri.parse(videoUrl)))
+                prepare()
+                playWhenReady = true
+            }
+        }
+        DisposableEffect(Unit) { onDispose { fullscreenPlayer.release() } }
+        val activity = context as? android.app.Activity
+        LaunchedEffect(Unit) {
+            activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+            activity?.window?.insetsController?.apply {
+                hide(android.view.WindowInsets.Type.statusBars() or android.view.WindowInsets.Type.navigationBars())
+                systemBarsBehavior = android.view.WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            }
+        }
+        Dialog(
+            onDismissRequest = {
+                activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+                activity?.window?.insetsController?.show(android.view.WindowInsets.Type.statusBars() or android.view.WindowInsets.Type.navigationBars())
+                isFullscreen = false
+            },
+            properties = DialogProperties(usePlatformDefaultWidth = false, dismissOnBackPress = true, dismissOnClickOutside = false)
+        ) {
+            Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
+                androidx.compose.ui.viewinterop.AndroidView(
+                    factory = { vc -> androidx.media3.ui.PlayerView(vc).apply { player = fullscreenPlayer; useController = true } },
+                    modifier = Modifier.fillMaxSize()
+                )
+                IconButton(
+                    onClick = {
+                        activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+                        activity?.window?.insetsController?.show(android.view.WindowInsets.Type.statusBars() or android.view.WindowInsets.Type.navigationBars())
+                        isFullscreen = false
+                    },
+                    modifier = Modifier.align(Alignment.TopEnd).statusBarsPadding().padding(8.dp)
+                ) {
+                    Icon(Icons.Filled.Close, "退出全屏", tint = Color.White, modifier = Modifier.size(28.dp))
                 }
-            )
+            }
         }
     }
 
@@ -238,14 +215,10 @@ fun ParseInfoCard(
                 TextButton(onClick = {
                     showSaveDialog = false
                     saveCoverToGallery(context, cover)
-                }) {
-                    Text("好的喵")
-                }
+                }) { Text("好的喵") }
             },
             dismissButton = {
-                TextButton(onClick = { showSaveDialog = false }) {
-                    Text("不好喵")
-                }
+                TextButton(onClick = { showSaveDialog = false }) { Text("不好喵") }
             }
         )
     }
@@ -280,11 +253,10 @@ fun ParseInfoCard(
                 overflow = TextOverflow.Ellipsis
             )
 
-            // 笔记内容（desc），超过 2 行折叠
             if (desc.isNotEmpty()) {
                 Spacer(Modifier.height(6.dp))
-                var isOverflowed by remember { mutableStateOf(false) }
                 Row(verticalAlignment = Alignment.Top) {
+                    var isOverflowed by remember { mutableStateOf(false) }
                     Text(
                         text = desc,
                         style = MaterialTheme.typography.bodyMedium,
@@ -292,9 +264,7 @@ fun ParseInfoCard(
                         maxLines = if (isExpanded) Int.MAX_VALUE else 2,
                         overflow = TextOverflow.Ellipsis,
                         onTextLayout = { result ->
-                            if (!isExpanded && result.hasVisualOverflow) {
-                                isOverflowed = true
-                            }
+                            if (!isExpanded && result.hasVisualOverflow) isOverflowed = true
                         },
                         modifier = Modifier.weight(1f)
                     )
@@ -357,7 +327,6 @@ fun ParseInfoCard(
                     }
                 }
             }
-            // 统计数据
             if (stats != null) {
                 Spacer(Modifier.height(8.dp))
                 Row(
@@ -435,11 +404,7 @@ private fun saveCoverToGallery(context: android.content.Context, imageUrl: Strin
             }
 
             withContext(Dispatchers.Main) {
-                Toast.makeText(
-                    context,
-                    if (saved) "封面已保存到相册" else "保存封面失败",
-                    Toast.LENGTH_SHORT
-                ).show()
+                Toast.makeText(context, if (saved) "封面已保存到相册" else "保存封面失败", Toast.LENGTH_SHORT).show()
             }
         } catch (e: Exception) {
             withContext(Dispatchers.Main) {
@@ -462,11 +427,7 @@ fun DownloadOptionsCard(
 ) {
     GlassCard(modifier = modifier) {
         Column {
-            Text(
-                text = "下载选项",
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold
-            )
+            Text("下载选项", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.height(12.dp))
 
             items.forEachIndexed { idx, item ->
@@ -481,6 +442,7 @@ fun DownloadOptionsCard(
                     Icon(
                         imageVector = when (item.type) {
                             ContentType.VIDEO, ContentType.LIVE_VIDEO -> Icons.Filled.Videocam
+                            ContentType.AUDIO -> Icons.Filled.MusicNote
                             else -> Icons.Filled.Image
                         },
                         contentDescription = null,
@@ -509,15 +471,9 @@ fun DownloadOptionsCard(
                     }
 
                     if (isDownloading) {
-                        CircularProgressIndicator(
-                            progress = { progress },
-                            modifier = Modifier.size(32.dp),
-                            strokeWidth = 3.dp
-                        )
+                        CircularProgressIndicator(progress = { progress }, modifier = Modifier.size(32.dp), strokeWidth = 3.dp)
                     } else {
-                        TextButton(onClick = { onDownload(item) }) {
-                            Text("下载", fontWeight = FontWeight.SemiBold)
-                        }
+                        TextButton(onClick = { onDownload(item) }) { Text("下载", fontWeight = FontWeight.SemiBold) }
                     }
                 }
 
@@ -526,39 +482,27 @@ fun DownloadOptionsCard(
                 }
             }
 
-            // 备用画质
             if (videoBackups.isNotEmpty()) {
                 var showBackups by remember { mutableStateOf(false) }
                 DashedDivider(modifier = Modifier.padding(vertical = 4.dp))
-                TextButton(
-                    onClick = { showBackups = !showBackups },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Icon(
-                        if (showBackups) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown,
-                        null, modifier = Modifier.size(18.dp)
-                    )
+                TextButton(onClick = { showBackups = !showBackups }, modifier = Modifier.fillMaxWidth()) {
+                    Icon(if (showBackups) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown, null, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.width(4.dp))
                     Text("备用画质 (${videoBackups.size})", style = MaterialTheme.typography.labelMedium)
                 }
                 AnimatedVisibility(visible = showBackups) {
                     Column {
                         videoBackups.forEach { backup ->
-                            Row(
-                                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
+                            Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                                 val label = backup.quality ?: ""
                                 val codec = backup.codec ?: ""
-                                val res = if (backup.width > 0 && backup.height > 0) "${backup.width}×${backup.height}" else ""
+                                val res = if (backup.width > 0 && backup.height > 0) "${backup.width}x${backup.height}" else ""
                                 val infoParts = listOfNotNull(label, res, codec.uppercase(), backup.format?.uppercase()).filter { it.isNotEmpty() }
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(infoParts.joinToString(" · "), style = MaterialTheme.typography.bodySmall)
                                 }
                                 TextButton(onClick = {
-                                    backup.url?.let { url ->
-                                        onDownloadBackupUrl?.invoke(url, infoParts.firstOrNull() ?: "备用")
-                                    }
+                                    backup.url?.let { url -> onDownloadBackupUrl?.invoke(url, infoParts.firstOrNull() ?: "备用") }
                                 }) {
                                     Text("下载", fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
                                 }
