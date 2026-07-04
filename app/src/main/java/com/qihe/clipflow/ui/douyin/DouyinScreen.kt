@@ -278,7 +278,7 @@ fun DownloadProgressDialog(
                         val ctx = LocalContext.current
                         TextButton(onClick = {
                             try {
-                                val intent = android.content.Intent(android.content.Intent.ACTION_PICK).apply {
+                                val intent = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
                                     setDataAndType(
                                         android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
                                         "image/*"
