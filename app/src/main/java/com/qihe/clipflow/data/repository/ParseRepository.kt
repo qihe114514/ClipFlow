@@ -67,7 +67,7 @@ class ParseRepository {
                             items.add(
                                 ContentItem(
                                     id = "dy_music_$index",
-                                    type = ContentType.VIDEO,
+                                    type = ContentType.AUDIO,
                                     url = musicUrl,
                                     thumbnailUrl = data.music?.cover ?: data.cover,
                                     mediaInfo = MediaInfo(format = "MP3"),

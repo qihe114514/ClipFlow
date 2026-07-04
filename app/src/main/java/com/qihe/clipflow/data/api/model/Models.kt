@@ -91,6 +91,7 @@ data class ContentItem(
 enum class ContentType(val label: String) {
     VIDEO("视频"),
     IMAGE("图片"),
+    AUDIO("音频"),
     LIVE_IMAGE("实况-图"),
     LIVE_VIDEO("实况-视频")
 }

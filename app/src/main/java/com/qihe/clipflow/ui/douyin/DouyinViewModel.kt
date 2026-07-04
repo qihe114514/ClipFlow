@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.qihe.clipflow.data.api.model.ContentItem
+import com.qihe.clipflow.data.api.model.ContentType
 import com.qihe.clipflow.data.local.AppDatabase
 import com.qihe.clipflow.data.local.HistoryEntity
 import com.qihe.clipflow.data.repository.HistoryRepository
@@ -116,9 +117,14 @@ class DouyinViewModel(application: Application) : AndroidViewModel(application) 
                 downloadingItemId = item.id
             )
 
+            val isAudio = item.type == ContentType.AUDIO
             val ext = when {
-                item.mediaInfo?.format != null -> ".${(item.mediaInfo?.format?.lowercase() ?: "mp4")}"
-                item.type.name.contains("VIDEO") -> ".mp4"
+                isAudio -> ".mp3"
+                item.mediaInfo?.format != null -> {
+                    val safe = item.mediaInfo!!.format!!.split("/").first().lowercase().trim()
+                    ".$safe"
+                }
+                item.type == ContentType.VIDEO -> ".mp4"
                 else -> ".jpg"
             }
             val fileName = "ClipFlow_${System.currentTimeMillis()}$ext"
@@ -148,9 +154,8 @@ class DouyinViewModel(application: Application) : AndroidViewModel(application) 
             }
 
             downloadManager.download(item.url, fileName) { tempFile ->
-                val isVideo = item.type == com.qihe.clipflow.data.api.model.ContentType.VIDEO ||
+                MediaStoreHelper.saveToGallery(app, tempFile, item.type)
                         item.type == com.qihe.clipflow.data.api.model.ContentType.LIVE_VIDEO
-                MediaStoreHelper.saveToGallery(app, tempFile, isVideo)
             }
         }
     }

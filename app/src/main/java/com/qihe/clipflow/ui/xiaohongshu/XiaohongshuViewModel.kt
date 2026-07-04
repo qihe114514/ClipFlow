@@ -108,7 +108,10 @@ class XiaohongshuViewModel(application: Application) : AndroidViewModel(applicat
             )
 
             val ext = when {
-                item.mediaInfo?.format != null -> ".${(item.mediaInfo?.format?.lowercase() ?: "mp4")}"
+                item.mediaInfo?.format != null -> {
+                    val safe = item.mediaInfo!!.format!!.split("/").first().lowercase().trim()
+                    ".$safe"
+                }
                 item.type.name.contains("VIDEO") -> ".mp4"
                 else -> ".jpg"
             }
@@ -133,7 +136,7 @@ class XiaohongshuViewModel(application: Application) : AndroidViewModel(applicat
 
             downloadManager.download(item.url, fileName) { tempFile ->
                 val isVideo = item.type.name.contains("VIDEO")
-                MediaStoreHelper.saveToGallery(app, tempFile, isVideo)
+                MediaStoreHelper.saveToGallery(app, tempFile, item.type)
             }
         }
     }

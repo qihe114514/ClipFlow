@@ -127,6 +127,7 @@ fun ParseInfoCard(
 
     // 视频播放弹窗
     if (showVideoPlayer && videoUrl.isNotEmpty()) {
+        var isFullscreen by remember { mutableStateOf(false) }
         val player = remember {
             androidx.media3.exoplayer.ExoPlayer.Builder(context).build().apply {
                 setMediaItem(androidx.media3.common.MediaItem.fromUri(android.net.Uri.parse(videoUrl)))
@@ -143,7 +144,9 @@ fun ParseInfoCard(
             title = { Text("在线播放", style = MaterialTheme.typography.titleSmall) },
             text = {
                 Box(
-                    modifier = Modifier.fillMaxWidth().height(280.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .then(if (isFullscreen) Modifier.fillMaxHeight(0.85f) else Modifier.height(280.dp))
                 ) {
                     androidx.compose.ui.viewinterop.AndroidView(
                         factory = { ctx ->
@@ -157,7 +160,12 @@ fun ParseInfoCard(
                 }
             },
             confirmButton = {
-                TextButton(onClick = { showVideoPlayer = false; player.release() }) { Text("关闭") }
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    TextButton(onClick = { isFullscreen = !isFullscreen }) {
+                        Text(if (isFullscreen) "还原" else "全屏")
+                    }
+                    TextButton(onClick = { showVideoPlayer = false; player.release() }) { Text("关闭") }
+                }
             }
         )
     }

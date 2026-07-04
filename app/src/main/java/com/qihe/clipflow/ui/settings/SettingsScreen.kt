@@ -122,14 +122,79 @@ fun SettingsScreen(
                 Icon(Icons.Outlined.Folder, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
                 Spacer(Modifier.width(14.dp))
                 Column(Modifier.weight(1f)) {
-                    Text("下载目录", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
+                    Text("自定义下载目录", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
                     Text(
-                        uiState.savePath.ifEmpty { "Downloads/ClipFlow" },
+                        uiState.savePath.ifEmpty { "系统默认：视频→Movies/ClipFlow  图片→Pictures/ClipFlow  音乐→Music/ClipFlow" },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
                 Icon(Icons.Filled.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f))
+            }
+        }
+        // 快速打开文件夹
+        Spacer(Modifier.height(6.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            val ctx = LocalContext.current
+            OutlinedButton(
+                onClick = {
+                    try {
+                        val intent = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
+                            setDataAndType(
+                                android.provider.MediaStore.Video.Media.EXTERNAL_CONTENT_URI,
+                                "video/*"
+                            )
+                            addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                        }
+                        ctx.startActivity(intent)
+                    } catch (_: Exception) {}
+                },
+                modifier = Modifier.weight(1f)
+            ) {
+                Icon(Icons.Filled.Videocam, null, Modifier.size(16.dp))
+                Spacer(Modifier.width(4.dp))
+                Text("视频", style = MaterialTheme.typography.labelSmall)
+            }
+            OutlinedButton(
+                onClick = {
+                    try {
+                        val intent = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
+                            setDataAndType(
+                                android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                                "image/*"
+                            )
+                            addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                        }
+                        ctx.startActivity(intent)
+                    } catch (_: Exception) {}
+                },
+                modifier = Modifier.weight(1f)
+            ) {
+                Icon(Icons.Filled.Image, null, Modifier.size(16.dp))
+                Spacer(Modifier.width(4.dp))
+                Text("图片", style = MaterialTheme.typography.labelSmall)
+            }
+            OutlinedButton(
+                onClick = {
+                    try {
+                        val intent = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
+                            setDataAndType(
+                                android.provider.MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
+                                "audio/*"
+                            )
+                            addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                        }
+                        ctx.startActivity(intent)
+                    } catch (_: Exception) {}
+                },
+                modifier = Modifier.weight(1f)
+            ) {
+                Icon(Icons.Filled.MusicNote, null, Modifier.size(16.dp))
+                Spacer(Modifier.width(4.dp))
+                Text("音乐", style = MaterialTheme.typography.labelSmall)
             }
         }
 

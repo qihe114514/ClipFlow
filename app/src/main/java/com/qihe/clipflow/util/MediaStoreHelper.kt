@@ -7,23 +7,24 @@ import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
+import com.qihe.clipflow.data.api.model.ContentType
 import java.io.File
 
 /**
- * 将下载的文件写入系统相册
- * 视频/图片/音乐 → Downloads/ClipFlow
+ * 将下载的文件写入系统媒体库
+ * 视频→Movies/ClipFlow  图片→Pictures/ClipFlow  音频→Music/ClipFlow
  */
 object MediaStoreHelper {
 
     fun saveToGallery(
         context: Context,
         sourceFile: File,
-        isVideo: Boolean
+        type: ContentType
     ): Uri? {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            saveUsingMediaStore(context, sourceFile, isVideo)
+            saveUsingMediaStore(context, sourceFile, type)
         } else {
-            saveUsingLegacy(context, sourceFile, isVideo)
+            saveUsingLegacy(context, sourceFile, type)
         }
     }
 
@@ -31,32 +32,46 @@ object MediaStoreHelper {
     private fun saveUsingMediaStore(
         context: Context,
         sourceFile: File,
-        isVideo: Boolean
+        type: ContentType
     ): Uri? {
+        val isAudio = type == ContentType.AUDIO
         val contentValues = ContentValues().apply {
-            if (isVideo) {
-                put(MediaStore.Video.Media.DISPLAY_NAME, sourceFile.name)
-                put(MediaStore.Video.Media.MIME_TYPE, getMimeType(sourceFile.name))
-                put(
-                    MediaStore.Video.Media.RELATIVE_PATH,
-                    "${Environment.DIRECTORY_MOVIES}/ClipFlow"
-                )
-            } else {
-                put(MediaStore.Images.Media.DISPLAY_NAME, sourceFile.name)
-                put(MediaStore.Images.Media.MIME_TYPE, getMimeType(sourceFile.name))
-                put(
-                    MediaStore.Images.Media.RELATIVE_PATH,
-                    "${Environment.DIRECTORY_PICTURES}/ClipFlow"
-                )
+            when {
+                isAudio -> {
+                    put(MediaStore.Audio.Media.DISPLAY_NAME, sourceFile.name)
+                    put(MediaStore.Audio.Media.MIME_TYPE, getMimeType(sourceFile.name))
+                    put(
+                        MediaStore.Audio.Media.RELATIVE_PATH,
+                        "${Environment.DIRECTORY_MUSIC}/ClipFlow"
+                    )
+                }
+                type == ContentType.VIDEO || type == ContentType.LIVE_VIDEO -> {
+                    put(MediaStore.Video.Media.DISPLAY_NAME, sourceFile.name)
+                    put(MediaStore.Video.Media.MIME_TYPE, getMimeType(sourceFile.name))
+                    put(
+                        MediaStore.Video.Media.RELATIVE_PATH,
+                        "${Environment.DIRECTORY_MOVIES}/ClipFlow"
+                    )
+                }
+                else -> {
+                    put(MediaStore.Images.Media.DISPLAY_NAME, sourceFile.name)
+                    put(MediaStore.Images.Media.MIME_TYPE, getMimeType(sourceFile.name))
+                    put(
+                        MediaStore.Images.Media.RELATIVE_PATH,
+                        "${Environment.DIRECTORY_PICTURES}/ClipFlow"
+                    )
+                }
             }
             put(MediaStore.MediaColumns.IS_PENDING, 1)
         }
 
         val resolver = context.contentResolver
-        val collection = if (isVideo) {
-            MediaStore.Video.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
-        } else {
-            MediaStore.Images.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
+        val collection = when {
+            isAudio -> MediaStore.Audio.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
+            type == ContentType.VIDEO || type == ContentType.LIVE_VIDEO ->
+                MediaStore.Video.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
+            else ->
+                MediaStore.Images.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
         }
 
         val uri = resolver.insert(collection, contentValues) ?: return null
@@ -82,9 +97,14 @@ object MediaStoreHelper {
     private fun saveUsingLegacy(
         context: Context,
         sourceFile: File,
-        isVideo: Boolean
+        type: ContentType
     ): Uri? {
-        val dirType = if (isVideo) Environment.DIRECTORY_MOVIES else Environment.DIRECTORY_PICTURES
+        val isAudio = type == ContentType.AUDIO
+        val dirType = when {
+            isAudio -> Environment.DIRECTORY_MUSIC
+            type == ContentType.VIDEO || type == ContentType.LIVE_VIDEO -> Environment.DIRECTORY_MOVIES
+            else -> Environment.DIRECTORY_PICTURES
+        }
 
         val dir = File(
             Environment.getExternalStoragePublicDirectory(dirType),
@@ -110,6 +130,12 @@ object MediaStoreHelper {
 
     private fun getMimeType(fileName: String): String {
         return when {
+            // 音频
+            fileName.endsWith(".mp3", ignoreCase = true) -> "audio/mpeg"
+            fileName.endsWith(".aac", ignoreCase = true) -> "audio/aac"
+            fileName.endsWith(".m4a", ignoreCase = true) -> "audio/mp4"
+            fileName.endsWith(".wav", ignoreCase = true) -> "audio/wav"
+            fileName.endsWith(".ogg", ignoreCase = true) -> "audio/ogg"
             // 视频
             fileName.endsWith(".mp4", ignoreCase = true) -> "video/mp4"
             fileName.endsWith(".mov", ignoreCase = true) -> "video/quicktime"

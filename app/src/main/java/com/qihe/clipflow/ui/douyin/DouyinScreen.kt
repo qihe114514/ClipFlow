@@ -273,8 +273,23 @@ fun DownloadProgressDialog(
         },
         confirmButton = {
             if (state?.isComplete == true || state?.error != null) {
-                TextButton(onClick = onDismiss) {
-                    Text("关闭")
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (state.isComplete) {
+                        val ctx = LocalContext.current
+                        TextButton(onClick = {
+                            val intent = android.content.Intent(android.content.Intent.ACTION_MAIN).apply {
+                                type = "image/*"
+                                addCategory(android.content.Intent.CATEGORY_APP_GALLERY)
+                            }
+                            try { ctx.startActivity(intent) } catch (_: Exception) {}
+                            onDismiss()
+                        }) {
+                            Text("打开相册")
+                        }
+                    }
+                    TextButton(onClick = onDismiss) {
+                        Text("关闭")
+                    }
                 }
             } else if (state?.isDownloading == true) {
                 TextButton(onClick = onBackground) {
