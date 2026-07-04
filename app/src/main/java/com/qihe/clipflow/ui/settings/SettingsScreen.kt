@@ -123,7 +123,7 @@ fun SettingsScreen(
                 Column(Modifier.weight(1f)) {
                     Text("下载目录", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
                     Text(
-                        uiState.savePath.ifEmpty { "Movies/ClipFlow · Pictures/ClipFlow" },
+                        uiState.savePath.ifEmpty { "Downloads/ClipFlow" },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

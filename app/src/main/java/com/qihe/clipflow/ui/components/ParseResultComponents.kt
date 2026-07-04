@@ -278,6 +278,8 @@ fun DownloadOptionsCard(
     items: List<ContentItem>,
     downloadStates: Map<String, DownloadState>,
     onDownload: (ContentItem) -> Unit,
+    videoBackups: List<com.qihe.clipflow.data.api.model.VideoBackupItem> = emptyList(),
+    onDownloadBackupUrl: ((String, String) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     GlassCard(modifier = modifier) {
@@ -315,7 +317,6 @@ fun DownloadOptionsCard(
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.Medium
                         )
-                        // 格式 / 分辨率 / 编码 信息行
                         val infoParts = mutableListOf<String>()
                         item.mediaInfo?.resolution?.let { infoParts.add(it) }
                         item.mediaInfo?.codec?.let { infoParts.add(it) }
@@ -344,6 +345,48 @@ fun DownloadOptionsCard(
 
                 if (idx < items.size - 1) {
                     DashedDivider(modifier = Modifier.padding(vertical = 4.dp))
+                }
+            }
+
+            // 备用画质
+            if (videoBackups.isNotEmpty()) {
+                var showBackups by remember { mutableStateOf(false) }
+                DashedDivider(modifier = Modifier.padding(vertical = 4.dp))
+                TextButton(
+                    onClick = { showBackups = !showBackups },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(
+                        if (showBackups) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown,
+                        null, modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(Modifier.width(4.dp))
+                    Text("备用画质 (${videoBackups.size})", style = MaterialTheme.typography.labelMedium)
+                }
+                AnimatedVisibility(visible = showBackups) {
+                    Column {
+                        videoBackups.forEach { backup ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                val label = backup.quality ?: ""
+                                val codec = backup.codec ?: ""
+                                val res = if (backup.width > 0 && backup.height > 0) "${backup.width}×${backup.height}" else ""
+                                val infoParts = listOfNotNull(label, res, codec.uppercase(), backup.format?.uppercase()).filter { it.isNotEmpty() }
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(infoParts.joinToString(" · "), style = MaterialTheme.typography.bodySmall)
+                                }
+                                TextButton(onClick = {
+                                    backup.url?.let { url ->
+                                        onDownloadBackupUrl?.invoke(url, infoParts.firstOrNull() ?: "备用")
+                                    }
+                                }) {
+                                    Text("下载", fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }

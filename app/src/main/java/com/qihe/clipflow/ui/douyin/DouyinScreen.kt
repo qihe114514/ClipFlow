@@ -169,7 +169,9 @@ fun DouyinScreen(viewModel: DouyinViewModel = viewModel(viewModelStoreOwner = Lo
                     DownloadOptionsCard(
                         items = uiState.parseResult!!,
                         downloadStates = uiState.downloadStates,
-                        onDownload = { viewModel.downloadItem(it) }
+                        onDownload = { viewModel.downloadItem(it) },
+                        videoBackups = uiState.videoBackups,
+                        onDownloadBackupUrl = { url, label -> viewModel.downloadBackupUrl(url, label) }
                     )
                 }
             }

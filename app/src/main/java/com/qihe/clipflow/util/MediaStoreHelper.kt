@@ -11,8 +11,7 @@ import java.io.File
 
 /**
  * 将下载的文件写入系统相册
- * 视频 → Movies/ClipFlow
- * 图片 → Pictures/ClipFlow
+ * 视频/图片/音乐 → Downloads/ClipFlow
  */
 object MediaStoreHelper {
 
@@ -37,17 +36,17 @@ object MediaStoreHelper {
         val contentValues = ContentValues().apply {
             if (isVideo) {
                 put(MediaStore.Video.Media.DISPLAY_NAME, sourceFile.name)
-                put(MediaStore.Video.Media.MIME_TYPE, "video/mp4")
+                put(MediaStore.Video.Media.MIME_TYPE, getMimeType(sourceFile.name))
                 put(
                     MediaStore.Video.Media.RELATIVE_PATH,
-                    "${Environment.DIRECTORY_MOVIES}/ClipFlow"
+                    "${Environment.DIRECTORY_DOWNLOADS}/ClipFlow"
                 )
             } else {
                 put(MediaStore.Images.Media.DISPLAY_NAME, sourceFile.name)
                 put(MediaStore.Images.Media.MIME_TYPE, getMimeType(sourceFile.name))
                 put(
                     MediaStore.Images.Media.RELATIVE_PATH,
-                    "${Environment.DIRECTORY_PICTURES}/ClipFlow"
+                    "${Environment.DIRECTORY_DOWNLOADS}/ClipFlow"
                 )
             }
             put(MediaStore.MediaColumns.IS_PENDING, 1)
@@ -85,11 +84,7 @@ object MediaStoreHelper {
         sourceFile: File,
         isVideo: Boolean
     ): Uri? {
-        val dirType = if (isVideo) {
-            Environment.DIRECTORY_MOVIES
-        } else {
-            Environment.DIRECTORY_PICTURES
-        }
+        val dirType = Environment.DIRECTORY_DOWNLOADS
 
         val dir = File(
             Environment.getExternalStoragePublicDirectory(dirType),

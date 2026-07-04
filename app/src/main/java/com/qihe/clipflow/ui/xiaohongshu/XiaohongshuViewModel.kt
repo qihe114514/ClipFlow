@@ -107,7 +107,11 @@ class XiaohongshuViewModel(application: Application) : AndroidViewModel(applicat
                 downloadingItemId = item.id
             )
 
-            val ext = if (item.type.name.contains("VIDEO")) ".mp4" else ".jpg"
+            val ext = when {
+                item.mediaInfo?.format != null -> ".${(item.mediaInfo?.format?.lowercase() ?: "mp4")}"
+                item.type.name.contains("VIDEO") -> ".mp4"
+                else -> ".jpg"
+            }
             val fileName = "ClipFlow_${System.currentTimeMillis()}$ext"
             val app = getApplication<Application>()
             downloadManager.reset()

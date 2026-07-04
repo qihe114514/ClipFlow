@@ -28,6 +28,7 @@ data class DouyinUiState(
     val contentType: String = "",
     val shareUrl: String = "",
     val stats: com.qihe.clipflow.data.api.model.DouyinStatistics? = null,
+    val videoBackups: List<com.qihe.clipflow.data.api.model.VideoBackupItem> = emptyList(),
     val isBackgroundDownload: Boolean = false,
     val error: String? = null,
     val downloadStates: Map<String, DownloadState> = emptyMap(),
@@ -51,7 +52,7 @@ class DouyinViewModel(application: Application) : AndroidViewModel(application) 
     }
 
     fun clearUrl() {
-        _uiState.value = _uiState.value.copy(inputUrl = "", error = null)
+        _uiState.value = _uiState.value.copy(inputUrl = "", error = null, parseResult = null, parseTitle = "", parseDesc = "", parseCover = "", authorName = "", authorAvatar = "", contentType = "", shareUrl = "", stats = null)
     }
 
     fun pasteFromClipboard() {
@@ -91,7 +92,8 @@ class DouyinViewModel(application: Application) : AndroidViewModel(application) 
                         authorAvatar = result.authorAvatar,
                         contentType = result.contentType,
                         shareUrl = result.shareUrl,
-                        stats = result.stats
+                        stats = result.stats,
+                        videoBackups = result.videoBackups
                     )
                     saveHistory(url, result)
                 },
@@ -112,7 +114,11 @@ class DouyinViewModel(application: Application) : AndroidViewModel(application) 
                 downloadingItemId = item.id
             )
 
-            val ext = if (item.type.name.contains("VIDEO")) ".mp4" else ".jpg"
+            val ext = when {
+                item.mediaInfo?.format != null -> ".${(item.mediaInfo?.format?.lowercase() ?: "mp4")}"
+                item.type.name.contains("VIDEO") -> ".mp4"
+                else -> ".jpg"
+            }
             val fileName = "ClipFlow_${System.currentTimeMillis()}$ext"
             val app = getApplication<Application>()
 
@@ -145,6 +151,17 @@ class DouyinViewModel(application: Application) : AndroidViewModel(application) 
                 MediaStoreHelper.saveToGallery(app, tempFile, isVideo)
             }
         }
+    }
+
+    fun downloadBackupUrl(url: String, label: String) {
+        val item = com.qihe.clipflow.data.api.model.ContentItem(
+            id = "backup_${System.currentTimeMillis()}",
+            type = com.qihe.clipflow.data.api.model.ContentType.VIDEO,
+            url = url,
+            description = label,
+            mediaInfo = com.qihe.clipflow.data.api.model.MediaInfo(format = "MP4")
+        )
+        downloadItem(item)
     }
 
     fun dismissDownloadDialog(background: Boolean = false) {
