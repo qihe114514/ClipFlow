@@ -28,7 +28,7 @@ import com.qihe.clipflow.ui.theme.*
 import com.qihe.clipflow.navigation.ParseBridge
 
 @Composable
-fun XiaohongshuScreen(viewModel: XiaohongshuViewModel = viewModel()) {
+fun XiaohongshuScreen(viewModel: XiaohongshuViewModel = viewModel(viewModelStoreOwner = LocalContext.current as androidx.activity.ComponentActivity)) {
     val uiState by viewModel.uiState.collectAsState()
 
     LaunchedEffect(Unit) {

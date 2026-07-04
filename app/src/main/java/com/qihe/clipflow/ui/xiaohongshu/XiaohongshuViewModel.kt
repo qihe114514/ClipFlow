@@ -47,7 +47,7 @@ class XiaohongshuViewModel(application: Application) : AndroidViewModel(applicat
     }
 
     fun clearUrl() {
-        _uiState.value = _uiState.value.copy(inputUrl = "", error = null)
+        _uiState.value = _uiState.value.copy(inputUrl = "", error = null, parseResult = null, parseTitle = "", parseDesc = "", parseCover = "", authorName = "", authorAvatar = "", contentType = "")
     }
 
     fun pasteFromClipboard() {

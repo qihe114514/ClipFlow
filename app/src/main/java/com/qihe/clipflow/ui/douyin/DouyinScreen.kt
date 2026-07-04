@@ -29,7 +29,7 @@ import com.qihe.clipflow.ui.theme.*
 import com.qihe.clipflow.navigation.ParseBridge
 
 @Composable
-fun DouyinScreen(viewModel: DouyinViewModel = viewModel()) {
+fun DouyinScreen(viewModel: DouyinViewModel = viewModel(viewModelStoreOwner = LocalContext.current as androidx.activity.ComponentActivity)) {
     val uiState by viewModel.uiState.collectAsState()
 
     LaunchedEffect(Unit) {
