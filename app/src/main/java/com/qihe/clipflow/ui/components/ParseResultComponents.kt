@@ -1,7 +1,6 @@
 package com.qihe.clipflow.ui.components
 
 import android.content.ContentValues
-import android.content.pm.ActivityInfo
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import android.os.Build
@@ -20,6 +19,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -131,6 +131,7 @@ fun ParseInfoCard(
     // 视频播放弹窗
     if (showVideoPlayer && videoUrl.isNotEmpty()) {
         var isFullscreen by remember { mutableStateOf(false) }
+        var isLandscapeVideo by remember { mutableStateOf(false) }
         val player = remember {
             androidx.media3.exoplayer.ExoPlayer.Builder(context).build().apply {
                 setMediaItem(androidx.media3.common.MediaItem.fromUri(android.net.Uri.parse(videoUrl)))
@@ -138,12 +139,23 @@ fun ParseInfoCard(
                 playWhenReady = true
             }
         }
+        // 监听视频尺寸，判断是否横屏视频
+        DisposableEffect(player) {
+            val listener = object : androidx.media3.common.Player.Listener {
+                override fun onVideoSizeChanged(videoSize: androidx.media3.common.VideoSize) {
+                    isLandscapeVideo = videoSize.width > videoSize.height
+                }
+            }
+            player.addListener(listener)
+            onDispose { player.removeListener(listener) }
+        }
         // 页面隐藏时释放
         DisposableEffect(Unit) {
             onDispose { player.release() }
         }
         if (isFullscreen) {
             // 全屏沉浸式播放
+            
             Dialog(
                 onDismissRequest = { isFullscreen = false },
                 properties = DialogProperties(
@@ -158,24 +170,27 @@ fun ParseInfoCard(
                         .background(Color.Black)
                 ) {
                     androidx.compose.ui.viewinterop.AndroidView(
-                        factory = { ctx ->
-                            androidx.media3.ui.PlayerView(ctx).apply {
+                        factory = { viewCtx ->
+                            androidx.media3.ui.PlayerView(viewCtx).apply {
                                 this.player = player
                                 useController = true
-                                // 尝试锁定横屏
-                                (ctx as? android.app.Activity)?.requestedOrientation =
-                                    android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
                             }
                         },
-                        modifier = Modifier.fillMaxSize()
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .graphicsLayer {
+                                if (isLandscapeVideo) {
+                                    rotationZ = 90f
+                                    scaleX = size.width / size.height.toFloat()
+                                    scaleY = size.height / size.width.toFloat()
+                                    translationX = (size.width - size.height) / 2f
+                                    translationY = (size.height - size.width) / 2f
+                                }
+                            }
                     )
                     // 退出全屏按钮
                     IconButton(
-                        onClick = {
-                            (context as? android.app.Activity)?.requestedOrientation =
-                                android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
-                            isFullscreen = false
-                        },
+                        onClick = { isFullscreen = false },
                         modifier = Modifier
                             .align(Alignment.TopEnd)
                             .statusBarsPadding()

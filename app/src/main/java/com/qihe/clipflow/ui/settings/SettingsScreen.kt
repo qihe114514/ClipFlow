@@ -33,6 +33,9 @@ import kotlinx.coroutines.launch
 
 data class SettingsUiState(
     val savePath: String = "",
+    val videoSavePath: String = "",
+    val imageSavePath: String = "",
+    val audioSavePath: String = "",
     val wallpaperUri: String = "",
     val wallpaperType: String = "image",
     val wallpaperOpacity: Float = 75f,
@@ -50,6 +53,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     init {
         viewModelScope.launch {
             launch { prefs.savePath.collect { _uiState.value = _uiState.value.copy(savePath = it) } }
+            launch { prefs.videoSavePath.collect { _uiState.value = _uiState.value.copy(videoSavePath = it) } }
+            launch { prefs.imageSavePath.collect { _uiState.value = _uiState.value.copy(imageSavePath = it) } }
+            launch { prefs.audioSavePath.collect { _uiState.value = _uiState.value.copy(audioSavePath = it) } }
             launch { prefs.wallpaperUri.collect { _uiState.value = _uiState.value.copy(wallpaperUri = it) } }
             launch { prefs.wallpaperType.collect { _uiState.value = _uiState.value.copy(wallpaperType = it) } }
             launch { prefs.wallpaperOpacity.collect { _uiState.value = _uiState.value.copy(wallpaperOpacity = it) } }
@@ -60,6 +66,12 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun setSavePath(path: String) { viewModelScope.launch { prefs.setSavePath(path) } }
+    fun setVideoSavePath(path: String) { viewModelScope.launch { prefs.setVideoSavePath(path) } }
+    fun setImageSavePath(path: String) { viewModelScope.launch { prefs.setImageSavePath(path) } }
+    fun setAudioSavePath(path: String) { viewModelScope.launch { prefs.setAudioSavePath(path) } }
+    fun resetVideoSavePath() { viewModelScope.launch { prefs.setVideoSavePath("") } }
+    fun resetImageSavePath() { viewModelScope.launch { prefs.setImageSavePath("") } }
+    fun resetAudioSavePath() { viewModelScope.launch { prefs.setAudioSavePath("") } }
     fun setWallpaperUri(uri: String) { viewModelScope.launch { prefs.setWallpaperUri(uri) } }
     fun setWallpaperType(type: String) { viewModelScope.launch { prefs.setWallpaperType(type) } }
     fun setWallpaperOpacity(o: Float) { viewModelScope.launch { prefs.setWallpaperOpacity(o) } }
@@ -98,14 +110,34 @@ fun SettingsScreen(
         }
     }
 
-    val dirPickerLauncher = rememberLauncherForActivityResult(
+    val videoDirLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocumentTree()
     ) { uri: Uri? ->
         uri?.let {
             context.contentResolver.takePersistableUriPermission(
                 it, android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION or android.content.Intent.FLAG_GRANT_WRITE_URI_PERMISSION
             )
-            viewModel.setSavePath(it.toString())
+            viewModel.setVideoSavePath(it.toString())
+        }
+    }
+    val imageDirLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocumentTree()
+    ) { uri: Uri? ->
+        uri?.let {
+            context.contentResolver.takePersistableUriPermission(
+                it, android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION or android.content.Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+            )
+            viewModel.setImageSavePath(it.toString())
+        }
+    }
+    val audioDirLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocumentTree()
+    ) { uri: Uri? ->
+        uri?.let {
+            context.contentResolver.takePersistableUriPermission(
+                it, android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION or android.content.Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+            )
+            viewModel.setAudioSavePath(it.toString())
         }
     }
 
@@ -117,24 +149,34 @@ fun SettingsScreen(
 
         // ========== 保存路径 ==========
         SectionHeader(title = "保存路径")
-        GlassCard(onClick = { dirPickerLauncher.launch(null) }) {
-            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Outlined.Folder, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
-                Spacer(Modifier.width(14.dp))
-                Column(Modifier.weight(1f)) {
-                    Text("自定义下载目录", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
-                    Text(
-                        uiState.savePath.ifEmpty { "视频/图片/音乐 分目录存储" },
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                Icon(Icons.Filled.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f))
+        GlassCard(modifier = Modifier.fillMaxWidth()) {
+            Column {
+                PathRow(
+                    icon = Icons.Filled.Videocam,
+                    label = "视频",
+                    path = uiState.videoSavePath.ifEmpty { "Movies/ClipFlow（默认）" },
+                    onCustomize = { videoDirLauncher.launch(null) },
+                    onReset = { viewModel.resetVideoSavePath() }
+                )
+                PathRow(
+                    icon = Icons.Filled.Image,
+                    label = "图片",
+                    path = uiState.imageSavePath.ifEmpty { "Pictures/ClipFlow（默认）" },
+                    onCustomize = { imageDirLauncher.launch(null) },
+                    onReset = { viewModel.resetImageSavePath() }
+                )
+                PathRow(
+                    icon = Icons.Filled.MusicNote,
+                    label = "音乐",
+                    path = uiState.audioSavePath.ifEmpty { "Music/ClipFlow（默认）" },
+                    onCustomize = { audioDirLauncher.launch(null) },
+                    onReset = { viewModel.resetAudioSavePath() }
+                )
             }
         }
         // 快速打开文件夹
         Row(
-            modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+            modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             val ctx = LocalContext.current
@@ -310,19 +352,44 @@ fun SettingsScreen(
             }
         }
         TextButton(
-                        onClick = {
-                            viewModel.resetTutorial()
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
-                    ) {
-                        Text("重置新手教程", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f))
-                    }
-                    Spacer(Modifier.height(20.dp))
+            onClick = { viewModel.resetTutorial() },
+            modifier = Modifier.fillMaxWidth(),
+            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
+        ) {
+            Text("重置新手教程", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f))
+        }
+        Spacer(Modifier.height(20.dp))
     }
 }
 
 @Composable
 fun SectionHeader(title: String) {
     Text(title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(top = 4.dp))
+}
+
+@Composable
+private fun PathRow(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    path: String,
+    onCustomize: () -> Unit,
+    onReset: () -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(icon, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+        Spacer(Modifier.width(10.dp))
+        Column(Modifier.weight(1f)) {
+            Text(label, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
+            Text(path, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        TextButton(onClick = onCustomize, contentPadding = PaddingValues(horizontal = 6.dp)) {
+            Text("自定义", style = MaterialTheme.typography.labelSmall)
+        }
+        TextButton(onClick = onReset, contentPadding = PaddingValues(horizontal = 6.dp)) {
+            Text("默认", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error)
+        }
+    }
 }

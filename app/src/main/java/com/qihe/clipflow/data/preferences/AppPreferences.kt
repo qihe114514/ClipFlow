@@ -14,6 +14,9 @@ class AppPreferences(private val context: Context) {
     companion object {
         // 保存路径
         val KEY_SAVE_PATH = stringPreferencesKey("save_path")
+        val KEY_VIDEO_SAVE_PATH = stringPreferencesKey("video_save_path")
+        val KEY_IMAGE_SAVE_PATH = stringPreferencesKey("image_save_path")
+        val KEY_AUDIO_SAVE_PATH = stringPreferencesKey("audio_save_path")
 
         // 默认打开页面: home / douyin / xiaohongshu
         val KEY_DEFAULT_PAGE = stringPreferencesKey("default_page")
@@ -43,8 +46,19 @@ class AppPreferences(private val context: Context) {
         val KEY_TUTORIAL_SHOWN = booleanPreferencesKey("tutorial_shown")
     }
 
+    val videoSavePath: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[KEY_VIDEO_SAVE_PATH] ?: ""
+    }
     val savePath: Flow<String> = context.dataStore.data.map { prefs ->
         prefs[KEY_SAVE_PATH] ?: ""
+    }
+
+    val imageSavePath: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[KEY_IMAGE_SAVE_PATH] ?: ""
+    }
+
+    val audioSavePath: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[KEY_AUDIO_SAVE_PATH] ?: ""
     }
 
     val defaultPage: Flow<String> = context.dataStore.data.map { prefs ->
@@ -97,6 +111,24 @@ class AppPreferences(private val context: Context) {
     suspend fun setSavePath(path: String) {
         context.dataStore.edit { prefs ->
             prefs[KEY_SAVE_PATH] = path
+        }
+    }
+
+    suspend fun setVideoSavePath(path: String) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_VIDEO_SAVE_PATH] = path
+        }
+    }
+
+    suspend fun setImageSavePath(path: String) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_IMAGE_SAVE_PATH] = path
+        }
+    }
+
+    suspend fun setAudioSavePath(path: String) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_AUDIO_SAVE_PATH] = path
         }
     }
 

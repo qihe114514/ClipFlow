@@ -277,9 +277,12 @@ fun DownloadProgressDialog(
                     if (state.isComplete) {
                         val ctx = LocalContext.current
                         TextButton(onClick = {
-                            val intent = android.content.Intent(android.content.Intent.ACTION_MAIN).apply {
-                                type = "image/*"
-                                addCategory(android.content.Intent.CATEGORY_APP_GALLERY)
+                            val intent = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
+                                setDataAndType(
+                                    android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                                    "image/*"
+                                )
+                                addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
                             }
                             try { ctx.startActivity(intent) } catch (_: Exception) {}
                             onDismiss()
