@@ -1,5 +1,4 @@
-# Gson 泛型保护：R8 full mode 优化会破坏泛型，禁用优化但保留混淆
--dontoptimize
+# Gson 泛型保护
 -keepattributes Signature
 -keepattributes *Annotation*
 -keepattributes InnerClasses
@@ -17,6 +16,9 @@
 # 保护所有 API Model 不被混淆（Gson 反序列化依赖原名）
 -keep class com.qihe.clipflow.data.api.model.** { *; }
 -keep class com.qihe.clipflow.data.repository.ParseResult { *; }
+
+# Retrofit 接口保护（R8 会删泛型签名导致 Class cannot be cast to ParameterizedType）
+-keep,allowobfuscation interface com.qihe.clipflow.data.api.ApiService { *; }
 
 # Retrofit 保护
 -dontwarn retrofit2.**
