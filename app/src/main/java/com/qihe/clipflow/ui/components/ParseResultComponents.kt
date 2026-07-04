@@ -127,16 +127,39 @@ fun ParseInfoCard(
 
     // 视频播放弹窗
     if (showVideoPlayer && videoUrl.isNotEmpty()) {
-        try {
-            val intent = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
-                setDataAndType(android.net.Uri.parse(videoUrl), "video/*")
-                addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+        val player = remember {
+            androidx.media3.exoplayer.ExoPlayer.Builder(context).build().apply {
+                setMediaItem(androidx.media3.common.MediaItem.fromUri(android.net.Uri.parse(videoUrl)))
+                prepare()
+                playWhenReady = true
             }
-            context.startActivity(intent)
-        } catch (e: Exception) {
-            android.widget.Toast.makeText(context, "未找到可播放视频的应用", android.widget.Toast.LENGTH_SHORT).show()
         }
-        showVideoPlayer = false
+        // 页面隐藏时释放
+        DisposableEffect(Unit) {
+            onDispose { player.release() }
+        }
+        AlertDialog(
+            onDismissRequest = { showVideoPlayer = false; player.release() },
+            title = { Text("在线播放", style = MaterialTheme.typography.titleSmall) },
+            text = {
+                Box(
+                    modifier = Modifier.fillMaxWidth().height(280.dp)
+                ) {
+                    androidx.compose.ui.viewinterop.AndroidView(
+                        factory = { ctx ->
+                            androidx.media3.ui.PlayerView(ctx).apply {
+                                this.player = player
+                                useController = true
+                            }
+                        },
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showVideoPlayer = false; player.release() }) { Text("关闭") }
+            }
+        )
     }
 
     // 长按封面 → 保存确认弹窗

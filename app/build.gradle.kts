@@ -12,8 +12,8 @@ android {
         applicationId = "com.qihe.clipflow"
         minSdk = 31
         targetSdk = 36
-        versionCode = 21
-        versionName = "2.8.1"
+        versionCode = 22
+        versionName = "2.8.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -100,6 +100,11 @@ dependencies {
     implementation("com.squareup.retrofit2:converter-gson:2.9.0")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
+
+    // Media3 ExoPlayer (应用内视频播放)
+    implementation("androidx.media3:media3-exoplayer:1.3.1")
+    implementation("androidx.media3:media3-ui:1.3.1")
+    implementation("androidx.media3:media3-common:1.3.1")
 
     // Room
     implementation("androidx.room:room-runtime:2.6.1")

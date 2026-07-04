@@ -110,9 +110,19 @@ object MediaStoreHelper {
 
     private fun getMimeType(fileName: String): String {
         return when {
+            // 视频
+            fileName.endsWith(".mp4", ignoreCase = true) -> "video/mp4"
+            fileName.endsWith(".mov", ignoreCase = true) -> "video/quicktime"
+            fileName.endsWith(".mkv", ignoreCase = true) -> "video/x-matroska"
+            fileName.endsWith(".avi", ignoreCase = true) -> "video/x-msvideo"
+            fileName.endsWith(".webm", ignoreCase = true) -> "video/webm"
+            fileName.endsWith(".ts", ignoreCase = true) -> "video/mp2ts"
+            // 图片
             fileName.endsWith(".webp", ignoreCase = true) -> "image/webp"
             fileName.endsWith(".png", ignoreCase = true) -> "image/png"
             fileName.endsWith(".gif", ignoreCase = true) -> "image/gif"
+            fileName.endsWith(".jpg", ignoreCase = true) -> "image/jpeg"
+            fileName.endsWith(".jpeg", ignoreCase = true) -> "image/jpeg"
             else -> "image/jpeg"
         }
     }

@@ -157,7 +157,7 @@ class ParseRepository {
 
                 if (response.code != 200 || response.data == null || response.data.isJsonNull) {
                     return@withContext Result.failure(
-                        Exception(response.msg.ifEmpty { "解析失败" })
+                        Exception(response.msg.ifEmpty { "解析失败，服务器返回异常" })
                     )
                 }
 
@@ -167,7 +167,11 @@ class ParseRepository {
                     jsonElement.isJsonObject -> jsonElement.asJsonObject
                     jsonElement.isJsonArray && jsonElement.asJsonArray.size() > 0 ->
                         jsonElement.asJsonArray[0].asJsonObject
-                    else -> return@withContext Result.failure(Exception("未找到有效内容"))
+                    else -> {
+                        // 也尝试用 msg 字段提示
+                        val hint = response.msg.ifEmpty { "返回数据为空" }
+                        return@withContext Result.failure(Exception(hint))
+                    }
                 }
 
                 // 手动提取字段，兼容 author 为字符串或对象
@@ -279,11 +283,15 @@ class ParseRepository {
                         }
                     }
                     else -> {
-                        // 无 type 字段时，回退到通用逻辑：url / video / images
+                        // 无 type 字段时，回退到通用逻辑：url / video / images / photos
                         val url = jsonObj.get("url")?.asString
-                            ?: jsonObj.get("video")?.asString ?: ""
+                            ?: jsonObj.get("video")?.asString
+                            ?: jsonObj.get("video_url")?.asString
+                            ?: jsonObj.get("play_url")?.asString ?: ""
                         if (url.isNotEmpty()) {
                             val isVideo = url.endsWith(".mp4", ignoreCase = true)
+                                    || url.contains("/video/")
+                                    || url.contains("video")
                             items.add(ContentItem(
                                 id = "xhs_0",
                                 type = if (isVideo) ContentType.VIDEO else ContentType.IMAGE,
@@ -293,9 +301,10 @@ class ParseRepository {
                                 description = title
                             ))
                         }
-                        val imagesElement = jsonObj.get("images")
-                        if (imagesElement != null && imagesElement.isJsonArray) {
-                            imagesElement.asJsonArray.forEachIndexed { i, element ->
+                        // 尝试 images / photos 数组
+                        val imgElem = jsonObj.get("images") ?: jsonObj.get("photos")
+                        if (imgElem != null && imgElem.isJsonArray) {
+                            imgElem.asJsonArray.forEachIndexed { i, element ->
                                 element?.asString?.let { imageUrl ->
                                     if (imageUrl.isNotEmpty()) {
                                         items.add(ContentItem(

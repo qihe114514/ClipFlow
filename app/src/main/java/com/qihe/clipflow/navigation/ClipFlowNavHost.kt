@@ -47,6 +47,7 @@ import com.qihe.clipflow.ui.about.AboutScreen
 import com.qihe.clipflow.ui.xiaohongshu.XiaohongshuScreen
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import android.os.Build
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -59,18 +60,19 @@ fun ClipFlowNavHost() {
     val currentRoute = currentDestination?.route
 
     // ========== 隐私政策同意检查 ==========
+    var isPrivacyCheckReady by remember { mutableStateOf(false) }
     val privacyAgreed by produceState(initialValue = false) {
         prefs.privacyAgreed.collect { value = it }
     }
 
-    // 已同意则初始化友盟 SDK（首次同意 + 后续每次冷启动）
     LaunchedEffect(privacyAgreed) {
+        isPrivacyCheckReady = true
         if (privacyAgreed) {
             (context.applicationContext as ClipFlowApp).initUmengIfNeeded()
         }
     }
 
-    if (!privacyAgreed) {
+    if (!privacyAgreed && isPrivacyCheckReady) {
         val scope = rememberCoroutineScope()
         PrivacyConsentDialog(
             onAgree = {
@@ -84,24 +86,33 @@ fun ClipFlowNavHost() {
         )
     }
 
-    // ========== 存储权限申请（隐私同意后） ==========
+    // ========== 存储权限申请（隐私同意后，仅 Android 9 及以下）==========
     var storagePermissionRequested by remember { mutableStateOf(false) }
     var showStorageDialog by remember { mutableStateOf(false) }
+    val storagePermissionLauncher = rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        storagePermissionRequested = true
+        showStorageDialog = false
+    }
 
-    // 隐私同意后弹出存储权限弹窗
     LaunchedEffect(privacyAgreed) {
         if (privacyAgreed && !storagePermissionRequested) {
-            showStorageDialog = true
+            val needStorage = Build.VERSION.SDK_INT < Build.VERSION_CODES.Q
+                    && (context as? android.app.Activity)?.let { act ->
+                        androidx.core.content.ContextCompat.checkSelfPermission(
+                            act, android.Manifest.permission.WRITE_EXTERNAL_STORAGE
+                        ) != android.content.pm.PackageManager.PERMISSION_GRANTED
+                    } == true
+            if (needStorage) {
+                showStorageDialog = true
+            } else {
+                storagePermissionRequested = true
+            }
         }
     }
 
     if (showStorageDialog) {
-        val storagePermissionLauncher = rememberLauncherForActivityResult(
-            androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
-        ) { granted ->
-            storagePermissionRequested = true
-            showStorageDialog = false
-        }
         AlertDialog(
             onDismissRequest = {
                 showStorageDialog = false
@@ -111,7 +122,6 @@ fun ClipFlowNavHost() {
             text = { Text("ClipFlow 需要存储权限来保存下载的视频和图片到 Downloads/ClipFlow 目录。") },
             confirmButton = {
                 TextButton(onClick = {
-                    showStorageDialog = false
                     storagePermissionLauncher.launch(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
                 }) { Text("授权") }
             },
