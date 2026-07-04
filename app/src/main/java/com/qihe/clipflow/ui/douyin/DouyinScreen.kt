@@ -280,7 +280,7 @@ fun DownloadProgressDialog(
                             val intent = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
                                 setDataAndType(
                                     android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-                                    "image/*"
+                                    "*/*"
                                 )
                                 addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
                             }

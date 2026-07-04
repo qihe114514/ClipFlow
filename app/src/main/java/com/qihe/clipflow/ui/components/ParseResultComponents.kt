@@ -19,7 +19,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -131,23 +130,12 @@ fun ParseInfoCard(
     // 视频播放弹窗
     if (showVideoPlayer && videoUrl.isNotEmpty()) {
         var isFullscreen by remember { mutableStateOf(false) }
-        var isLandscapeVideo by remember { mutableStateOf(false) }
         val player = remember {
             androidx.media3.exoplayer.ExoPlayer.Builder(context).build().apply {
                 setMediaItem(androidx.media3.common.MediaItem.fromUri(android.net.Uri.parse(videoUrl)))
                 prepare()
                 playWhenReady = true
             }
-        }
-        // 监听视频尺寸，判断是否横屏视频
-        DisposableEffect(player) {
-            val listener = object : androidx.media3.common.Player.Listener {
-                override fun onVideoSizeChanged(videoSize: androidx.media3.common.VideoSize) {
-                    isLandscapeVideo = videoSize.width > videoSize.height
-                }
-            }
-            player.addListener(listener)
-            onDispose { player.removeListener(listener) }
         }
         // 页面隐藏时释放
         DisposableEffect(Unit) {
@@ -174,19 +162,10 @@ fun ParseInfoCard(
                             androidx.media3.ui.PlayerView(viewCtx).apply {
                                 this.player = player
                                 useController = true
+                                resizeMode = 2
                             }
                         },
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .graphicsLayer {
-                                if (isLandscapeVideo) {
-                                    rotationZ = 90f
-                                    scaleX = size.width / size.height.toFloat()
-                                    scaleY = size.height / size.width.toFloat()
-                                    translationX = (size.width - size.height) / 2f
-                                    translationY = (size.height - size.width) / 2f
-                                }
-                            }
+                        modifier = Modifier.fillMaxSize()
                     )
                     // 退出全屏按钮
                     IconButton(
