@@ -170,9 +170,22 @@ fun ParseInfoCard(
             }
         }
         DisposableEffect(Unit) { onDispose { fullscreenPlayer.release() } }
+        // 监听视频比例，横屏才旋转
+        var isLandscapeVideo by remember { mutableStateOf(false) }
+        DisposableEffect(fullscreenPlayer) {
+            val listener = object : androidx.media3.common.Player.Listener {
+                override fun onVideoSizeChanged(vs: androidx.media3.common.VideoSize) {
+                    isLandscapeVideo = vs.width > vs.height
+                }
+            }
+            fullscreenPlayer.addListener(listener)
+            onDispose { fullscreenPlayer.removeListener(listener) }
+        }
         val activity = context as? android.app.Activity
-        LaunchedEffect(Unit) {
-            activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+        LaunchedEffect(isLandscapeVideo) {
+            if (isLandscapeVideo) {
+                activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+            }
             activity?.window?.insetsController?.apply {
                 hide(android.view.WindowInsets.Type.statusBars() or android.view.WindowInsets.Type.navigationBars())
                 systemBarsBehavior = android.view.WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
