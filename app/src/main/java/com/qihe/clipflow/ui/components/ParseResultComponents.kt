@@ -20,7 +20,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -155,20 +155,31 @@ fun ParseInfoCard(
         }
         if (isFullscreen) {
             // 全屏沉浸式播放
+            // 隐藏状态栏
+            val activity = context as? android.app.Activity
+            SideEffect {
+                activity?.window?.insetsController?.apply {
+                    hide(android.view.WindowInsets.Type.statusBars() or android.view.WindowInsets.Type.navigationBars())
+                    systemBarsBehavior = android.view.WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+                }
+            }
             Dialog(
-                onDismissRequest = { isFullscreen = false },
+                onDismissRequest = {
+                    activity?.window?.insetsController?.show(android.view.WindowInsets.Type.statusBars() or android.view.WindowInsets.Type.navigationBars())
+                    isFullscreen = false
+                },
                 properties = DialogProperties(
                     usePlatformDefaultWidth = false,
                     dismissOnBackPress = true,
                     dismissOnClickOutside = false
                 )
             ) {
-                BoxWithConstraints(
+                Box(
                     modifier = Modifier
                         .fillMaxSize()
                         .background(Color.Black)
                 ) {
-                    val isWide = isLandscapeVideo
+                    val needRotate = isLandscapeVideo
                     androidx.compose.ui.viewinterop.AndroidView(
                         factory = { viewCtx ->
                             androidx.media3.ui.PlayerView(viewCtx).apply {
@@ -176,20 +187,23 @@ fun ParseInfoCard(
                                 useController = true
                             }
                         },
-                        modifier = if (isWide) {
-                            Modifier
-                                .size(
-                                    width = with(androidx.compose.ui.platform.LocalDensity.current) { constraints.maxHeight.toDp() },
-                                    height = with(androidx.compose.ui.platform.LocalDensity.current) { constraints.maxWidth.toDp() }
-                                )
-                                .rotate(90f)
-                        } else {
-                            Modifier.fillMaxSize()
-                        }
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .graphicsLayer {
+                                if (needRotate) {
+                                    rotationZ = 90f
+                                    val scale = size.height / size.width.toFloat()
+                                    scaleX = scale
+                                    scaleY = scale
+                                }
+                            }
                     )
                     // 退出全屏按钮
                     IconButton(
-                        onClick = { isFullscreen = false },
+                        onClick = {
+                            activity?.window?.insetsController?.show(android.view.WindowInsets.Type.statusBars() or android.view.WindowInsets.Type.navigationBars())
+                            isFullscreen = false
+                        },
                         modifier = Modifier
                             .align(Alignment.TopEnd)
                             .statusBarsPadding()
