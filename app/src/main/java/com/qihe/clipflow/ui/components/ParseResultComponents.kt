@@ -1,6 +1,9 @@
 package com.qihe.clipflow.ui.components
 
 import android.content.ContentValues
+import android.content.pm.ActivityInfo
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
@@ -139,35 +142,81 @@ fun ParseInfoCard(
         DisposableEffect(Unit) {
             onDispose { player.release() }
         }
-        AlertDialog(
-            onDismissRequest = { showVideoPlayer = false; player.release() },
-            title = { Text("在线播放", style = MaterialTheme.typography.titleSmall) },
-            text = {
+        if (isFullscreen) {
+            // 全屏沉浸式播放
+            Dialog(
+                onDismissRequest = { isFullscreen = false },
+                properties = DialogProperties(
+                    usePlatformDefaultWidth = false,
+                    dismissOnBackPress = true,
+                    dismissOnClickOutside = false
+                )
+            ) {
                 Box(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .then(if (isFullscreen) Modifier.fillMaxHeight(0.85f) else Modifier.height(280.dp))
+                        .fillMaxSize()
+                        .background(Color.Black)
                 ) {
                     androidx.compose.ui.viewinterop.AndroidView(
                         factory = { ctx ->
                             androidx.media3.ui.PlayerView(ctx).apply {
                                 this.player = player
                                 useController = true
+                                // 尝试锁定横屏
+                                (ctx as? android.app.Activity)?.requestedOrientation =
+                                    android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
                             }
                         },
                         modifier = Modifier.fillMaxSize()
                     )
-                }
-            },
-            confirmButton = {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    TextButton(onClick = { isFullscreen = !isFullscreen }) {
-                        Text(if (isFullscreen) "还原" else "全屏")
+                    // 退出全屏按钮
+                    IconButton(
+                        onClick = {
+                            (context as? android.app.Activity)?.requestedOrientation =
+                                android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+                            isFullscreen = false
+                        },
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .statusBarsPadding()
+                            .padding(8.dp)
+                    ) {
+                        Icon(
+                            Icons.Filled.Close,
+                            contentDescription = "退出全屏",
+                            tint = Color.White,
+                            modifier = Modifier.size(28.dp)
+                        )
                     }
-                    TextButton(onClick = { showVideoPlayer = false; player.release() }) { Text("关闭") }
                 }
             }
-        )
+        } else {
+            AlertDialog(
+                onDismissRequest = { showVideoPlayer = false; player.release() },
+                title = { Text("在线播放", style = MaterialTheme.typography.titleSmall) },
+                text = {
+                    Box(
+                        modifier = Modifier.fillMaxWidth().height(280.dp)
+                    ) {
+                        androidx.compose.ui.viewinterop.AndroidView(
+                            factory = { ctx ->
+                                androidx.media3.ui.PlayerView(ctx).apply {
+                                    this.player = player
+                                    useController = true
+                                }
+                            },
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
+                },
+                confirmButton = {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        TextButton(onClick = { isFullscreen = true }) { Text("全屏") }
+                        TextButton(onClick = { showVideoPlayer = false; player.release() }) { Text("关闭") }
+                    }
+                }
+            )
+        }
     }
 
     // 长按封面 → 保存确认弹窗

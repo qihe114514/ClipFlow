@@ -124,18 +124,10 @@ class XiaohongshuViewModel(application: Application) : AndroidViewModel(applicat
                     val states = _uiState.value.downloadStates.toMutableMap()
                     states[item.id] = state
                     _uiState.value = _uiState.value.copy(downloadStates = states)
-
-                    if (state.isComplete) {
-                        _uiState.value = _uiState.value.copy(
-                            showDownloadDialog = false,
-                            downloadingItemId = null
-                        )
-                    }
                 }
             }
 
             downloadManager.download(item.url, fileName) { tempFile ->
-                val isVideo = item.type.name.contains("VIDEO")
                 MediaStoreHelper.saveToGallery(app, tempFile, item.type)
             }
         }

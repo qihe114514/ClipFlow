@@ -143,13 +143,6 @@ class DouyinViewModel(application: Application) : AndroidViewModel(application) 
                     if (_uiState.value.isBackgroundDownload) {
                         DownloadPillState.update(state.progress, state.speedText)
                     }
-
-                    if (state.isComplete) {
-                        _uiState.value = _uiState.value.copy(
-                            showDownloadDialog = false,
-                            downloadingItemId = null
-                        )
-                    }
                 }
             }
 

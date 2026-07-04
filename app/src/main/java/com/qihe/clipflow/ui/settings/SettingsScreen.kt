@@ -124,7 +124,7 @@ fun SettingsScreen(
                 Column(Modifier.weight(1f)) {
                     Text("自定义下载目录", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
                     Text(
-                        uiState.savePath.ifEmpty { "系统默认：视频→Movies/ClipFlow  图片→Pictures/ClipFlow  音乐→Music/ClipFlow" },
+                        uiState.savePath.ifEmpty { "视频/图片/音乐 分目录存储" },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -133,20 +133,20 @@ fun SettingsScreen(
             }
         }
         // 快速打开文件夹
-        Spacer(Modifier.height(6.dp))
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             val ctx = LocalContext.current
             OutlinedButton(
                 onClick = {
                     try {
+                        val uri = android.provider.DocumentsContract.buildTreeDocumentUri(
+                            "com.android.externalstorage.documents",
+                            "primary:Movies/ClipFlow"
+                        )
                         val intent = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
-                            setDataAndType(
-                                android.provider.MediaStore.Video.Media.EXTERNAL_CONTENT_URI,
-                                "video/*"
-                            )
+                            setDataAndType(uri, android.provider.DocumentsContract.Document.MIME_TYPE_DIR)
                             addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
                         }
                         ctx.startActivity(intent)
@@ -161,11 +161,12 @@ fun SettingsScreen(
             OutlinedButton(
                 onClick = {
                     try {
+                        val uri = android.provider.DocumentsContract.buildTreeDocumentUri(
+                            "com.android.externalstorage.documents",
+                            "primary:Pictures/ClipFlow"
+                        )
                         val intent = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
-                            setDataAndType(
-                                android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-                                "image/*"
-                            )
+                            setDataAndType(uri, android.provider.DocumentsContract.Document.MIME_TYPE_DIR)
                             addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
                         }
                         ctx.startActivity(intent)
@@ -180,11 +181,12 @@ fun SettingsScreen(
             OutlinedButton(
                 onClick = {
                     try {
+                        val uri = android.provider.DocumentsContract.buildTreeDocumentUri(
+                            "com.android.externalstorage.documents",
+                            "primary:Music/ClipFlow"
+                        )
                         val intent = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
-                            setDataAndType(
-                                android.provider.MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
-                                "audio/*"
-                            )
+                            setDataAndType(uri, android.provider.DocumentsContract.Document.MIME_TYPE_DIR)
                             addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
                         }
                         ctx.startActivity(intent)
