@@ -86,53 +86,6 @@ fun ClipFlowNavHost() {
         )
     }
 
-    // ========== 存储权限申请（隐私同意后，仅 Android 9 及以下）==========
-    var storagePermissionRequested by remember { mutableStateOf(false) }
-    var showStorageDialog by remember { mutableStateOf(false) }
-    val storagePermissionLauncher = rememberLauncherForActivityResult(
-        androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
-    ) { granted ->
-        storagePermissionRequested = true
-        showStorageDialog = false
-    }
-
-    LaunchedEffect(privacyAgreed) {
-        if (privacyAgreed && !storagePermissionRequested) {
-            val needStorage = Build.VERSION.SDK_INT < Build.VERSION_CODES.Q
-                    && (context as? android.app.Activity)?.let { act ->
-                        androidx.core.content.ContextCompat.checkSelfPermission(
-                            act, android.Manifest.permission.WRITE_EXTERNAL_STORAGE
-                        ) != android.content.pm.PackageManager.PERMISSION_GRANTED
-                    } == true
-            if (needStorage) {
-                showStorageDialog = true
-            } else {
-                storagePermissionRequested = true
-            }
-        }
-    }
-
-    if (showStorageDialog) {
-        AlertDialog(
-            onDismissRequest = {
-                showStorageDialog = false
-                storagePermissionRequested = true
-            },
-            title = { Text("存储权限申请") },
-            text = { Text("ClipFlow 需要存储权限来保存下载的视频和图片到 Downloads/ClipFlow 目录。") },
-            confirmButton = {
-                TextButton(onClick = {
-                    storagePermissionLauncher.launch(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                }) { Text("授权") }
-            },
-            dismissButton = {
-                TextButton(onClick = {
-                    showStorageDialog = false
-                    storagePermissionRequested = true
-                }) { Text("跳过") }
-            }
-        )
-    }
 
     // ========== 更新检测 ==========
     // var updateInfo by remember { mutableStateOf<UpdateManager.UpdateInfo?>(null) }

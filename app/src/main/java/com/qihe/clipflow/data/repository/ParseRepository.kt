@@ -154,22 +154,24 @@ class ParseRepository {
         return withContext(Dispatchers.IO) {
             try {
                 val response = api.parseXiaohongshu(url)
+                android.util.Log.e("ParseRepo", "XHS code=${response.code} msg=${response.msg} dataType=${response.data?.javaClass?.simpleName}")
 
-                if (response.code != 200 || response.data == null || response.data.isJsonNull) {
+                if ((response.code != 200 && response.code != 0) || response.data == null || response.data.isJsonNull) {
+                    val detail = if (response.msg.isNotEmpty()) "(${response.msg})" else "(code=${response.code})"
                     return@withContext Result.failure(
-                        Exception(response.msg.ifEmpty { "解析失败，服务器返回异常" })
+                        Exception("解析失败${detail}，请确认链接是否有效")
                     )
                 }
 
                 // data 可能是对象或数组
                 val jsonElement = response.data!!
+                android.util.Log.e("ParseRepo", "XHS data isArray=${jsonElement.isJsonArray} isObj=${jsonElement.isJsonObject} size=${if (jsonElement.isJsonArray) jsonElement.asJsonArray.size() else -1}")
                 val jsonObj = when {
                     jsonElement.isJsonObject -> jsonElement.asJsonObject
                     jsonElement.isJsonArray && jsonElement.asJsonArray.size() > 0 ->
                         jsonElement.asJsonArray[0].asJsonObject
                     else -> {
-                        // 也尝试用 msg 字段提示
-                        val hint = response.msg.ifEmpty { "返回数据为空" }
+                        val hint = if (response.msg.isNotEmpty()) response.msg else "返回数据为空"
                         return@withContext Result.failure(Exception(hint))
                     }
                 }

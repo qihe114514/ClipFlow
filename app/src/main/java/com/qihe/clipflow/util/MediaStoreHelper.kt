@@ -39,14 +39,14 @@ object MediaStoreHelper {
                 put(MediaStore.Video.Media.MIME_TYPE, getMimeType(sourceFile.name))
                 put(
                     MediaStore.Video.Media.RELATIVE_PATH,
-                    "${Environment.DIRECTORY_DOWNLOADS}/ClipFlow"
+                    "${Environment.DIRECTORY_MOVIES}/ClipFlow"
                 )
             } else {
                 put(MediaStore.Images.Media.DISPLAY_NAME, sourceFile.name)
                 put(MediaStore.Images.Media.MIME_TYPE, getMimeType(sourceFile.name))
                 put(
                     MediaStore.Images.Media.RELATIVE_PATH,
-                    "${Environment.DIRECTORY_DOWNLOADS}/ClipFlow"
+                    "${Environment.DIRECTORY_PICTURES}/ClipFlow"
                 )
             }
             put(MediaStore.MediaColumns.IS_PENDING, 1)
@@ -84,7 +84,7 @@ object MediaStoreHelper {
         sourceFile: File,
         isVideo: Boolean
     ): Uri? {
-        val dirType = Environment.DIRECTORY_DOWNLOADS
+        val dirType = if (isVideo) Environment.DIRECTORY_MOVIES else Environment.DIRECTORY_PICTURES
 
         val dir = File(
             Environment.getExternalStoragePublicDirectory(dirType),
