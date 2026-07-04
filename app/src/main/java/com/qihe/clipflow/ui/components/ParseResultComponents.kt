@@ -1,6 +1,7 @@
 package com.qihe.clipflow.ui.components
 
 import android.content.ContentValues
+import android.content.pm.ActivityInfo
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import android.os.Build
@@ -20,7 +21,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -131,7 +131,6 @@ fun ParseInfoCard(
     // 视频播放弹窗
     if (showVideoPlayer && videoUrl.isNotEmpty()) {
         var isFullscreen by remember { mutableStateOf(false) }
-        var isLandscapeVideo by remember { mutableStateOf(false) }
         val player = remember {
             androidx.media3.exoplayer.ExoPlayer.Builder(context).build().apply {
                 setMediaItem(androidx.media3.common.MediaItem.fromUri(android.net.Uri.parse(videoUrl)))
@@ -139,25 +138,15 @@ fun ParseInfoCard(
                 playWhenReady = true
             }
         }
-        // 监听视频尺寸
-        DisposableEffect(player) {
-            val listener = object : androidx.media3.common.Player.Listener {
-                override fun onVideoSizeChanged(vs: androidx.media3.common.VideoSize) {
-                    isLandscapeVideo = vs.width > vs.height
-                }
-            }
-            player.addListener(listener)
-            onDispose { player.removeListener(listener) }
-        }
         // 页面隐藏时释放
         DisposableEffect(Unit) {
             onDispose { player.release() }
         }
         if (isFullscreen) {
             // 全屏沉浸式播放
-            // 隐藏状态栏
             val activity = context as? android.app.Activity
             SideEffect {
+                activity?.requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
                 activity?.window?.insetsController?.apply {
                     hide(android.view.WindowInsets.Type.statusBars() or android.view.WindowInsets.Type.navigationBars())
                     systemBarsBehavior = android.view.WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
@@ -165,6 +154,7 @@ fun ParseInfoCard(
             }
             Dialog(
                 onDismissRequest = {
+                    activity?.requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
                     activity?.window?.insetsController?.show(android.view.WindowInsets.Type.statusBars() or android.view.WindowInsets.Type.navigationBars())
                     isFullscreen = false
                 },
@@ -179,7 +169,6 @@ fun ParseInfoCard(
                         .fillMaxSize()
                         .background(Color.Black)
                 ) {
-                    val needRotate = isLandscapeVideo
                     androidx.compose.ui.viewinterop.AndroidView(
                         factory = { viewCtx ->
                             androidx.media3.ui.PlayerView(viewCtx).apply {
@@ -187,20 +176,12 @@ fun ParseInfoCard(
                                 useController = true
                             }
                         },
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .graphicsLayer {
-                                if (needRotate) {
-                                    rotationZ = 90f
-                                    val scale = size.height / size.width.toFloat()
-                                    scaleX = scale
-                                    scaleY = scale
-                                }
-                            }
+                        modifier = Modifier.fillMaxSize()
                     )
                     // 退出全屏按钮
                     IconButton(
                         onClick = {
+                            activity?.requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
                             activity?.window?.insetsController?.show(android.view.WindowInsets.Type.statusBars() or android.view.WindowInsets.Type.navigationBars())
                             isFullscreen = false
                         },
