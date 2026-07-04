@@ -21,6 +21,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import coil.request.ImageRequest
 import com.qihe.clipflow.data.api.model.ContentItem
 import com.qihe.clipflow.data.api.model.ContentType
@@ -161,7 +163,8 @@ fun DouyinScreen(viewModel: DouyinViewModel = viewModel(viewModelStoreOwner = Lo
                         authorAvatar = uiState.authorAvatar,
                         contentType = uiState.contentType,
                         shareUrl = uiState.shareUrl,
-                        stats = uiState.stats
+                        stats = uiState.stats,
+                        videoUrl = uiState.parseResult?.firstOrNull { it.type == com.qihe.clipflow.data.api.model.ContentType.VIDEO }?.url ?: ""
                     )
                 }
                 // 下载卡片
@@ -188,6 +191,31 @@ fun DouyinScreen(viewModel: DouyinViewModel = viewModel(viewModelStoreOwner = Lo
                 state = downloadState,
                 onDismiss = { viewModel.dismissDownloadDialog() },
                 onBackground = { viewModel.dismissDownloadDialog(background = true) }
+            )
+        }
+
+        // ========== 新手教程 ==========
+        val context = LocalContext.current
+        val prefs = remember { com.qihe.clipflow.data.preferences.AppPreferences(context) }
+        val scope = rememberCoroutineScope()
+        val tutorialShown by produceState(initialValue = true) {
+            prefs.tutorialShown.collect { value = it }
+        }
+        var showTutorial by remember { mutableStateOf(false) }
+
+        LaunchedEffect(uiState.parseResult) {
+            if (uiState.parseResult != null && !tutorialShown) {
+                delay(600)
+                showTutorial = true
+            }
+        }
+
+        if (showTutorial) {
+            TutorialOverlay(
+                onDismiss = {
+                    showTutorial = false
+                    scope.launch { prefs.setTutorialShown(true) }
+                }
             )
         }
     }

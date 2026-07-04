@@ -29,6 +29,7 @@ data class DouyinUiState(
     val shareUrl: String = "",
     val stats: com.qihe.clipflow.data.api.model.DouyinStatistics? = null,
     val videoBackups: List<com.qihe.clipflow.data.api.model.VideoBackupItem> = emptyList(),
+    val videoUrl: String = "",
     val isBackgroundDownload: Boolean = false,
     val error: String? = null,
     val downloadStates: Map<String, DownloadState> = emptyMap(),
@@ -93,7 +94,8 @@ class DouyinViewModel(application: Application) : AndroidViewModel(application) 
                         contentType = result.contentType,
                         shareUrl = result.shareUrl,
                         stats = result.stats,
-                        videoBackups = result.videoBackups
+                        videoBackups = result.videoBackups,
+                        videoUrl = result.items.firstOrNull()?.url ?: ""
                     )
                     saveHistory(url, result)
                 },

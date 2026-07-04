@@ -1,6 +1,7 @@
 package com.qihe.clipflow.navigation
 
 import androidx.compose.animation.*
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -79,6 +80,46 @@ fun ClipFlowNavHost() {
             },
             onDisagree = {
                 (context as? android.app.Activity)?.finishAffinity()
+            }
+        )
+    }
+
+    // ========== 存储权限申请（隐私同意后） ==========
+    var storagePermissionRequested by remember { mutableStateOf(false) }
+    var showStorageDialog by remember { mutableStateOf(false) }
+
+    // 隐私同意后弹出存储权限弹窗
+    LaunchedEffect(privacyAgreed) {
+        if (privacyAgreed && !storagePermissionRequested) {
+            showStorageDialog = true
+        }
+    }
+
+    if (showStorageDialog) {
+        val storagePermissionLauncher = rememberLauncherForActivityResult(
+            androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
+        ) { granted ->
+            storagePermissionRequested = true
+            showStorageDialog = false
+        }
+        AlertDialog(
+            onDismissRequest = {
+                showStorageDialog = false
+                storagePermissionRequested = true
+            },
+            title = { Text("存储权限申请") },
+            text = { Text("ClipFlow 需要存储权限来保存下载的视频和图片到 Downloads/ClipFlow 目录。") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showStorageDialog = false
+                    storagePermissionLauncher.launch(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                }) { Text("授权") }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    showStorageDialog = false
+                    storagePermissionRequested = true
+                }) { Text("跳过") }
             }
         )
     }

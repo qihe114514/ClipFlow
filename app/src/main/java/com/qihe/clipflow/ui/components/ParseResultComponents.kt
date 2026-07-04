@@ -40,6 +40,69 @@ import okhttp3.Request
 import java.io.File
 import java.io.FileOutputStream
 import java.util.concurrent.TimeUnit
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.graphics.Color
+
+// ==================== 新手教程引导遮罩 ====================
+
+@Composable
+fun TutorialOverlay(
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val infiniteTransition = rememberInfiniteTransition(label = "arrow")
+    val arrowOffset by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 20f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(600, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "arrow_bounce"
+    )
+
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.7f))
+            .clickable { onDismiss() }
+    ) {
+        Column(
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .padding(top = 160.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = "↓",
+                fontSize = 40.sp,
+                color = Color.White,
+                modifier = Modifier.offset(y = arrowOffset.dp)
+            )
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text = "点击封面在线播放",
+                color = Color.White,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(Modifier.height(6.dp))
+            Text(
+                text = "长按封面保存到相册",
+                color = Color.White.copy(alpha = 0.8f),
+                fontSize = 14.sp
+            )
+            Spacer(Modifier.height(120.dp))
+            Text(
+                text = "点任意位置关闭",
+                color = Color.White.copy(alpha = 0.4f),
+                fontSize = 12.sp
+            )
+        }
+    }
+}
 
 // ==================== 信息卡片（抖音 + 小红书通用） ====================
 
@@ -54,11 +117,44 @@ fun ParseInfoCard(
     contentType: String,
     shareUrl: String = "",
     stats: DouyinStatistics? = null,
+    videoUrl: String = "",
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
     var showSaveDialog by remember { mutableStateOf(false) }
+    var showVideoPlayer by remember { mutableStateOf(false) }
     var isExpanded by remember { mutableStateOf(false) }
+
+    // 视频播放弹窗
+    if (showVideoPlayer && videoUrl.isNotEmpty()) {
+        AlertDialog(
+            onDismissRequest = { showVideoPlayer = false },
+            title = { Text("在线播放", style = MaterialTheme.typography.titleSmall) },
+            text = {
+                Box(
+                    modifier = Modifier.fillMaxWidth().height(280.dp)
+                ) {
+                    androidx.compose.ui.viewinterop.AndroidView(
+                        factory = { ctx ->
+                            android.widget.VideoView(ctx).also { vv ->
+                                vv.setVideoPath(videoUrl)
+                                vv.setOnPreparedListener { it.start() }
+                                vv.setOnErrorListener { _, _, _ ->
+                                    showVideoPlayer = false
+                                    android.widget.Toast.makeText(context, "播放失败", android.widget.Toast.LENGTH_SHORT).show()
+                                    true
+                                }
+                            }
+                        },
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showVideoPlayer = false }) { Text("关闭") }
+            }
+        )
+    }
 
     // 长按封面 → 保存确认弹窗
     if (showSaveDialog) {
@@ -96,7 +192,7 @@ fun ParseInfoCard(
                         .height(200.dp)
                         .clip(RoundedCornerShape(12.dp))
                         .combinedClickable(
-                            onClick = {},
+                            onClick = { if (videoUrl.isNotEmpty()) showVideoPlayer = true },
                             onLongClick = { showSaveDialog = true }
                         ),
                     contentScale = ContentScale.Crop
@@ -115,24 +211,34 @@ fun ParseInfoCard(
             // 笔记内容（desc），超过 2 行折叠
             if (desc.isNotEmpty()) {
                 Spacer(Modifier.height(6.dp))
-                Text(
-                    text = desc,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = if (isExpanded) Int.MAX_VALUE else 2,
-                    overflow = TextOverflow.Ellipsis
-                )
-                // "展开/收起" 按钮
-                TextButton(
-                    onClick = { isExpanded = !isExpanded },
-                    modifier = Modifier.align(Alignment.End),
-                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
-                ) {
+                var isOverflowed by remember { mutableStateOf(false) }
+                Row(verticalAlignment = Alignment.Top) {
                     Text(
-                        text = if (isExpanded) "收起" else "展开",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.primary
+                        text = desc,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = if (isExpanded) Int.MAX_VALUE else 2,
+                        overflow = TextOverflow.Ellipsis,
+                        onTextLayout = { result ->
+                            if (!isExpanded && result.hasVisualOverflow) {
+                                isOverflowed = true
+                            }
+                        },
+                        modifier = Modifier.weight(1f)
                     )
+                    if (isOverflowed || isExpanded) {
+                        TextButton(
+                            onClick = { isExpanded = !isExpanded },
+                            modifier = Modifier.widthIn(min = 48.dp),
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
+                        ) {
+                            Text(
+                                text = if (isExpanded) "收起" else "展开",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
                 }
             }
 

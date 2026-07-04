@@ -66,6 +66,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun setWallpaperEnabled(e: Boolean) { viewModelScope.launch { prefs.setWallpaperEnabled(e) } }
     fun setDefaultPage(page: String) { viewModelScope.launch { prefs.setDefaultPage(page) } }
     fun setBottomBarOrder(order: List<String>) { viewModelScope.launch { prefs.setBottomBarOrder(order) } }
+    fun resetTutorial() { viewModelScope.launch { prefs.setTutorialShown(false) } }
 }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
@@ -241,7 +242,16 @@ fun SettingsScreen(
                 Icon(Icons.Filled.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f))
             }
         }
-        Spacer(Modifier.height(20.dp))
+        TextButton(
+                        onClick = {
+                            viewModel.resetTutorial()
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
+                    ) {
+                        Text("重置新手教程", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f))
+                    }
+                    Spacer(Modifier.height(20.dp))
     }
 }
 

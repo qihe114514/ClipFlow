@@ -38,6 +38,9 @@ class AppPreferences(private val context: Context) {
 
         // 用户是否已同意隐私政策
         val KEY_PRIVACY_AGREED = booleanPreferencesKey("privacy_agreed")
+
+        // 新手教程是否已展示
+        val KEY_TUTORIAL_SHOWN = booleanPreferencesKey("tutorial_shown")
     }
 
     val savePath: Flow<String> = context.dataStore.data.map { prefs ->
@@ -83,6 +86,10 @@ class AppPreferences(private val context: Context) {
 
     val privacyAgreed: Flow<Boolean> = context.dataStore.data.map { prefs ->
         prefs[KEY_PRIVACY_AGREED] ?: false
+    }
+
+    val tutorialShown: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[KEY_TUTORIAL_SHOWN] ?: false
     }
 
     // ========== Setters ==========
@@ -139,6 +146,12 @@ class AppPreferences(private val context: Context) {
     suspend fun setPrivacyAgreed(agreed: Boolean) {
         context.dataStore.edit { prefs ->
             prefs[KEY_PRIVACY_AGREED] = agreed
+        }
+    }
+
+    suspend fun setTutorialShown(shown: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_TUTORIAL_SHOWN] = shown
         }
     }
 }

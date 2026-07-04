@@ -159,6 +159,7 @@ fun AboutScreen(navController: NavHostController) {
                     icon = Icons.Filled.SmartDisplay,
                     label = "B站主页",
                     url = "https://space.bilibili.com/1049283248",
+                    appUri = "tv.danmaku.bili://space/1049283248",
                     context = context
                 )
                 Spacer(Modifier.height(10.dp))
@@ -167,6 +168,7 @@ fun AboutScreen(navController: NavHostController) {
                     icon = Icons.Filled.MusicNote,
                     label = "抖音主页",
                     url = "https://www.douyin.com/user/MS4wLjABAAAAuUtKOArTFKTBm4C6o5MwDQuGMNZ9-0CWZfUay6U9wUI",
+                    appUri = "snssdk1128://user/profile/MS4wLjABAAAAuUtKOArTFKTBm4C6o5MwDQuGMNZ9-0CWZfUay6U9wUI",
                     context = context
                 )
                 Spacer(Modifier.height(10.dp))
@@ -504,7 +506,8 @@ private fun LinkRow(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     label: String,
     url: String,
-    context: android.content.Context
+    context: android.content.Context,
+    appUri: String? = null
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -525,6 +528,13 @@ private fun LinkRow(
         )
         FilledTonalIconButton(
             onClick = {
+                if (appUri != null) {
+                    try {
+                        val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, Uri.parse(appUri!!))
+                        context.startActivity(intent)
+                        return@FilledTonalIconButton
+                    } catch (_: Exception) { }
+                }
                 try {
                     CustomTabsIntent.Builder()
                         .setShowTitle(true)
