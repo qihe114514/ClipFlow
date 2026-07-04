@@ -20,6 +20,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -130,6 +131,7 @@ fun ParseInfoCard(
     // 视频播放弹窗
     if (showVideoPlayer && videoUrl.isNotEmpty()) {
         var isFullscreen by remember { mutableStateOf(false) }
+        var isLandscapeVideo by remember { mutableStateOf(false) }
         val player = remember {
             androidx.media3.exoplayer.ExoPlayer.Builder(context).build().apply {
                 setMediaItem(androidx.media3.common.MediaItem.fromUri(android.net.Uri.parse(videoUrl)))
@@ -137,13 +139,22 @@ fun ParseInfoCard(
                 playWhenReady = true
             }
         }
+        // 监听视频尺寸
+        DisposableEffect(player) {
+            val listener = object : androidx.media3.common.Player.Listener {
+                override fun onVideoSizeChanged(vs: androidx.media3.common.VideoSize) {
+                    isLandscapeVideo = vs.width > vs.height
+                }
+            }
+            player.addListener(listener)
+            onDispose { player.removeListener(listener) }
+        }
         // 页面隐藏时释放
         DisposableEffect(Unit) {
             onDispose { player.release() }
         }
         if (isFullscreen) {
             // 全屏沉浸式播放
-            
             Dialog(
                 onDismissRequest = { isFullscreen = false },
                 properties = DialogProperties(
@@ -152,20 +163,29 @@ fun ParseInfoCard(
                     dismissOnClickOutside = false
                 )
             ) {
-                Box(
+                BoxWithConstraints(
                     modifier = Modifier
                         .fillMaxSize()
                         .background(Color.Black)
                 ) {
+                    val isWide = isLandscapeVideo
                     androidx.compose.ui.viewinterop.AndroidView(
                         factory = { viewCtx ->
                             androidx.media3.ui.PlayerView(viewCtx).apply {
                                 this.player = player
                                 useController = true
-                                resizeMode = 2
                             }
                         },
-                        modifier = Modifier.fillMaxSize()
+                        modifier = if (isWide) {
+                            Modifier
+                                .size(
+                                    width = with(androidx.compose.ui.platform.LocalDensity.current) { constraints.maxHeight.toDp() },
+                                    height = with(androidx.compose.ui.platform.LocalDensity.current) { constraints.maxWidth.toDp() }
+                                )
+                                .rotate(90f)
+                        } else {
+                            Modifier.fillMaxSize()
+                        }
                     )
                     // 退出全屏按钮
                     IconButton(

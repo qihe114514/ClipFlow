@@ -277,17 +277,31 @@ fun DownloadProgressDialog(
                     if (state.isComplete) {
                         val ctx = LocalContext.current
                         TextButton(onClick = {
-                            val intent = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
-                                setDataAndType(
-                                    android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-                                    "*/*"
-                                )
-                                addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                            val savedUri = state.savedMediaUri
+                            if (savedUri != null) {
+                                // 直接打开已保存的文件
+                                try {
+                                    val intent = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
+                                        setDataAndType(android.net.Uri.parse(savedUri), "*/*")
+                                        addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION or android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                                    }
+                                    ctx.startActivity(intent)
+                                } catch (_: Exception) {}
+                            } else {
+                                try {
+                                    val intent = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
+                                        setDataAndType(
+                                            android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                                            "*/*"
+                                        )
+                                        addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                                    }
+                                    ctx.startActivity(intent)
+                                } catch (_: Exception) {}
                             }
-                            try { ctx.startActivity(intent) } catch (_: Exception) {}
                             onDismiss()
                         }) {
-                            Text("打开相册")
+                            Text("打开")
                         }
                     }
                     TextButton(onClick = onDismiss) {

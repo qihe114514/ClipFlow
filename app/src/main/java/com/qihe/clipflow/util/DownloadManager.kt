@@ -26,7 +26,8 @@ data class DownloadState(
     val isComplete: Boolean = false,
     val error: String? = null,
     val totalBytes: Long = 0,
-    val downloadedBytes: Long = 0
+    val downloadedBytes: Long = 0,
+    val savedMediaUri: String? = null
 )
 
 class DownloadManager(private val context: Context) {

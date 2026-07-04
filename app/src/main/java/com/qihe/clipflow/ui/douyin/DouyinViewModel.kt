@@ -147,8 +147,12 @@ class DouyinViewModel(application: Application) : AndroidViewModel(application) 
             }
 
             downloadManager.download(item.url, fileName) { tempFile ->
-                MediaStoreHelper.saveToGallery(app, tempFile, item.type)
-                        item.type == com.qihe.clipflow.data.api.model.ContentType.LIVE_VIDEO
+                val uri = MediaStoreHelper.saveToGallery(app, tempFile, item.type)
+                if (uri != null) {
+                    val states = _uiState.value.downloadStates.toMutableMap()
+                    val s = _uiState.value.downloadStates[item.id]; if (s != null) states[item.id] = s.copy(savedMediaUri = uri.toString())
+                    _uiState.value = _uiState.value.copy(downloadStates = states)
+                }
             }
         }
     }
