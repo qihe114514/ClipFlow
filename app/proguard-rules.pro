@@ -20,6 +20,12 @@
 # Retrofit 接口保护（R8 会删泛型签名导致 Class cannot be cast to ParameterizedType）
 -keep,allowobfuscation interface com.qihe.clipflow.data.api.ApiService { *; }
 
+# Kotlin suspend + Retrofit：Continuation 泛型必须保留
+-keep class kotlin.coroutines.Continuation { *; }
+-dontwarn kotlin.Unit
+-dontwarn retrofit2.KotlinExtensions
+-dontwarn retrofit2.KotlinExtensions$*
+
 # Retrofit 保护
 -dontwarn retrofit2.**
 -keep class retrofit2.** { *; }
