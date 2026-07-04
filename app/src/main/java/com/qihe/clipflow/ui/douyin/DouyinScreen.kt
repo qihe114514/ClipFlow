@@ -42,6 +42,22 @@ fun DouyinScreen(viewModel: DouyinViewModel = viewModel(viewModelStoreOwner = Lo
         }
     }
 
+    // ========== 新手教程（函数级，不在 Box 内）==========
+    val context = LocalContext.current
+    val prefs = remember { com.qihe.clipflow.data.preferences.AppPreferences(context) }
+    val scope = rememberCoroutineScope()
+    val tutorialShown by produceState(initialValue = true) {
+        prefs.tutorialShown.collect { value = it }
+    }
+    var showTutorial by remember { mutableStateOf(false) }
+
+    LaunchedEffect(uiState.parseResult) {
+        if (uiState.parseResult != null && !tutorialShown) {
+            delay(600)
+            showTutorial = true
+        }
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
@@ -193,31 +209,15 @@ fun DouyinScreen(viewModel: DouyinViewModel = viewModel(viewModelStoreOwner = Lo
                 onBackground = { viewModel.dismissDownloadDialog(background = true) }
             )
         }
+    }
 
-        // ========== 新手教程 ==========
-        val context = LocalContext.current
-        val prefs = remember { com.qihe.clipflow.data.preferences.AppPreferences(context) }
-        val scope = rememberCoroutineScope()
-        val tutorialShown by produceState(initialValue = true) {
-            prefs.tutorialShown.collect { value = it }
-        }
-        var showTutorial by remember { mutableStateOf(false) }
-
-        LaunchedEffect(uiState.parseResult) {
-            if (uiState.parseResult != null && !tutorialShown) {
-                delay(600)
-                showTutorial = true
+    if (showTutorial) {
+        TutorialOverlay(
+            onDismiss = {
+                showTutorial = false
+                scope.launch { prefs.setTutorialShown(true) }
             }
-        }
-
-        if (showTutorial) {
-            TutorialOverlay(
-                onDismiss = {
-                    showTutorial = false
-                    scope.launch { prefs.setTutorialShown(true) }
-                }
-            )
-        }
+        )
     }
 }
 

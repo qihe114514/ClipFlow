@@ -175,6 +175,7 @@ class DouyinViewModel(application: Application) : AndroidViewModel(application) 
         if (background) {
             val state = _uiState.value.downloadStates[_uiState.value.downloadingItemId]
             if (state != null) {
+                DownloadPillState.sourceRoute = "douyin"
                 DownloadPillState.show(state.progress, state.speedText) { showDialogFromPill() }
             }
         } else {

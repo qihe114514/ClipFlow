@@ -158,7 +158,8 @@ fun XiaohongshuScreen(viewModel: XiaohongshuViewModel = viewModel(viewModelStore
                         desc = uiState.parseDesc,
                         authorName = uiState.authorName,
                         authorAvatar = uiState.authorAvatar,
-                        contentType = uiState.contentType
+                        contentType = uiState.contentType,
+                        videoUrl = uiState.parseResult?.firstOrNull { it.type == com.qihe.clipflow.data.api.model.ContentType.VIDEO }?.url ?: ""
                     )
                 }
                 // 下载卡片

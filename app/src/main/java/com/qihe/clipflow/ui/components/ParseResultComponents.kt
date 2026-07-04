@@ -127,33 +127,16 @@ fun ParseInfoCard(
 
     // 视频播放弹窗
     if (showVideoPlayer && videoUrl.isNotEmpty()) {
-        AlertDialog(
-            onDismissRequest = { showVideoPlayer = false },
-            title = { Text("在线播放", style = MaterialTheme.typography.titleSmall) },
-            text = {
-                Box(
-                    modifier = Modifier.fillMaxWidth().height(280.dp)
-                ) {
-                    androidx.compose.ui.viewinterop.AndroidView(
-                        factory = { ctx ->
-                            android.widget.VideoView(ctx).also { vv ->
-                                vv.setVideoPath(videoUrl)
-                                vv.setOnPreparedListener { it.start() }
-                                vv.setOnErrorListener { _, _, _ ->
-                                    showVideoPlayer = false
-                                    android.widget.Toast.makeText(context, "播放失败", android.widget.Toast.LENGTH_SHORT).show()
-                                    true
-                                }
-                            }
-                        },
-                        modifier = Modifier.fillMaxSize()
-                    )
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { showVideoPlayer = false }) { Text("关闭") }
+        try {
+            val intent = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
+                setDataAndType(android.net.Uri.parse(videoUrl), "video/*")
+                addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
             }
-        )
+            context.startActivity(intent)
+        } catch (e: Exception) {
+            android.widget.Toast.makeText(context, "未找到可播放视频的应用", android.widget.Toast.LENGTH_SHORT).show()
+        }
+        showVideoPlayer = false
     }
 
     // 长按封面 → 保存确认弹窗

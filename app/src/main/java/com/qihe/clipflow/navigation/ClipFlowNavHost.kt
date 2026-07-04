@@ -236,8 +236,22 @@ fun ClipFlowNavHost() {
                 progress = pillProgress,
                 speedText = pillSpeed,
                 visible = pillVisible,
-                onClick = { DownloadPillState.performClick() },
-                modifier = Modifier.align(Alignment.TopStart)
+                onClick = {
+                    val route = when (DownloadPillState.sourceRoute) {
+                        "xiaohongshu" -> Screen.Xiaohongshu.route
+                        else -> Screen.Douyin.route
+                    }
+                    navController.navigate(route) {
+                        popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                    DownloadPillState.performClick()
+                },
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .statusBarsPadding()
+                    .padding(top = 8.dp)
             )
         }
     }

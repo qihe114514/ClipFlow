@@ -159,7 +159,8 @@ fun AboutScreen(navController: NavHostController) {
                     icon = Icons.Filled.SmartDisplay,
                     label = "B站主页",
                     url = "https://space.bilibili.com/1049283248",
-                    appUri = "tv.danmaku.bili://space/1049283248",
+                    appUri = "bilibili://space/1049283248",
+                    appPackage = "tv.danmaku.bili",
                     context = context
                 )
                 Spacer(Modifier.height(10.dp))
@@ -168,7 +169,7 @@ fun AboutScreen(navController: NavHostController) {
                     icon = Icons.Filled.MusicNote,
                     label = "抖音主页",
                     url = "https://www.douyin.com/user/MS4wLjABAAAAuUtKOArTFKTBm4C6o5MwDQuGMNZ9-0CWZfUay6U9wUI",
-                    appUri = "snssdk1128://user/profile/MS4wLjABAAAAuUtKOArTFKTBm4C6o5MwDQuGMNZ9-0CWZfUay6U9wUI",
+                    appPackage = "com.ss.android.ugc.aweme",
                     context = context
                 )
                 Spacer(Modifier.height(10.dp))
@@ -507,7 +508,8 @@ private fun LinkRow(
     label: String,
     url: String,
     context: android.content.Context,
-    appUri: String? = null
+    appUri: String? = null,
+    appPackage: String? = null
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -528,11 +530,20 @@ private fun LinkRow(
         )
         FilledTonalIconButton(
             onClick = {
-                if (appUri != null) {
+                // 优先尝试 APP 跳转
+                if (appUri != null || appPackage != null) {
                     try {
-                        val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, Uri.parse(appUri!!))
-                        context.startActivity(intent)
-                        return@FilledTonalIconButton
+                        val appIntent = android.content.Intent(
+                            android.content.Intent.ACTION_VIEW,
+                            Uri.parse(appUri ?: url)
+                        ).apply {
+                            if (appPackage != null) setPackage(appPackage)
+                            addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                        }
+                        if (appIntent.resolveActivity(context.packageManager) != null) {
+                            context.startActivity(appIntent)
+                            return@FilledTonalIconButton
+                        }
                     } catch (_: Exception) { }
                 }
                 try {

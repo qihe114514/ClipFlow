@@ -15,6 +15,7 @@ object DownloadPillState {
     val speedText: StateFlow<String> = _speedText
 
     private var _onClick: (() -> Unit)? = null
+    var sourceRoute: String = "douyin"
 
     fun show(progress: Float, speedText: String, onClick: () -> Unit) {
         _progress.value = progress
