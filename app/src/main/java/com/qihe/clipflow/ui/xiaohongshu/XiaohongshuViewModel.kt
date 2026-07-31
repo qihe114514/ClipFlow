@@ -1,18 +1,21 @@
 package com.qihe.clipflow.ui.xiaohongshu
 
 import android.app.Application
+import android.content.ClipboardManager
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.qihe.clipflow.data.api.model.ContentItem
 import com.qihe.clipflow.data.local.AppDatabase
-import com.qihe.clipflow.data.local.HistoryEntity
 import com.qihe.clipflow.data.repository.HistoryRepository
+import com.qihe.clipflow.data.repository.HistorySaver
+import com.qihe.clipflow.data.repository.ParseException
 import com.qihe.clipflow.data.repository.ParseRepository
-import com.qihe.clipflow.util.DownloadManager
+import com.qihe.clipflow.util.DownloadCoordinator
 import com.qihe.clipflow.util.DownloadState
-import com.qihe.clipflow.util.MediaStoreHelper
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 data class XiaohongshuUiState(
@@ -28,7 +31,8 @@ data class XiaohongshuUiState(
     val error: String? = null,
     val downloadStates: Map<String, DownloadState> = emptyMap(),
     val showDownloadDialog: Boolean = false,
-    val downloadingItemId: String? = null
+    val downloadingItemId: String? = null,
+    val isBackgroundDownload: Boolean = false
 )
 
 class XiaohongshuViewModel(application: Application) : AndroidViewModel(application) {
@@ -37,131 +41,112 @@ class XiaohongshuViewModel(application: Application) : AndroidViewModel(applicat
     private val historyRepository = HistoryRepository(
         AppDatabase.getInstance(application).historyDao()
     )
-    private val downloadManager = DownloadManager(application)
+    private val historySaver = HistorySaver(historyRepository)
+    private val downloadCoordinator = DownloadCoordinator(application, "xiaohongshu", viewModelScope)
 
     private val _uiState = MutableStateFlow(XiaohongshuUiState())
     val uiState: StateFlow<XiaohongshuUiState> = _uiState
 
+    init {
+        viewModelScope.launch {
+            downloadCoordinator.session.collectLatest { session ->
+                _uiState.update {
+                    it.copy(
+                        downloadStates = session.downloadStates,
+                        showDownloadDialog = session.showDownloadDialog,
+                        downloadingItemId = session.downloadingItemId,
+                        isBackgroundDownload = session.isBackgroundDownload
+                    )
+                }
+            }
+        }
+    }
+
     fun onUrlChange(url: String) {
-        _uiState.value = _uiState.value.copy(inputUrl = url, error = null)
+        _uiState.update { it.copy(inputUrl = url, error = null) }
     }
 
     fun clearUrl() {
-        _uiState.value = _uiState.value.copy(inputUrl = "", error = null, parseResult = null, parseTitle = "", parseDesc = "", parseCover = "", authorName = "", authorAvatar = "", contentType = "")
+        _uiState.value = XiaohongshuUiState(
+            downloadStates = _uiState.value.downloadStates,
+            showDownloadDialog = _uiState.value.showDownloadDialog,
+            downloadingItemId = _uiState.value.downloadingItemId,
+            isBackgroundDownload = _uiState.value.isBackgroundDownload
+        )
     }
 
     fun pasteFromClipboard() {
         val clipboard = getApplication<Application>()
-            .getSystemService(Application.CLIPBOARD_SERVICE) as android.content.ClipboardManager
-        val text = clipboard.primaryClip?.getItemAt(0)?.text?.toString() ?: ""
+            .getSystemService(Application.CLIPBOARD_SERVICE) as ClipboardManager
+        val text = clipboard.primaryClip?.getItemAt(0)?.text?.toString().orEmpty()
         if (text.isNotEmpty()) {
-            _uiState.value = _uiState.value.copy(inputUrl = text)
+            _uiState.update { it.copy(inputUrl = text, error = null) }
         }
     }
 
     fun parse() {
-        val raw = _uiState.value.inputUrl
-        val url = extractUrl(raw)
-        if (url.isEmpty()) {
-            _uiState.value = _uiState.value.copy(error = "ËØ∑Á≤òË¥¥Â∞èÁ∫¢‰π¶ÂàÜ‰∫´ÈìæÊé•")
-            return
-        }
-        if (!url.contains("xhslink.com") && !url.contains("xiaohongshu.com")) {
-            _uiState.value = _uiState.value.copy(error = "ËØ∑ËæìÂÖ•ÊúâÊïàÁöÑÂ∞èÁ∫¢‰π¶ÈìæÊé•")
+        val rawInput = _uiState.value.inputUrl
+        if (rawInput.isBlank()) {
+            _uiState.update { it.copy(error = "«Î’≥Ã˘–°∫Ï È∑÷œÌ¡¥Ω”") }
             return
         }
 
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isParsing = true, error = null, parseResult = null)
+            _uiState.update {
+                it.copy(
+                    isParsing = true,
+                    error = null,
+                    parseResult = null
+                )
+            }
 
-            val result = parseRepository.parseXiaohongshu(url)
-
-            result.fold(
+            parseRepository.parseXiaohongshu(rawInput).fold(
                 onSuccess = { result ->
-                    _uiState.value = _uiState.value.copy(
-                        isParsing = false,
-                        parseResult = result.items,
-                        parseTitle = result.title,
-                        parseDesc = result.desc,
-                        parseCover = result.cover,
-                        authorName = result.authorName,
-                        authorAvatar = result.authorAvatar,
-                        contentType = result.contentType
+                    _uiState.update {
+                        it.copy(
+                            isParsing = false,
+                            parseResult = result.items,
+                            parseTitle = result.title,
+                            parseDesc = result.desc,
+                            parseCover = result.cover,
+                            authorName = result.authorName,
+                            authorAvatar = result.authorAvatar,
+                            contentType = result.contentType
+                        )
+                    }
+                    historySaver.save(
+                        platform = "xiaohongshu",
+                        sourceUrl = rawInput.trim(),
+                        result = result,
+                        defaultTitle = result.title.ifEmpty { "–°∫Ï È± º«" },
+                        fallbackContentType = "note"
                     )
-                    saveHistory(url, result)
                 },
-                onFailure = { e ->
-                    _uiState.value = _uiState.value.copy(
-                        isParsing = false,
-                        error = e.message ?: "Ëß£ÊûêÂ§±Ë¥•"
-                    )
+                onFailure = { error ->
+                    _uiState.update {
+                        it.copy(
+                            isParsing = false,
+                            error = error.toUserMessage()
+                        )
+                    }
                 }
             )
         }
     }
 
     fun downloadItem(item: ContentItem) {
-        viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(
-                showDownloadDialog = true,
-                downloadingItemId = item.id
-            )
-
-            val ext = when {
-                item.mediaInfo?.format != null -> {
-                    val safe = item.mediaInfo!!.format!!.split("/").first().lowercase().trim()
-                    ".$safe"
-                }
-                item.type.name.contains("VIDEO") -> ".mp4"
-                else -> ".jpg"
-            }
-            val fileName = "ClipFlow_${System.currentTimeMillis()}$ext"
-            val app = getApplication<Application>()
-            downloadManager.reset()
-
-            launch {
-                downloadManager.downloadState.collect { state ->
-                    val states = _uiState.value.downloadStates.toMutableMap()
-                    states[item.id] = state
-                    _uiState.value = _uiState.value.copy(downloadStates = states)
-                }
-            }
-
-            downloadManager.download(item.url, fileName) { tempFile ->
-                val uri = MediaStoreHelper.saveToGallery(app, tempFile, item.type)
-                if (uri != null) {
-                    val states = _uiState.value.downloadStates.toMutableMap()
-                    val s = _uiState.value.downloadStates[item.id]; if (s != null) states[item.id] = s.copy(savedMediaUri = uri.toString())
-                    _uiState.value = _uiState.value.copy(downloadStates = states)
-                }
-            }
-        }
+        downloadCoordinator.startDownload(item)
     }
 
-    fun dismissDownloadDialog() {
-        _uiState.value = _uiState.value.copy(showDownloadDialog = false, downloadingItemId = null)
+    fun dismissDownloadDialog(background: Boolean = false) {
+        downloadCoordinator.dismiss(background)
     }
 
-    private suspend fun saveHistory(url: String, result: com.qihe.clipflow.data.repository.ParseResult) {
-        val existing = historyRepository.getByUrl(url)
-        if (existing != null) {
-            historyRepository.updateTimestamp(url, System.currentTimeMillis())
+    private fun Throwable.toUserMessage(): String {
+        return if (this is ParseException) {
+            failure.message
         } else {
-            historyRepository.insert(
-                HistoryEntity(
-                    url = url,
-                    title = result.title.ifEmpty { "Â∞èÁ∫¢‰π¶Á¨îËÆ∞" },
-                    platform = "xiaohongshu",
-                    coverUrl = result.cover.ifEmpty { null },
-                    authorName = result.authorName.ifEmpty { null },
-                    contentType = result.contentType.ifEmpty { "note" }
-                )
-            )
+            message ?: "Ω‚Œˆ ß∞‹"
         }
     }
-}
-
-private fun extractUrl(text: String): String {
-    val regex = Regex("""https?://(xhslink\.com|xiaohongshu\.com)\S*""")
-    return regex.find(text)?.value ?: text.trim()
 }

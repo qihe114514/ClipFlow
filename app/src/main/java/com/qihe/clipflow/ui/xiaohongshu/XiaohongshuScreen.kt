@@ -48,14 +48,14 @@ fun XiaohongshuScreen(viewModel: XiaohongshuViewModel = viewModel(viewModelStore
             ),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            // ========== 输入区 ==========
+            // ========== 输入�?==========
             item(key = "input") {
                 GlassCard {
                     Column {
                         GlassTextField(
                             value = uiState.inputUrl,
                             onValueChange = { viewModel.onUrlChange(it) },
-                            placeholder = "粘贴小红书分享链接...",
+                            placeholder = "粘贴小红书分享链�?..",
                             modifier = Modifier.fillMaxWidth()
                         )
 
@@ -85,7 +85,7 @@ fun XiaohongshuScreen(viewModel: XiaohongshuViewModel = viewModel(viewModelStore
                             }
 
                             GlassButton(
-                                text = if (uiState.isParsing) "解析中..." else "开始解析",
+                                text = if (uiState.isParsing) "������..." else "��ʼ����",
                                 onClick = { viewModel.parse() },
                                 enabled = !uiState.isParsing && uiState.inputUrl.isNotBlank(),
                                 containerColor = XiaohongshuAccent,
@@ -125,7 +125,7 @@ fun XiaohongshuScreen(viewModel: XiaohongshuViewModel = viewModel(viewModelStore
                 }
             }
 
-            // ========== 加载中 ==========
+            // ========== 加载�?==========
             if (uiState.isParsing) {
                 item(key = "loading") {
                     GlassCard {
@@ -154,7 +154,7 @@ fun XiaohongshuScreen(viewModel: XiaohongshuViewModel = viewModel(viewModelStore
                 item(key = "info_card") {
                     ParseInfoCard(
                         cover = uiState.parseCover,
-                        title = uiState.parseTitle.ifEmpty { "小红书笔记" },
+                        title = uiState.parseTitle.ifEmpty { "С����ʼ�" },
                         desc = uiState.parseDesc,
                         authorName = uiState.authorName,
                         authorAvatar = uiState.authorAvatar,
@@ -182,9 +182,13 @@ fun XiaohongshuScreen(viewModel: XiaohongshuViewModel = viewModel(viewModelStore
             val downloadState = uiState.downloadStates[uiState.downloadingItemId]
             DownloadProgressDialog(
                 state = downloadState,
-                onDismiss = { viewModel.dismissDownloadDialog() }
+                onDismiss = { viewModel.dismissDownloadDialog() },
+                onBackground = { viewModel.dismissDownloadDialog(background = true) }
             )
         }
     }
 }
+
+
+
 

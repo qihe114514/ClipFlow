@@ -1,20 +1,25 @@
 package com.qihe.clipflow.ui.douyin
 
 import android.app.Application
+import android.content.ClipboardManager
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.qihe.clipflow.data.api.model.ContentItem
 import com.qihe.clipflow.data.api.model.ContentType
+import com.qihe.clipflow.data.api.model.DouyinStatistics
+import com.qihe.clipflow.data.api.model.MediaInfo
+import com.qihe.clipflow.data.api.model.VideoBackupItem
 import com.qihe.clipflow.data.local.AppDatabase
-import com.qihe.clipflow.data.local.HistoryEntity
 import com.qihe.clipflow.data.repository.HistoryRepository
+import com.qihe.clipflow.data.repository.HistorySaver
+import com.qihe.clipflow.data.repository.ParseException
 import com.qihe.clipflow.data.repository.ParseRepository
-import com.qihe.clipflow.ui.components.DownloadPillState
-import com.qihe.clipflow.util.DownloadManager
+import com.qihe.clipflow.util.DownloadCoordinator
 import com.qihe.clipflow.util.DownloadState
-import com.qihe.clipflow.util.MediaStoreHelper
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 data class DouyinUiState(
@@ -28,8 +33,8 @@ data class DouyinUiState(
     val authorAvatar: String = "",
     val contentType: String = "",
     val shareUrl: String = "",
-    val stats: com.qihe.clipflow.data.api.model.DouyinStatistics? = null,
-    val videoBackups: List<com.qihe.clipflow.data.api.model.VideoBackupItem> = emptyList(),
+    val stats: DouyinStatistics? = null,
+    val videoBackups: List<VideoBackupItem> = emptyList(),
     val videoUrl: String = "",
     val isBackgroundDownload: Boolean = false,
     val error: String? = null,
@@ -44,182 +49,133 @@ class DouyinViewModel(application: Application) : AndroidViewModel(application) 
     private val historyRepository = HistoryRepository(
         AppDatabase.getInstance(application).historyDao()
     )
-    private val downloadManager = DownloadManager(application)
+    private val historySaver = HistorySaver(historyRepository)
+    private val downloadCoordinator = DownloadCoordinator(application, "douyin", viewModelScope)
 
     private val _uiState = MutableStateFlow(DouyinUiState())
     val uiState: StateFlow<DouyinUiState> = _uiState
 
+    init {
+        viewModelScope.launch {
+            downloadCoordinator.session.collectLatest { session ->
+                _uiState.update {
+                    it.copy(
+                        downloadStates = session.downloadStates,
+                        showDownloadDialog = session.showDownloadDialog,
+                        downloadingItemId = session.downloadingItemId,
+                        isBackgroundDownload = session.isBackgroundDownload
+                    )
+                }
+            }
+        }
+    }
+
     fun onUrlChange(url: String) {
-        _uiState.value = _uiState.value.copy(inputUrl = url, error = null)
+        _uiState.update { it.copy(inputUrl = url, error = null) }
     }
 
     fun clearUrl() {
-        _uiState.value = _uiState.value.copy(inputUrl = "", error = null, parseResult = null, parseTitle = "", parseDesc = "", parseCover = "", authorName = "", authorAvatar = "", contentType = "", shareUrl = "", stats = null)
+        _uiState.value = DouyinUiState(
+            downloadStates = _uiState.value.downloadStates,
+            showDownloadDialog = _uiState.value.showDownloadDialog,
+            downloadingItemId = _uiState.value.downloadingItemId,
+            isBackgroundDownload = _uiState.value.isBackgroundDownload
+        )
     }
 
     fun pasteFromClipboard() {
         val clipboard = getApplication<Application>()
-            .getSystemService(Application.CLIPBOARD_SERVICE) as android.content.ClipboardManager
-        val text = clipboard.primaryClip?.getItemAt(0)?.text?.toString() ?: ""
+            .getSystemService(Application.CLIPBOARD_SERVICE) as ClipboardManager
+        val text = clipboard.primaryClip?.getItemAt(0)?.text?.toString().orEmpty()
         if (text.isNotEmpty()) {
-            _uiState.value = _uiState.value.copy(inputUrl = text)
+            _uiState.update { it.copy(inputUrl = text, error = null) }
         }
     }
 
     fun parse() {
-        val url = _uiState.value.inputUrl.trim()
-        if (url.isEmpty()) {
-            _uiState.value = _uiState.value.copy(error = "ËØ∑Á≤òË¥¥ÊäñÈü≥ÂàÜ‰∫´ÈìæÊé•")
-            return
-        }
-        if (!url.contains("douyin.com") && !url.contains("iesdouyin.com")) {
-            _uiState.value = _uiState.value.copy(error = "ËØ∑ËæìÂÖ•ÊúâÊïàÁöÑÊäñÈü≥ÈìæÊé•")
+        val rawInput = _uiState.value.inputUrl
+        if (rawInput.isBlank()) {
+            _uiState.update { it.copy(error = "«Î’≥Ã˘∂∂“Ù∑÷œÌ¡¥Ω”") }
             return
         }
 
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isParsing = true, error = null, parseResult = null)
+            _uiState.update {
+                it.copy(
+                    isParsing = true,
+                    error = null,
+                    parseResult = null,
+                    shareUrl = "",
+                    stats = null,
+                    videoBackups = emptyList(),
+                    videoUrl = ""
+                )
+            }
 
-            val result = parseRepository.parseDouyin(url)
-
-            result.fold(
+            parseRepository.parseDouyin(rawInput).fold(
                 onSuccess = { result ->
-                    _uiState.value = _uiState.value.copy(
-                        isParsing = false,
-                        parseResult = result.items,
-                        parseTitle = result.title,
-                        parseDesc = result.desc,
-                        parseCover = result.cover,
-                        authorName = result.authorName,
-                        authorAvatar = result.authorAvatar,
-                        contentType = result.contentType,
-                        shareUrl = result.shareUrl,
-                        stats = result.stats,
-                        videoBackups = result.videoBackups,
-                        videoUrl = result.items.firstOrNull()?.url ?: ""
+                    _uiState.update {
+                        it.copy(
+                            isParsing = false,
+                            parseResult = result.items,
+                            parseTitle = result.title,
+                            parseDesc = result.desc,
+                            parseCover = result.cover,
+                            authorName = result.authorName,
+                            authorAvatar = result.authorAvatar,
+                            contentType = result.contentType,
+                            shareUrl = result.shareUrl,
+                            stats = result.stats,
+                            videoBackups = result.videoBackups,
+                            videoUrl = result.items.firstOrNull()?.url.orEmpty()
+                        )
+                    }
+                    historySaver.save(
+                        platform = "douyin",
+                        sourceUrl = rawInput.trim(),
+                        result = result,
+                        defaultTitle = result.title.ifEmpty {
+                            if (result.contentType.isNotEmpty()) "∂∂“Ù ${result.contentType}" else "∂∂“Ù◊˜∆∑"
+                        }
                     )
-                    saveHistory(url, result)
                 },
-                onFailure = { e ->
-                    _uiState.value = _uiState.value.copy(
-                        isParsing = false,
-                        error = e.message ?: "Ëß£ÊûêÂ§±Ë¥•"
-                    )
+                onFailure = { error ->
+                    _uiState.update {
+                        it.copy(
+                            isParsing = false,
+                            error = error.toUserMessage()
+                        )
+                    }
                 }
             )
         }
     }
 
     fun downloadItem(item: ContentItem) {
-        viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(
-                showDownloadDialog = true,
-                downloadingItemId = item.id
-            )
-
-            val isAudio = item.type == ContentType.AUDIO
-            val ext = when {
-                isAudio -> ".mp3"
-                item.mediaInfo?.format != null -> {
-                    val safe = item.mediaInfo!!.format!!.split("/").first().lowercase().trim()
-                    ".$safe"
-                }
-                item.type == ContentType.VIDEO -> ".mp4"
-                else -> ".jpg"
-            }
-            val fileName = "ClipFlow_${System.currentTimeMillis()}$ext"
-            val app = getApplication<Application>()
-
-            downloadManager.reset()
-
-            // ÁõëÂê¨‰∏ãËΩΩÁä∂ÊÄÅ
-            launch {
-                downloadManager.downloadState.collect { state ->
-                    val states = _uiState.value.downloadStates.toMutableMap()
-                    states[item.id] = state
-                    _uiState.value = _uiState.value.copy(downloadStates = states)
-
-                    // Êõ¥Êñ∞ÂÖ®Â±ÄËçØ‰∏∏
-                    if (_uiState.value.isBackgroundDownload) {
-                        DownloadPillState.update(state.progress, state.speedText)
-                    }
-                }
-            }
-
-            downloadManager.download(item.url, fileName) { tempFile ->
-                val uri = MediaStoreHelper.saveToGallery(app, tempFile, item.type)
-                if (uri != null) {
-                    val states = _uiState.value.downloadStates.toMutableMap()
-                    val s = _uiState.value.downloadStates[item.id]; if (s != null) states[item.id] = s.copy(savedMediaUri = uri.toString())
-                    _uiState.value = _uiState.value.copy(downloadStates = states)
-                }
-            }
-        }
+        downloadCoordinator.startDownload(item)
     }
 
     fun downloadBackupUrl(url: String, label: String) {
-        val item = com.qihe.clipflow.data.api.model.ContentItem(
-            id = "backup_${System.currentTimeMillis()}",
-            type = com.qihe.clipflow.data.api.model.ContentType.VIDEO,
-            url = url,
-            description = label,
-            mediaInfo = com.qihe.clipflow.data.api.model.MediaInfo(format = "MP4")
+        downloadItem(
+            ContentItem(
+                id = "backup_${System.currentTimeMillis()}",
+                type = ContentType.VIDEO,
+                url = url,
+                description = label,
+                mediaInfo = MediaInfo(format = "MP4")
+            )
         )
-        downloadItem(item)
     }
 
     fun dismissDownloadDialog(background: Boolean = false) {
-        _uiState.value = _uiState.value.copy(
-            showDownloadDialog = false,
-            downloadingItemId = if (background) _uiState.value.downloadingItemId else null,
-            isBackgroundDownload = background
-        )
-        if (background) {
-            val state = _uiState.value.downloadStates[_uiState.value.downloadingItemId]
-            if (state != null) {
-                DownloadPillState.sourceRoute = "douyin"
-                DownloadPillState.show(state.progress, state.speedText) { showDialogFromPill() }
-            }
-        } else {
-            DownloadPillState.hide()
-        }
+        downloadCoordinator.dismiss(background)
     }
 
-    fun showDialogFromPill() {
-        DownloadPillState.hide()
-        val itemId = _uiState.value.downloadingItemId
-        if (itemId != null) {
-            _uiState.value = _uiState.value.copy(
-                showDownloadDialog = true,
-                isBackgroundDownload = false
-            )
-        } else if (_uiState.value.parseResult?.isNotEmpty() == true) {
-            // Reopen with last downloading item
-            _uiState.value = _uiState.value.copy(
-                showDownloadDialog = true,
-                isBackgroundDownload = false,
-                downloadingItemId = _uiState.value.parseResult?.firstOrNull()?.id
-            )
-        }
-    }
-
-
-    private suspend fun saveHistory(url: String, result: com.qihe.clipflow.data.repository.ParseResult) {
-        val existing = historyRepository.getByUrl(url)
-        if (existing != null) {
-            // ÂêåÈìæÊé•Âè™Êõ¥Êñ∞Êó∂Èó¥Ôºå‰∏çÂàõÂª∫Êñ∞ËÆ∞ÂΩï
-            historyRepository.updateTimestamp(url, System.currentTimeMillis())
+    private fun Throwable.toUserMessage(): String {
+        return if (this is ParseException) {
+            failure.message
         } else {
-            historyRepository.insert(
-                HistoryEntity(
-                    url = url,
-                    title = result.title.ifEmpty { "ÊäñÈü≥ ${result.contentType}" },
-                    platform = "douyin",
-                    coverUrl = result.cover.ifEmpty { null },
-                    authorName = result.authorName.ifEmpty { null },
-                    contentType = result.contentType.ifEmpty { null }
-                )
-            )
+            message ?: "Ω‚Œˆ ß∞‹"
         }
     }
 }
