@@ -24,11 +24,20 @@ enum class SupportedPlatform {
     XIAOHONGSHU
 }
 
+enum class ParseErrorKind {
+    EMPTY_INPUT,
+    INVALID_INPUT,
+    REMOTE_FAILURE,
+    NO_DOWNLOADABLE_CONTENT,
+    UNEXPECTED
+}
+
 data class ParseFailure(
-    val message: String,
+    val kind: ParseErrorKind,
+    val detail: String? = null,
     val cause: Throwable? = null
 )
 
 class ParseException(
     val failure: ParseFailure
-) : Exception(failure.message, failure.cause)
+) : Exception(failure.detail, failure.cause)

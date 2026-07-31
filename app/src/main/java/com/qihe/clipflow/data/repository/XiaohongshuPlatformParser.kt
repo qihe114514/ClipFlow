@@ -26,10 +26,10 @@ class XiaohongshuPlatformParser(
 
     override suspend fun parse(normalizedInput: String): Result<ParseResult> {
         if (normalizedInput.isBlank()) {
-            return Result.failure(ParseException(ParseFailure("请粘贴小红书分享链接")))
+            return Result.failure(ParseException(ParseFailure(ParseErrorKind.EMPTY_INPUT)))
         }
         if (!supports(normalizedInput)) {
-            return Result.failure(ParseException(ParseFailure("请输入有效的小红书链接")))
+            return Result.failure(ParseException(ParseFailure(ParseErrorKind.INVALID_INPUT)))
         }
 
         return withContext(Dispatchers.IO) {
@@ -38,7 +38,7 @@ class XiaohongshuPlatformParser(
                 if ((response.code != 200 && response.code != 0) || response.data == null || response.data.isJsonNull) {
                     val detail = response.msg.takeIf { it.isNotBlank() } ?: "code=${response.code}"
                     return@withContext Result.failure(
-                        ParseException(ParseFailure("解析失败($detail)，请确认链接是否有效"))
+                        ParseException(ParseFailure(ParseErrorKind.REMOTE_FAILURE, detail))
                     )
                 }
 
@@ -47,9 +47,9 @@ class XiaohongshuPlatformParser(
                     element.isJsonObject -> element.asJsonObject
                     element.isJsonArray && element.asJsonArray.size() > 0 -> element.asJsonArray[0].asJsonObject
                     else -> {
-                        val hint = response.msg.takeIf { it.isNotBlank() } ?: "返回数据为空"
+                        val hint = response.msg.takeIf { it.isNotBlank() }
                         return@withContext Result.failure(
-                            ParseException(ParseFailure(hint))
+                            ParseException(ParseFailure(ParseErrorKind.REMOTE_FAILURE, hint))
                         )
                     }
                 }
@@ -217,7 +217,7 @@ class XiaohongshuPlatformParser(
 
                 if (items.isEmpty()) {
                     return@withContext Result.failure(
-                        ParseException(ParseFailure("未找到可下载的内容，请确认链接是否有效"))
+                        ParseException(ParseFailure(ParseErrorKind.NO_DOWNLOADABLE_CONTENT))
                     )
                 }
 
@@ -251,7 +251,7 @@ class XiaohongshuPlatformParser(
                 )
             } catch (e: Exception) {
                 Result.failure(
-                    ParseException(ParseFailure("解析失败，请检查链接后重试", e))
+                    ParseException(ParseFailure(ParseErrorKind.UNEXPECTED, cause = e))
                 )
             }
         }

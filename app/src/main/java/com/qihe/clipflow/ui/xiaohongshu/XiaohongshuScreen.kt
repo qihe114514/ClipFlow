@@ -24,15 +24,16 @@ import com.qihe.clipflow.data.api.model.ContentItem
 import com.qihe.clipflow.data.api.model.ContentType
 import com.qihe.clipflow.ui.components.*
 import com.qihe.clipflow.ui.theme.*
-import com.qihe.clipflow.navigation.ParseBridge
 
 @Composable
-fun XiaohongshuScreen(viewModel: XiaohongshuViewModel = viewModel(viewModelStoreOwner = LocalContext.current as androidx.activity.ComponentActivity)) {
+fun XiaohongshuScreen(
+    sourceUrl: String? = null,
+    viewModel: XiaohongshuViewModel = viewModel(viewModelStoreOwner = LocalContext.current as androidx.activity.ComponentActivity)
+) {
     val uiState by viewModel.uiState.collectAsState()
 
-    LaunchedEffect(Unit) {
-        ParseBridge.pendingUrl?.let { url ->
-            ParseBridge.pendingUrl = null
+    LaunchedEffect(sourceUrl) {
+        sourceUrl?.takeIf { it.isNotBlank() }?.let { url ->
             viewModel.onUrlChange(url)
             viewModel.parse()
         }

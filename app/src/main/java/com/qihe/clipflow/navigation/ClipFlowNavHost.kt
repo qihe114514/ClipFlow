@@ -26,10 +26,12 @@ import androidx.navigation.NavDestination
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.qihe.clipflow.data.preferences.AppPreferences
 import com.qihe.clipflow.ui.components.PrivacyConsentDialog
 import com.qihe.clipflow.ui.components.DownloadPill
@@ -52,7 +54,7 @@ fun ClipFlowNavHost() {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
-    val currentRoute = currentDestination?.route
+    val currentRoute = currentDestination?.route?.substringBefore("?")
 
     // ========== 隐私政策同意检查 ==========
     var isPrivacyCheckReady by remember { mutableStateOf(false) }
@@ -124,16 +126,16 @@ fun ClipFlowNavHost() {
                         .padding(innerPadding)
                         .then(if (showBottomBar) Modifier.padding(bottom = 80.dp) else Modifier),
                     enterTransition = {
-                        val from = initialState.destination.route
-                        val to = targetState.destination.route
+                        val from = initialState.destination.route?.substringBefore("?")
+                        val to = targetState.destination.route?.substringBefore("?")
                         val fromIdx = bottomBarOrder.indexOf(from)
                         val toIdx = bottomBarOrder.indexOf(to)
                         val direction = if (toIdx > fromIdx) 1 else -1
                         fadeIn(tween(300)) + slideInHorizontally(tween(300)) { direction * it / 4 }
                     },
                     exitTransition = {
-                        val from = initialState.destination.route
-                        val to = targetState.destination.route
+                        val from = initialState.destination.route?.substringBefore("?")
+                        val to = targetState.destination.route?.substringBefore("?")
                         val fromIdx = bottomBarOrder.indexOf(from)
                         val toIdx = bottomBarOrder.indexOf(to)
                         val direction = if (toIdx > fromIdx) 1 else -1
@@ -147,8 +149,30 @@ fun ClipFlowNavHost() {
                     }
                 ) {
                     composable(Screen.Home.route) { HomeScreen(navController) }
-                    composable(Screen.Douyin.route) { DouyinScreen() }
-                    composable(Screen.Xiaohongshu.route) { XiaohongshuScreen() }
+                    composable(
+                        route = Screen.Douyin.destinationRoute,
+                        arguments = listOf(
+                            navArgument(Screen.Douyin.sourceUrlArgument) {
+                                type = NavType.StringType
+                                nullable = true
+                                defaultValue = null
+                            }
+                        )
+                    ) { entry ->
+                        DouyinScreen(entry.arguments?.getString(Screen.Douyin.sourceUrlArgument))
+                    }
+                    composable(
+                        route = Screen.Xiaohongshu.destinationRoute,
+                        arguments = listOf(
+                            navArgument(Screen.Xiaohongshu.sourceUrlArgument) {
+                                type = NavType.StringType
+                                nullable = true
+                                defaultValue = null
+                            }
+                        )
+                    ) { entry ->
+                        XiaohongshuScreen(entry.arguments?.getString(Screen.Xiaohongshu.sourceUrlArgument))
+                    }
                     composable(Screen.History.route) { HistoryScreen(navController) }
                     composable(Screen.Settings.route) { SettingsScreen(navController) }
                     composable(Screen.About.route) { AboutScreen(navController) }
@@ -291,7 +315,7 @@ fun FloatingBottomBar(
     ) {
         orderedItems.forEach { item ->
             val selected = currentDestination?.hierarchy?.any {
-                it.route == item.route
+                it.route?.substringBefore("?") == item.route
             } == true
 
             val labelColor = if (selected)

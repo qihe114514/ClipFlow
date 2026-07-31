@@ -6,7 +6,9 @@ import com.qihe.clipflow.data.api.model.ContentItem
 import com.qihe.clipflow.data.local.AppDatabase
 import com.qihe.clipflow.data.repository.HistoryRepository
 import com.qihe.clipflow.data.repository.HistorySaver
+import com.qihe.clipflow.data.repository.ParseErrorKind
 import com.qihe.clipflow.data.repository.ParseException
+import com.qihe.clipflow.data.repository.ParseFailure
 import com.qihe.clipflow.data.repository.ParseRepository
 import com.qihe.clipflow.data.repository.ParseResult
 import com.qihe.clipflow.data.repository.PlatformRegistry
@@ -41,7 +43,7 @@ class ParseScreenSupport(
     }
 
     fun emptyInputMessage(): String {
-        return descriptor.emptyInputMessage
+        return descriptor.errorMessage(ParseFailure(ParseErrorKind.EMPTY_INPUT))
     }
 
     fun normalizeInput(rawInput: String): String {
@@ -72,7 +74,7 @@ class ParseScreenSupport(
 
     fun userMessage(error: Throwable): String {
         return if (error is ParseException) {
-            error.failure.message
+            descriptor.errorMessage(error.failure)
         } else {
             error.message ?: "解析失败"
         }

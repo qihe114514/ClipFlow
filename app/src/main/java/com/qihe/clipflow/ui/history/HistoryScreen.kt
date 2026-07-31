@@ -31,7 +31,6 @@ import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.qihe.clipflow.data.local.HistoryEntity
-import com.qihe.clipflow.navigation.ParseBridge
 import com.qihe.clipflow.navigation.Screen
 import com.qihe.clipflow.ui.components.GlassCard
 import com.qihe.clipflow.ui.components.GlassTextField
@@ -223,11 +222,10 @@ fun HistoryScreen(
                                     viewModel.toggleItemSelection(item.id)
                                 } else {
                                     val route = when (item.platform) {
-                                        "douyin" -> Screen.Douyin.route
-                                        "xiaohongshu" -> Screen.Xiaohongshu.route
+                                        "douyin" -> Screen.Douyin.withSourceUrl(item.url)
+                                        "xiaohongshu" -> Screen.Xiaohongshu.withSourceUrl(item.url)
                                         else -> Screen.Home.route
                                     }
-                                    ParseBridge.pendingUrl = item.url
                                     navController.navigate(route) {
                                         popUpTo(Screen.Home.route) { inclusive = false }
                                         launchSingleTop = true

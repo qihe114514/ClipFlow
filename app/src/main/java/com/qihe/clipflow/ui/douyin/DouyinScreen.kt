@@ -28,15 +28,16 @@ import com.qihe.clipflow.data.api.model.ContentItem
 import com.qihe.clipflow.data.api.model.ContentType
 import com.qihe.clipflow.ui.components.*
 import com.qihe.clipflow.ui.theme.*
-import com.qihe.clipflow.navigation.ParseBridge
 
 @Composable
-fun DouyinScreen(viewModel: DouyinViewModel = viewModel(viewModelStoreOwner = LocalContext.current as androidx.activity.ComponentActivity)) {
+fun DouyinScreen(
+    sourceUrl: String? = null,
+    viewModel: DouyinViewModel = viewModel(viewModelStoreOwner = LocalContext.current as androidx.activity.ComponentActivity)
+) {
     val uiState by viewModel.uiState.collectAsState()
 
-    LaunchedEffect(Unit) {
-        ParseBridge.pendingUrl?.let { url ->
-            ParseBridge.pendingUrl = null
+    LaunchedEffect(sourceUrl) {
+        sourceUrl?.takeIf { it.isNotBlank() }?.let { url ->
             viewModel.onUrlChange(url)
             viewModel.parse()
         }

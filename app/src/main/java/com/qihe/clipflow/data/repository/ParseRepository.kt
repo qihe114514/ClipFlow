@@ -7,14 +7,6 @@ class ParseRepository(
         PlatformRegistry.createParsers(RetrofitClient.apiService)
 ) {
 
-    suspend fun parseDouyin(rawInput: String): Result<ParseResult> {
-        return parse(SupportedPlatform.DOUYIN, rawInput)
-    }
-
-    suspend fun parseXiaohongshu(rawInput: String): Result<ParseResult> {
-        return parse(SupportedPlatform.XIAOHONGSHU, rawInput)
-    }
-
     suspend fun parse(
         platform: SupportedPlatform,
         rawInput: String

@@ -8,11 +8,26 @@ import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.MusicNote
 import androidx.compose.material.icons.outlined.Shop
 import androidx.compose.ui.graphics.vector.ImageVector
+import android.net.Uri
 
 sealed class Screen(val route: String) {
     data object Home : Screen("home")
-    data object Douyin : Screen("douyin")
-    data object Xiaohongshu : Screen("xiaohongshu")
+    data object Douyin : Screen("douyin") {
+        const val sourceUrlArgument = "sourceUrl"
+        val destinationRoute = "$route?$sourceUrlArgument={$sourceUrlArgument}"
+
+        fun withSourceUrl(sourceUrl: String): String {
+            return "$route?$sourceUrlArgument=${Uri.encode(sourceUrl)}"
+        }
+    }
+    data object Xiaohongshu : Screen("xiaohongshu") {
+        const val sourceUrlArgument = "sourceUrl"
+        val destinationRoute = "$route?$sourceUrlArgument={$sourceUrlArgument}"
+
+        fun withSourceUrl(sourceUrl: String): String {
+            return "$route?$sourceUrlArgument=${Uri.encode(sourceUrl)}"
+        }
+    }
     data object History : Screen("history")
     data object Settings : Screen("settings")
     data object About : Screen("about")

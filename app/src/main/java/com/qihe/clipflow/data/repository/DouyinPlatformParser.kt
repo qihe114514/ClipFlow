@@ -24,10 +24,10 @@ class DouyinPlatformParser(
 
     override suspend fun parse(normalizedInput: String): Result<ParseResult> {
         if (normalizedInput.isBlank()) {
-            return Result.failure(ParseException(ParseFailure("«Î’≥Ã˘∂∂“Ù∑÷œÌ¡¥Ω”")))
+            return Result.failure(ParseException(ParseFailure(ParseErrorKind.EMPTY_INPUT)))
         }
         if (!supports(normalizedInput)) {
-            return Result.failure(ParseException(ParseFailure("«Î ‰»Î”––ßµƒ∂∂“Ù¡¥Ω”")))
+            return Result.failure(ParseException(ParseFailure(ParseErrorKind.INVALID_INPUT)))
         }
 
         return withContext(Dispatchers.IO) {
@@ -41,7 +41,10 @@ class DouyinPlatformParser(
                 if (response.code != 200 || data == null) {
                     return@withContext Result.failure(
                         ParseException(
-                            ParseFailure(response.msg.ifEmpty { "Ω‚Œˆ ß∞‹£¨«Î…‘∫Û÷ÿ ‘" })
+                            ParseFailure(
+                                kind = ParseErrorKind.REMOTE_FAILURE,
+                                detail = response.msg.takeIf { it.isNotBlank() }
+                            )
                         )
                     )
                 }
@@ -59,7 +62,7 @@ class DouyinPlatformParser(
                                         url = videoUrl,
                                         thumbnailUrl = data.cover,
                                         mediaInfo = MediaInfo(format = "MP4"),
-                                        description = "[‘≠ª≠] ÷˜¡¥Ω”"
+                                        description = "[ÂéüÁîª] ‰∏ªÈìæÊé•"
                                     )
                                 )
                                 index++
@@ -73,7 +76,7 @@ class DouyinPlatformParser(
                                         url = musicUrl,
                                         thumbnailUrl = data.music.cover ?: data.cover,
                                         mediaInfo = MediaInfo(format = "MP3"),
-                                        description = "[“Ù¿÷] ${(data.music.title ?: "").take(20)}"
+                                        description = "[Èü≥‰πê] ${(data.music.title ?: "").take(20)}"
                                     )
                                 )
                             }
@@ -89,7 +92,7 @@ class DouyinPlatformParser(
                                             url = imageUrl,
                                             thumbnailUrl = imageUrl,
                                             mediaInfo = MediaInfo(format = "WEBP/JPEG"),
-                                            description = "Õº∆¨ ${itemIndex + 1}"
+                                            description = "ÂõæÁâá ${itemIndex + 1}"
                                         )
                                     )
                                 }
@@ -106,7 +109,7 @@ class DouyinPlatformParser(
                                             url = imageUrl,
                                             thumbnailUrl = imageUrl,
                                             mediaInfo = MediaInfo(format = "WEBP/JPEG"),
-                                            description = " µøˆÕº ${itemIndex + 1}"
+                                            description = "ÂÆûÂÜµÂõæ ${itemIndex + 1}"
                                         )
                                     )
                                 }
@@ -118,7 +121,7 @@ class DouyinPlatformParser(
                                             url = videoUrl,
                                             thumbnailUrl = live.image,
                                             mediaInfo = MediaInfo(format = "MP4"),
-                                            description = " µøˆ ”∆µ ${itemIndex + 1}"
+                                            description = "ÂÆûÂÜµËßÜÈ¢ë ${itemIndex + 1}"
                                         )
                                     )
                                 }
@@ -129,7 +132,7 @@ class DouyinPlatformParser(
 
                 if (items.isEmpty()) {
                     return@withContext Result.failure(
-                        ParseException(ParseFailure("Œ¥’“µΩø…œ¬‘ÿµƒƒ⁄»›"))
+                        ParseException(ParseFailure(ParseErrorKind.NO_DOWNLOADABLE_CONTENT))
                     )
                 }
 
@@ -151,7 +154,7 @@ class DouyinPlatformParser(
                 )
             } catch (e: Exception) {
                 Result.failure(
-                    ParseException(ParseFailure("Ω‚Œˆ ß∞‹£¨«ÎºÏ≤È¡¥Ω”∫Û÷ÿ ‘", e))
+                    ParseException(ParseFailure(ParseErrorKind.UNEXPECTED, cause = e))
                 )
             }
         }
