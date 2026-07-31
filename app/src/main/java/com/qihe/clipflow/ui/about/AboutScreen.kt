@@ -155,7 +155,7 @@ fun AboutScreen(_navController: NavHostController) {
         GlassCard(modifier = Modifier.fillMaxWidth()) {
             Column {
                 // B站
-                LinkRow(
+                ExternalLinkRow(
                     icon = Icons.Filled.SmartDisplay,
                     label = "B站主页",
                     url = "https://space.bilibili.com/1049283248",
@@ -163,7 +163,7 @@ fun AboutScreen(_navController: NavHostController) {
                 )
                 Spacer(Modifier.height(10.dp))
                 // 抖音
-                LinkRow(
+                ExternalLinkRow(
                     icon = Icons.Filled.MusicNote,
                     label = "抖音主页",
                     url = "https://www.douyin.com/user/MS4wLjABAAAAuUtKOArTFKTBm4C6o5MwDQuGMNZ9-0CWZfUay6U9wUI",
@@ -171,7 +171,7 @@ fun AboutScreen(_navController: NavHostController) {
                 )
                 Spacer(Modifier.height(10.dp))
                 // GitHub
-                LinkRow(
+                ExternalLinkRow(
                     icon = Icons.Filled.Code,
                     label = "GitHub 开源仓库",
                     url = "https://github.com/qihe114514/qihe-douyin",
@@ -472,78 +472,5 @@ fun AboutScreen(_navController: NavHostController) {
         )
 
         Spacer(Modifier.height(20.dp))
-    }
-}
-
-@Suppress("DEPRECATION")
-@Composable
-private fun AboutInfoRow(
-    label: String,
-    value: String
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Text(
-            text = value,
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Medium,
-            color = MaterialTheme.colorScheme.onSurface
-        )
-    }
-}
-
-@Suppress("DEPRECATION")
-@Composable
-private fun LinkRow(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    label: String,
-    url: String,
-    context: android.content.Context
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(22.dp)
-        )
-        Spacer(Modifier.width(14.dp))
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Medium,
-            modifier = Modifier.weight(1f)
-        )
-        FilledTonalIconButton(
-            onClick = {
-                try {
-                    CustomTabsIntent.Builder()
-                        .setShowTitle(true)
-                        .build()
-                        .launchUrl(context, Uri.parse(url))
-                } catch (_: Exception) {
-                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-                    context.startActivity(intent)
-                }
-            },
-            modifier = Modifier.size(36.dp)
-        ) {
-            Icon(
-                imageVector = Icons.Filled.OpenInNew,
-                contentDescription = "打开",
-                modifier = Modifier.size(16.dp)
-            )
-        }
     }
 }

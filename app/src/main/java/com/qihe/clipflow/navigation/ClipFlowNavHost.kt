@@ -2,28 +2,14 @@ package com.qihe.clipflow.navigation
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.History
-import androidx.compose.material.icons.outlined.Settings
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavDestination
-import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -46,7 +32,6 @@ import com.qihe.clipflow.ui.xiaohongshu.XiaohongshuScreen
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ClipFlowNavHost() {
     val context = LocalContext.current
@@ -214,151 +199,6 @@ fun ClipFlowNavHost() {
                     .statusBarsPadding()
                     .padding(top = 8.dp)
             )
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun ClipFlowTopBar(
-    currentRoute: String?,
-    navController: NavHostController
-) {
-    val isSpecialPage = currentRoute == Screen.History.route
-        || currentRoute == Screen.Settings.route
-        || currentRoute == Screen.About.route
-    val showHistory = !isSpecialPage
-    val showSettings = !isSpecialPage
-    val showBack = currentRoute == Screen.History.route
-        || currentRoute == Screen.Settings.route
-        || currentRoute == Screen.About.route
-
-    CenterAlignedTopAppBar(
-        navigationIcon = {
-            if (showBack) {
-                IconButton(onClick = { navController.popBackStack() }) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
-                }
-            }
-        },
-        title = {
-            Text(
-                text = when (currentRoute) {
-                    Screen.Home.route -> "ClipFlow"
-                    Screen.Douyin.route -> "抖音解析"
-                    Screen.Xiaohongshu.route -> "小红书解析"
-                    Screen.History.route -> "解析历史"
-                    Screen.Settings.route -> "设置"
-                    Screen.About.route -> "关于"
-                    else -> "ClipFlow"
-                },
-                style = MaterialTheme.typography.titleLarge
-            )
-        },
-        actions = {
-            if (showHistory) {
-                IconButton(onClick = { navController.navigate(Screen.History.route) }) {
-                    Icon(Icons.Outlined.History, contentDescription = "历史")
-                }
-            }
-            if (showSettings) {
-                IconButton(onClick = { navController.navigate(Screen.Settings.route) }) {
-                    Icon(Icons.Outlined.Settings, contentDescription = "设置")
-                }
-            }
-        },
-        colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-            containerColor = Color.Transparent,
-            scrolledContainerColor = Color.Transparent
-        ),
-        modifier = Modifier
-            .statusBarsPadding()
-            .windowInsetsPadding(WindowInsets(0, 0, 0, 0))
-    )
-}
-
-@Composable
-fun FloatingBottomBar(
-    navController: NavHostController,
-    currentDestination: NavDestination?,
-    prefs: AppPreferences,
-    modifier: Modifier = Modifier
-) {
-    val isDark = isSystemInDarkTheme()
-
-    val bottomBarOrder by produceState(initialValue = listOf("home", "douyin", "xiaohongshu")) {
-        prefs.bottomBarOrder.collect { value = it }
-    }
-
-    val orderedItems = bottomBarOrder.mapNotNull { key ->
-        bottomNavItems.find { it.route == key }
-    }
-
-    val containerBg = if (isDark)
-        Color.Black.copy(alpha = 0.55f)
-    else
-        Color.White.copy(alpha = 0.55f)
-    val borderColor = if (isDark)
-        Color.White.copy(alpha = 0.08f)
-    else
-        Color.White.copy(alpha = 0.25f)
-
-    Row(
-        modifier = modifier
-            .navigationBarsPadding()
-            .padding(horizontal = 20.dp, vertical = 12.dp)
-            .clip(RoundedCornerShape(28.dp))
-            .background(containerBg, RoundedCornerShape(28.dp))
-            .border(0.5.dp, borderColor, RoundedCornerShape(28.dp))
-            .padding(horizontal = 6.dp, vertical = 6.dp),
-        horizontalArrangement = Arrangement.SpaceEvenly
-    ) {
-        orderedItems.forEach { item ->
-            val selected = currentDestination?.hierarchy?.any {
-                it.route?.substringBefore("?") == item.route
-            } == true
-
-            val labelColor = if (selected)
-                MaterialTheme.colorScheme.primary
-            else
-                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .clip(RoundedCornerShape(22.dp))
-                    .then(
-                        if (selected) Modifier.background(
-                            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
-                            RoundedCornerShape(22.dp)
-                        ) else Modifier
-                    )
-                    .clickable {
-                        if (!selected) {
-                            navController.navigate(item.route) {
-                                launchSingleTop = true
-                                restoreState = true
-                            }
-                        }
-                    }
-                    .padding(vertical = 8.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(
-                        imageVector = if (selected) item.selectedIcon else item.unselectedIcon,
-                        contentDescription = item.label,
-                        tint = labelColor,
-                        modifier = Modifier.size(24.dp)
-                    )
-                    Text(
-                        text = item.label,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = labelColor,
-                        fontWeight = if (selected) FontWeight.Medium else FontWeight.Normal
-                    )
-                }
-            }
         }
     }
 }
