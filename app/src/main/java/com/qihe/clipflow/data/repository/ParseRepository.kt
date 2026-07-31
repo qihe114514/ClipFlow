@@ -3,10 +3,8 @@ package com.qihe.clipflow.data.repository
 import com.qihe.clipflow.data.api.RetrofitClient
 
 class ParseRepository(
-    private val parsers: Map<SupportedPlatform, PlatformParser> = listOf(
-        DouyinPlatformParser(RetrofitClient.apiService),
-        XiaohongshuPlatformParser(RetrofitClient.apiService)
-    ).associateBy { it.platform }
+    private val parsers: Map<SupportedPlatform, PlatformParser> =
+        PlatformRegistry.createParsers(RetrofitClient.apiService)
 ) {
 
     suspend fun parseDouyin(rawInput: String): Result<ParseResult> {
@@ -22,6 +20,13 @@ class ParseRepository(
         rawInput: String
     ): Result<ParseResult> {
         val parser = parsers.getValue(platform)
-        return parser.parse(parser.normalizeInput(rawInput))
+        return parser.parse(normalize(platform, rawInput))
+    }
+
+    fun normalize(
+        platform: SupportedPlatform,
+        rawInput: String
+    ): String {
+        return parsers.getValue(platform).normalizeInput(rawInput)
     }
 }

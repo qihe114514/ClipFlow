@@ -23,7 +23,6 @@ import coil.request.ImageRequest
 import com.qihe.clipflow.data.api.model.ContentItem
 import com.qihe.clipflow.data.api.model.ContentType
 import com.qihe.clipflow.ui.components.*
-import com.qihe.clipflow.ui.douyin.DownloadProgressDialog
 import com.qihe.clipflow.ui.theme.*
 import com.qihe.clipflow.navigation.ParseBridge
 
@@ -48,14 +47,14 @@ fun XiaohongshuScreen(viewModel: XiaohongshuViewModel = viewModel(viewModelStore
             ),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            // ========== 输入�?==========
+            // ========== 输入区 ==========
             item(key = "input") {
                 GlassCard {
                     Column {
                         GlassTextField(
                             value = uiState.inputUrl,
                             onValueChange = { viewModel.onUrlChange(it) },
-                            placeholder = "粘贴小红书分享链�?..",
+                            placeholder = "粘贴小红书分享链接...",
                             modifier = Modifier.fillMaxWidth()
                         )
 
@@ -85,7 +84,7 @@ fun XiaohongshuScreen(viewModel: XiaohongshuViewModel = viewModel(viewModelStore
                             }
 
                             GlassButton(
-                                text = if (uiState.isParsing) "������..." else "��ʼ����",
+                                text = if (uiState.isParsing) "解析中..." else "开始解析",
                                 onClick = { viewModel.parse() },
                                 enabled = !uiState.isParsing && uiState.inputUrl.isNotBlank(),
                                 containerColor = XiaohongshuAccent,
@@ -125,7 +124,7 @@ fun XiaohongshuScreen(viewModel: XiaohongshuViewModel = viewModel(viewModelStore
                 }
             }
 
-            // ========== 加载�?==========
+            // ========== 加载中 ==========
             if (uiState.isParsing) {
                 item(key = "loading") {
                     GlassCard {
@@ -154,7 +153,7 @@ fun XiaohongshuScreen(viewModel: XiaohongshuViewModel = viewModel(viewModelStore
                 item(key = "info_card") {
                     ParseInfoCard(
                         cover = uiState.parseCover,
-                        title = uiState.parseTitle.ifEmpty { "С����ʼ�" },
+                        title = uiState.parseTitle.ifEmpty { "小红书笔记" },
                         desc = uiState.parseDesc,
                         authorName = uiState.authorName,
                         authorAvatar = uiState.authorAvatar,
@@ -188,7 +187,4 @@ fun XiaohongshuScreen(viewModel: XiaohongshuViewModel = viewModel(viewModelStore
         }
     }
 }
-
-
-
 

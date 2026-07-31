@@ -1,7 +1,6 @@
 package com.qihe.clipflow.ui.douyin
 
 import android.app.Application
-import android.content.ClipboardManager
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.qihe.clipflow.data.api.model.ContentItem
@@ -9,12 +8,8 @@ import com.qihe.clipflow.data.api.model.ContentType
 import com.qihe.clipflow.data.api.model.DouyinStatistics
 import com.qihe.clipflow.data.api.model.MediaInfo
 import com.qihe.clipflow.data.api.model.VideoBackupItem
-import com.qihe.clipflow.data.local.AppDatabase
-import com.qihe.clipflow.data.repository.HistoryRepository
-import com.qihe.clipflow.data.repository.HistorySaver
-import com.qihe.clipflow.data.repository.ParseException
-import com.qihe.clipflow.data.repository.ParseRepository
-import com.qihe.clipflow.util.DownloadCoordinator
+import com.qihe.clipflow.data.repository.SupportedPlatform
+import com.qihe.clipflow.ui.parser.ParseScreenSupport
 import com.qihe.clipflow.util.DownloadState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -45,19 +40,18 @@ data class DouyinUiState(
 
 class DouyinViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val parseRepository = ParseRepository()
-    private val historyRepository = HistoryRepository(
-        AppDatabase.getInstance(application).historyDao()
+    private val parseSupport = ParseScreenSupport(
+        application = application,
+        platform = SupportedPlatform.DOUYIN,
+        scope = viewModelScope
     )
-    private val historySaver = HistorySaver(historyRepository)
-    private val downloadCoordinator = DownloadCoordinator(application, "douyin", viewModelScope)
 
     private val _uiState = MutableStateFlow(DouyinUiState())
     val uiState: StateFlow<DouyinUiState> = _uiState
 
     init {
         viewModelScope.launch {
-            downloadCoordinator.session.collectLatest { session ->
+            parseSupport.downloadSession.collectLatest { session ->
                 _uiState.update {
                     it.copy(
                         downloadStates = session.downloadStates,
@@ -84,9 +78,7 @@ class DouyinViewModel(application: Application) : AndroidViewModel(application) 
     }
 
     fun pasteFromClipboard() {
-        val clipboard = getApplication<Application>()
-            .getSystemService(Application.CLIPBOARD_SERVICE) as ClipboardManager
-        val text = clipboard.primaryClip?.getItemAt(0)?.text?.toString().orEmpty()
+        val text = parseSupport.readClipboardText()
         if (text.isNotEmpty()) {
             _uiState.update { it.copy(inputUrl = text, error = null) }
         }
@@ -95,9 +87,10 @@ class DouyinViewModel(application: Application) : AndroidViewModel(application) 
     fun parse() {
         val rawInput = _uiState.value.inputUrl
         if (rawInput.isBlank()) {
-            _uiState.update { it.copy(error = "«Î’≥Ã˘∂∂“Ù∑÷œÌ¡¥Ω”") }
+            _uiState.update { it.copy(error = parseSupport.emptyInputMessage()) }
             return
         }
+        val sourceUrl = parseSupport.normalizeInput(rawInput)
 
         viewModelScope.launch {
             _uiState.update {
@@ -112,7 +105,7 @@ class DouyinViewModel(application: Application) : AndroidViewModel(application) 
                 )
             }
 
-            parseRepository.parseDouyin(rawInput).fold(
+            parseSupport.parse(sourceUrl).fold(
                 onSuccess = { result ->
                     _uiState.update {
                         it.copy(
@@ -130,20 +123,13 @@ class DouyinViewModel(application: Application) : AndroidViewModel(application) 
                             videoUrl = result.items.firstOrNull()?.url.orEmpty()
                         )
                     }
-                    historySaver.save(
-                        platform = "douyin",
-                        sourceUrl = rawInput.trim(),
-                        result = result,
-                        defaultTitle = result.title.ifEmpty {
-                            if (result.contentType.isNotEmpty()) "∂∂“Ù ${result.contentType}" else "∂∂“Ù◊˜∆∑"
-                        }
-                    )
+                    parseSupport.saveHistory(sourceUrl, result)
                 },
                 onFailure = { error ->
                     _uiState.update {
                         it.copy(
                             isParsing = false,
-                            error = error.toUserMessage()
+                            error = parseSupport.userMessage(error)
                         )
                     }
                 }
@@ -152,7 +138,7 @@ class DouyinViewModel(application: Application) : AndroidViewModel(application) 
     }
 
     fun downloadItem(item: ContentItem) {
-        downloadCoordinator.startDownload(item)
+        parseSupport.startDownload(item)
     }
 
     fun downloadBackupUrl(url: String, label: String) {
@@ -168,14 +154,6 @@ class DouyinViewModel(application: Application) : AndroidViewModel(application) 
     }
 
     fun dismissDownloadDialog(background: Boolean = false) {
-        downloadCoordinator.dismiss(background)
-    }
-
-    private fun Throwable.toUserMessage(): String {
-        return if (this is ParseException) {
-            failure.message
-        } else {
-            message ?: "Ω‚Œˆ ß∞‹"
-        }
+        parseSupport.dismissDownloadDialog(background)
     }
 }

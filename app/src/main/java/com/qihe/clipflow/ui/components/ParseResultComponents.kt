@@ -33,7 +33,6 @@ import coil.request.ImageRequest
 import com.qihe.clipflow.data.api.model.ContentItem
 import com.qihe.clipflow.data.api.model.ContentType
 import com.qihe.clipflow.data.api.model.DouyinStatistics
-import com.qihe.clipflow.ui.douyin.formatFileSize
 import com.qihe.clipflow.ui.theme.*
 import com.qihe.clipflow.util.DownloadState
 import kotlinx.coroutines.Dispatchers
@@ -218,7 +217,7 @@ fun ParseInfoCard(
         }
     }
 
-    // 长按封面 → 保存确认弹窗
+    // 长按封面 -> 保存确认弹窗
     if (showSaveDialog) {
         AlertDialog(
             onDismissRequest = { showSaveDialog = false },
