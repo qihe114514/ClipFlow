@@ -50,6 +50,7 @@ fun ClipFlowNavHost() {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
     val currentRoute = currentDestination?.route?.substringBefore("?")
+    val currentRouteState = rememberUpdatedState(currentRoute)
 
     // ========== 隐私政策同意检查 ==========
     var isPrivacyCheckReady by remember { mutableStateOf(false) }
@@ -106,18 +107,19 @@ fun ClipFlowNavHost() {
 
     LaunchedEffect(currentRoute, primaryRoutes) {
         val targetPage = primaryRoutes.indexOf(currentRoute)
-        if (targetPage >= 0 && pagerState.currentPage != targetPage) {
+        if (targetPage >= 0 && pagerState.settledPage != targetPage) {
             pagerState.animateScrollToPage(targetPage)
         }
     }
 
-    LaunchedEffect(pagerState, primaryRoutes, currentRoute) {
+    LaunchedEffect(pagerState, primaryRoutes) {
         snapshotFlow { pagerState.settledPage }
             .drop(1)
             .distinctUntilChanged()
             .collectLatest { page ->
                 val route = primaryRoutes.getOrNull(page)
-                if (route != null && currentRoute != null && currentRoute in primaryRoutes && currentRoute != route) {
+                val routeNow = currentRouteState.value
+                if (route != null && routeNow != null && routeNow in primaryRoutes && routeNow != route) {
                     navController.navigateToPrimary(route)
                 }
             }

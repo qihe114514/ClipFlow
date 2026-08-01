@@ -38,4 +38,12 @@ class PrimaryNavigationTest {
         assertEquals(2f, pagerIndicatorPosition(2, 0.4f, 3), 0.0001f)
         assertEquals(0f, pagerIndicatorPosition(0, 0.4f, 1), 0.0001f)
     }
+
+    @Test
+    fun pagerIndicatorRemainsActiveUntilRouteSelectionCatchesUp() {
+        assertEquals(true, pagerIndicatorPositionActive(false, 1, 0))
+        assertEquals(true, pagerIndicatorPositionActive(true, 0, 0))
+        assertEquals(false, pagerIndicatorPositionActive(false, 1, 1))
+    }
+
 }

@@ -2,7 +2,6 @@ package com.qihe.clipflow.ui.component.miuix.animation
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.spring
-import androidx.compose.foundation.MutatorMutex
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -10,6 +9,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.util.VelocityTracker
 import androidx.compose.ui.unit.IntSize
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.android.awaitFrame
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
@@ -52,9 +52,8 @@ class DampedDragAnimation(
     private val scaleYAnimation =
         Animatable(initialScale, 0.001f)
 
-    private val mutatorMutex = MutatorMutex()
-
     private val velocityTracker = VelocityTracker()
+    private var pressAnimationJob: Job? = null
 
     val value: Float get() = valueAnimation.value
     val targetValue: Float get() = valueAnimation.targetValue
@@ -92,7 +91,8 @@ class DampedDragAnimation(
 
     fun press() {
         velocityTracker.resetTracking()
-        animationScope.launch {
+        pressAnimationJob?.cancel()
+        pressAnimationJob = animationScope.launch {
             launch { pressProgressAnimation.animateTo(1f, pressProgressAnimationSpec) }
             launch { scaleXAnimation.animateTo(pressedScale, scaleXAnimationSpec) }
             launch { scaleYAnimation.animateTo(pressedScale, scaleYAnimationSpec) }
@@ -100,18 +100,24 @@ class DampedDragAnimation(
     }
 
     fun release() {
-        animationScope.launch {
+        pressAnimationJob?.cancel()
+        pressAnimationJob = animationScope.launch {
             awaitFrame()
             if (value != targetValue) {
                 val threshold = (valueRange.endInclusive - valueRange.start) * 0.025f
-                snapshotFlow { valueAnimation.value }
-                    .filter { abs(it - valueAnimation.targetValue) < threshold }
+                snapshotFlow { valueAnimation.value to valueAnimation.targetValue }
+                    .filter { (value, target) -> abs(value - target) < threshold }
                     .first()
             }
             launch { pressProgressAnimation.animateTo(0f, pressProgressAnimationSpec) }
             launch { scaleXAnimation.animateTo(initialScale, scaleXAnimationSpec) }
             launch { scaleYAnimation.animateTo(initialScale, scaleYAnimationSpec) }
         }
+    }
+
+    suspend fun snapToValue(value: Float) {
+        valueAnimation.snapTo(value.coerceIn(valueRange))
+        velocityAnimation.snapTo(0f)
     }
 
     fun updateValue(value: Float) {
@@ -123,15 +129,13 @@ class DampedDragAnimation(
 
     fun animateToValue(value: Float) {
         animationScope.launch {
-            mutatorMutex.mutate {
-                press()
-                val targetValue = value.coerceIn(valueRange)
-                launch { valueAnimation.animateTo(targetValue, valueAnimationSpec) }
-                if (velocity != 0f) {
-                    launch { velocityAnimation.animateTo(0f, velocityAnimationSpec) }
-                }
-                release()
+            press()
+            val targetValue = value.coerceIn(valueRange)
+            valueAnimation.animateTo(targetValue, valueAnimationSpec)
+            if (velocity != 0f) {
+                velocityAnimation.animateTo(0f, velocityAnimationSpec)
             }
+            release()
         }
     }
 

@@ -128,7 +128,13 @@ fun FloatingBottomBar(
                 pageCount = items.size,
             )
         },
-        indicatorPositionActive = { pagerState.isScrollInProgress },
+        indicatorPositionActive = {
+            pagerIndicatorPositionActive(
+                isScrollInProgress = pagerState.isScrollInProgress,
+                currentPage = pagerState.currentPage,
+                selectedIndex = selectedIndexProvider(),
+            )
+        },
         isBlurEnabled = true,
     ) {
         items.forEach { item ->

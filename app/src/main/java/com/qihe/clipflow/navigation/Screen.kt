@@ -90,6 +90,14 @@ fun pagerIndicatorPosition(
         .coerceIn(0f, (pageCount - 1).toFloat())
 }
 
+fun pagerIndicatorPositionActive(
+    isScrollInProgress: Boolean,
+    currentPage: Int,
+    selectedIndex: Int,
+): Boolean {
+    return isScrollInProgress || currentPage != selectedIndex
+}
+
 fun NavHostController.navigateToPrimary(route: String) {
     navigate(route) {
         popUpTo(graph.findStartDestination().id) { saveState = true }
