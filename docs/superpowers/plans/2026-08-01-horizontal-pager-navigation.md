@@ -1,6 +1,6 @@
 # Horizontal Pager Navigation Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Add a real `HorizontalPager` to the primary ClipFlow navigation while keeping `NavController`, parser state, secondary screens, and persisted tab order intact.
 
@@ -31,7 +31,7 @@
 - `primaryPageIndex(route: String?, items: List<BottomNavItem>): Int` returns the matching index or `0` for an unknown route.
 - `NavHostController.navigateToPrimary(route: String)` performs tab-style navigation with `popUpTo(findStartDestination()) { saveState = true }`, `launchSingleTop = true`, and `restoreState = true`.
 
-- [ ] **Step 1: Write the failing helper tests.**
+- [x] **Step 1: Write the failing helper tests.**
 
 ```kotlin
 package com.qihe.clipflow.navigation
@@ -64,13 +64,13 @@ class PrimaryNavigationTest {
 }
 ```
 
-- [ ] **Step 2: Run the focused test to verify it fails because the helpers do not exist.**
+- [x] **Step 2: Run the focused test to verify it fails because the helpers do not exist.**
 
 Run: `.\gradlew.bat -g E:/clioipflow/.gradle-clipflow --offline --no-daemon --no-watch-fs --console=plain :app:testDebugUnitTest --tests com.qihe.clipflow.navigation.PrimaryNavigationTest`
 
 Expected: compilation failure naming the missing helper functions.
 
-- [ ] **Step 3: Implement the minimal helpers in `Screen.kt`.**
+- [x] **Step 3: Implement the minimal helpers in `Screen.kt`.**
 
 ```kotlin
 import androidx.navigation.NavHostController
@@ -102,13 +102,13 @@ fun NavHostController.navigateToPrimary(route: String) {
 }
 ```
 
-- [ ] **Step 4: Run the focused test and confirm all three cases pass.**
+- [x] **Step 4: Run the focused test and confirm all three cases pass.**
 
 Run: `.\gradlew.bat -g E:/clioipflow/.gradle-clipflow --offline --no-daemon --no-watch-fs --console=plain :app:testDebugUnitTest --tests com.qihe.clipflow.navigation.PrimaryNavigationTest`
 
 Expected: `3 tests completed, 0 failed`.
 
-- [ ] **Step 5: Commit the helper and tests.**
+- [x] **Step 5: Commit the helper and tests.**
 
 ```bash
 git add app/src/main/java/com/qihe/clipflow/navigation/Screen.kt app/src/test/java/com/qihe/clipflow/navigation/PrimaryNavigationTest.kt
@@ -124,7 +124,7 @@ git commit -m "test: cover primary navigation ordering"
 **Interfaces:**
 - `MainPager(navController: NavHostController, pages: List<BottomNavItem>, pagerState: PagerState, stateHolder: SaveableStateHolder, currentRoute: String?, sourceUrl: String?)` renders the registered primary pages and forwards `sourceUrl` only to the currently active parser page.
 
-- [ ] **Step 1: Add the explicit Compose Foundation dependency.**
+- [x] **Step 1: Add the explicit Compose Foundation dependency.**
 
 Add this dependency inside the existing Compose dependency block in
 `app/build.gradle.kts`:
@@ -133,7 +133,7 @@ Add this dependency inside the existing Compose dependency block in
 implementation("androidx.compose.foundation:foundation")
 ```
 
-- [ ] **Step 2: Create `MainPager` with stable route keys and per-route saveable state.**
+- [x] **Step 2: Create `MainPager` with stable route keys and per-route saveable state.**
 
 ```kotlin
 @Composable
@@ -171,14 +171,14 @@ The `when` remains the single registration point for page content; adding a
 new primary page adds one branch next to its existing `Screen` and
 `BottomNavItem` registration.
 
-- [ ] **Step 3: Compile the new file and run the focused navigation test.**
+- [x] **Step 3: Compile the new file and run the focused navigation test.**
 
 Run: `.\gradlew.bat -g E:/clioipflow/.gradle-clipflow --offline --no-daemon --no-watch-fs --console=plain :app:testDebugUnitTest --tests com.qihe.clipflow.navigation.PrimaryNavigationTest`
 
 Expected: the test task reaches the existing source compilation without an
 unresolved `HorizontalPager`, `PagerState`, or `SaveableStateHolder` symbol.
 
-- [ ] **Step 4: Commit the pager host.**
+- [x] **Step 4: Commit the pager host.**
 
 ```bash
 git add app/build.gradle.kts app/src/main/java/com/qihe/clipflow/navigation/MainPager.kt
@@ -196,7 +196,7 @@ git commit -m "feat: add saveable primary navigation pager"
 - Route-to-pager synchronization calls `pagerState.animateScrollToPage(primaryPageIndex(...))` only when the target differs from the settled page.
 - Pager-to-route synchronization observes `pagerState.settledPage` and calls `navController.navigateToPrimary(...)` only while the current route is a primary route.
 
-- [ ] **Step 1: Replace the fixed `bottomBarRoutes` list with the shared ordered items.**
+- [x] **Step 1: Replace the fixed `bottomBarRoutes` list with the shared ordered items.**
 
 Use this state near the existing `bottomBarOrder` flow:
 
@@ -218,7 +218,7 @@ Use `primaryRoutes.firstOrNull { it == defaultPage } ?: primaryRoutes.first()`
 as the `NavHost` start destination so a persisted invalid default cannot point
 to a page absent from the pager.
 
-- [ ] **Step 2: Add route-to-pager and pager-to-route effects.**
+- [x] **Step 2: Add route-to-pager and pager-to-route effects.**
 
 ```kotlin
 LaunchedEffect(currentRoute, primaryRoutes) {
@@ -245,7 +245,7 @@ Import `HorizontalPager` state APIs, `rememberSaveableStateHolder`,
 `distinctUntilChanged`, and `collectLatest` without changing any ViewModel or
 parser state collection.
 
-- [ ] **Step 3: Pass the current parser argument into the pager.**
+- [x] **Step 3: Pass the current parser argument into the pager.**
 
 Derive the current route argument from the active back-stack entry:
 
@@ -260,7 +260,7 @@ val currentSourceUrl = when (currentRoute) {
 Render `MainPager(...)` from the Home, Douyin, and Xiaohongshu `NavHost`
 destinations, leaving the existing route argument declarations in place.
 
-- [ ] **Step 4: Disable duplicate transitions for primary destinations.**
+- [x] **Step 4: Disable duplicate transitions for primary destinations.**
 
 In all four `NavHost` transition lambdas, return `EnterTransition.None` when
 the target route is primary and `ExitTransition.None` when the source route is
@@ -268,14 +268,14 @@ primary. Keep the existing fade/slide implementation for transitions whose
 destination is History, Settings, or About. Normalize routes with
 `substringBefore("?")` before checking membership.
 
-- [ ] **Step 5: Make the floating bottom bar use the shared item helper and navigation action.**
+- [x] **Step 5: Make the floating bottom bar use the shared item helper and navigation action.**
 
 Replace its local `mapNotNull` expression with
 `orderedBottomNavItems(bottomBarOrder)`, and replace the local `navigate` body
 with `navController.navigateToPrimary(item.route)`. Keep the existing visual
 renderer, labels, backdrop, and selected-index calculation unchanged.
 
-- [ ] **Step 6: Run unit tests and a debug build.**
+- [x] **Step 6: Run unit tests and a debug build.**
 
 Run: `.\gradlew.bat -g E:/clioipflow/.gradle-clipflow --offline --no-daemon --no-watch-fs --console=plain :app:testDebugUnitTest`
 
@@ -285,7 +285,7 @@ Run: `.\gradlew.bat -g E:/clioipflow/.gradle-clipflow --offline --no-daemon --no
 
 Expected: `BUILD SUCCESSFUL` and a debug APK under `app/build/outputs/apk/debug/`.
 
-- [ ] **Step 7: Commit the synchronized navigation shell.**
+- [x] **Step 7: Commit the synchronized navigation shell.**
 
 ```bash
 git add app/src/main/java/com/qihe/clipflow/navigation/ClipFlowNavHost.kt app/src/main/java/com/qihe/clipflow/navigation/NavigationChrome.kt
@@ -297,20 +297,20 @@ git commit -m "feat: sync horizontal pager with primary navigation"
 **Files:**
 - No source changes expected.
 
-- [ ] **Step 1: Check formatting and repository status.**
+- [x] **Step 1: Check formatting and repository status.**
 
 Run: `git diff --check`
 
 Expected: no output and exit code 0.
 
-- [ ] **Step 2: Build the release APK serially.**
+- [x] **Step 2: Build the release APK serially.**
 
 Run: `.\gradlew.bat -g E:/clioipflow/.gradle-clipflow --offline --no-daemon --no-watch-fs --console=plain :app:assembleRelease`
 
 Expected: `BUILD SUCCESSFUL` and
 `app/build/outputs/apk/release/app-release.apk` exists.
 
-- [ ] **Step 3: Inspect the final diff for scope.**
+- [x] **Step 3: Inspect the final diff for scope.**
 
 Run: `git status --short` and `git log -5 --oneline`
 
@@ -318,7 +318,7 @@ Expected: only the design, plan, pager dependency, navigation code, and focused
 tests are present; parser, downloader, wallpaper, privacy, and settings
 business files are unchanged.
 
-- [ ] **Step 4: Report manual acceptance limits.**
+- [x] **Step 4: Report manual acceptance limits.**
 
 If no Android device or emulator is available, report build/test verification
 as complete but state that physical left/right swipe acceptance was not run.
