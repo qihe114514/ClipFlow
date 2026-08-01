@@ -93,7 +93,7 @@ fun FloatingBottomBar(
     val bottomBarOrder by produceState(initialValue = listOf("home", "douyin", "xiaohongshu")) {
         prefs.bottomBarOrder.collect { value = it }
     }
-    val items = bottomBarOrder.mapNotNull { key -> bottomNavItems.find { it.route == key } }
+    val items = orderedBottomNavItems(bottomBarOrder)
     if (items.isEmpty()) return
 
     val selectedIndex = items.indexOfFirst { item ->
@@ -104,10 +104,7 @@ fun FloatingBottomBar(
 
     fun navigateTo(item: BottomNavItem?) {
         if (item == null) return
-        navController.navigate(item.route) {
-            launchSingleTop = true
-            restoreState = true
-        }
+        navController.navigateToPrimary(item.route)
     }
 
     LiquidFloatingBottomBar(

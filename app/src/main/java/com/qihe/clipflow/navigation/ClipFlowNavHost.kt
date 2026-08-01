@@ -4,8 +4,10 @@ import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -24,13 +26,13 @@ import com.qihe.clipflow.ui.components.PrivacyConsentDialog
 import com.qihe.clipflow.ui.components.DownloadPill
 import com.qihe.clipflow.ClipFlowApp
 import com.qihe.clipflow.ui.components.DownloadPillState
-import com.qihe.clipflow.ui.douyin.DouyinScreen
 import com.qihe.clipflow.ui.history.HistoryScreen
-import com.qihe.clipflow.ui.home.HomeScreen
 import com.qihe.clipflow.ui.settings.SettingsScreen
 import com.qihe.clipflow.ui.about.AboutScreen
-import com.qihe.clipflow.ui.xiaohongshu.XiaohongshuScreen
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
@@ -85,14 +87,42 @@ fun ClipFlowNavHost() {
         prefs.bottomBarOrder.collect { value = it }
     }
 
-    val bottomBarRoutes = listOf(
-        Screen.Home.route,
-        Screen.Douyin.route,
-        Screen.Xiaohongshu.route
-    )
-
-    val showBottomBar = currentRoute in bottomBarRoutes
+    val primaryItems = remember(bottomBarOrder) {
+        orderedBottomNavItems(bottomBarOrder)
+    }
+    val primaryRoutes = remember(primaryItems) { primaryItems.map { it.route } }
+    val showBottomBar = currentRoute in primaryRoutes
     val showTopBar = currentRoute != null
+    val pagerState = rememberPagerState(
+        initialPage = primaryPageIndex(currentRoute ?: defaultPage, primaryItems),
+        pageCount = { primaryItems.size },
+    )
+    val pagerStateHolder = rememberSaveableStateHolder()
+    val currentSourceUrl = when (currentRoute) {
+        Screen.Douyin.route -> navBackStackEntry?.arguments?.getString(Screen.Douyin.sourceUrlArgument)
+        Screen.Xiaohongshu.route -> navBackStackEntry?.arguments?.getString(Screen.Xiaohongshu.sourceUrlArgument)
+        else -> null
+    }
+
+    LaunchedEffect(currentRoute, primaryRoutes) {
+        val targetPage = primaryRoutes.indexOf(currentRoute)
+        if (targetPage >= 0 && pagerState.currentPage != targetPage) {
+            pagerState.animateScrollToPage(targetPage)
+        }
+    }
+
+    LaunchedEffect(pagerState, primaryRoutes, currentRoute) {
+        snapshotFlow { pagerState.settledPage }
+            .drop(1)
+            .distinctUntilChanged()
+            .collectLatest { page ->
+                val route = primaryRoutes.getOrNull(page)
+                if (route != null && currentRoute != null && currentRoute in primaryRoutes && currentRoute != route) {
+                    navController.navigateToPrimary(route)
+                }
+            }
+    }
+
     val isDark = isSystemInDarkTheme()
     val miuixController = remember(isDark) {
         ThemeController(
@@ -135,38 +165,62 @@ fun ClipFlowNavHost() {
                 ) {
                     NavHost(
                         navController = navController,
-                        startDestination = when (defaultPage) {
-                            "douyin" -> Screen.Douyin.route
-                            "xiaohongshu" -> Screen.Xiaohongshu.route
-                            else -> Screen.Home.route
-                        },
+                        startDestination = primaryRoutes.firstOrNull { it == defaultPage }
+                            ?: primaryRoutes.first(),
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(innerPadding),
                     enterTransition = {
                         val from = initialState.destination.route?.substringBefore("?")
                         val to = targetState.destination.route?.substringBefore("?")
-                        val fromIdx = bottomBarOrder.indexOf(from)
-                        val toIdx = bottomBarOrder.indexOf(to)
-                        val direction = if (toIdx > fromIdx) 1 else -1
-                        fadeIn(tween(300)) + slideInHorizontally(tween(300)) { direction * it / 4 }
+                        if (to in primaryRoutes) {
+                            EnterTransition.None
+                        } else {
+                            val fromIdx = primaryRoutes.indexOf(from)
+                            val toIdx = primaryRoutes.indexOf(to)
+                            val direction = if (toIdx > fromIdx) 1 else -1
+                            fadeIn(tween(300)) + slideInHorizontally(tween(300)) { direction * it / 4 }
+                        }
                     },
                     exitTransition = {
                         val from = initialState.destination.route?.substringBefore("?")
-                        val to = targetState.destination.route?.substringBefore("?")
-                        val fromIdx = bottomBarOrder.indexOf(from)
-                        val toIdx = bottomBarOrder.indexOf(to)
-                        val direction = if (toIdx > fromIdx) 1 else -1
-                        fadeOut(tween(300)) + slideOutHorizontally(tween(300)) { -direction * it / 4 }
+                        if (from in primaryRoutes) {
+                            ExitTransition.None
+                        } else {
+                            val to = targetState.destination.route?.substringBefore("?")
+                            val fromIdx = primaryRoutes.indexOf(from)
+                            val toIdx = primaryRoutes.indexOf(to)
+                            val direction = if (toIdx > fromIdx) 1 else -1
+                            fadeOut(tween(300)) + slideOutHorizontally(tween(300)) { -direction * it / 4 }
+                        }
                     },
                     popEnterTransition = {
-                        fadeIn(tween(300)) + slideInHorizontally(tween(300)) { -it / 4 }
+                        val to = targetState.destination.route?.substringBefore("?")
+                        if (to in primaryRoutes) {
+                            EnterTransition.None
+                        } else {
+                            fadeIn(tween(300)) + slideInHorizontally(tween(300)) { -it / 4 }
+                        }
                     },
                     popExitTransition = {
-                        fadeOut(tween(300)) + slideOutHorizontally(tween(300)) { it / 4 }
+                        val from = initialState.destination.route?.substringBefore("?")
+                        if (from in primaryRoutes) {
+                            ExitTransition.None
+                        } else {
+                            fadeOut(tween(300)) + slideOutHorizontally(tween(300)) { it / 4 }
+                        }
                     }
                     ) {
-                        composable(Screen.Home.route) { HomeScreen(navController) }
+                        composable(Screen.Home.route) {
+                            MainPager(
+                                navController = navController,
+                                pages = primaryItems,
+                                pagerState = pagerState,
+                                stateHolder = pagerStateHolder,
+                                currentRoute = currentRoute,
+                                sourceUrl = currentSourceUrl,
+                            )
+                        }
                         composable(
                             route = Screen.Douyin.destinationRoute,
                             arguments = listOf(
@@ -176,8 +230,15 @@ fun ClipFlowNavHost() {
                                     defaultValue = null
                                 }
                             )
-                        ) { entry ->
-                            DouyinScreen(entry.arguments?.getString(Screen.Douyin.sourceUrlArgument))
+                        ) {
+                            MainPager(
+                                navController = navController,
+                                pages = primaryItems,
+                                pagerState = pagerState,
+                                stateHolder = pagerStateHolder,
+                                currentRoute = currentRoute,
+                                sourceUrl = currentSourceUrl,
+                            )
                         }
                         composable(
                             route = Screen.Xiaohongshu.destinationRoute,
@@ -188,8 +249,15 @@ fun ClipFlowNavHost() {
                                     defaultValue = null
                                 }
                             )
-                        ) { entry ->
-                            XiaohongshuScreen(entry.arguments?.getString(Screen.Xiaohongshu.sourceUrlArgument))
+                        ) {
+                            MainPager(
+                                navController = navController,
+                                pages = primaryItems,
+                                pagerState = pagerState,
+                                stateHolder = pagerStateHolder,
+                                currentRoute = currentRoute,
+                                sourceUrl = currentSourceUrl,
+                            )
                         }
                         composable(Screen.History.route) { HistoryScreen(navController) }
                         composable(Screen.Settings.route) { SettingsScreen(navController) }

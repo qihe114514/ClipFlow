@@ -28,9 +28,11 @@ their existing screen implementations.
 
 The ordered primary page list is derived from the registered bottom-navigation
 items and the persisted `bottomBarOrder`. Unknown or duplicate persisted keys
-are ignored. If the resulting list is empty, the registered primary list is
-used as a fallback so the pager always has a valid page count. The same helper
-is used by the bottom bar and pager, keeping selection and swipe order aligned.
+are ignored, and registered items missing from an older persisted order are
+appended in registration order. If the resulting list is empty, the registered
+primary list is used as a fallback so the pager always has a valid page count.
+The same helper is used by the bottom bar and pager, keeping selection and
+swipe order aligned.
 
 Adding a primary page requires registering its `Screen`, bottom-navigation
 item, pager content, and `NavHost` destination. Pager sizing, adjacent-page

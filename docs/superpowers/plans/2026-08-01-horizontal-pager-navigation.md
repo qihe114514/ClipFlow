@@ -27,7 +27,7 @@
 - Create: `app/src/test/java/com/qihe/clipflow/navigation/PrimaryNavigationTest.kt`
 
 **Interfaces:**
-- `orderedBottomNavItems(order: List<String>, registeredItems: List<BottomNavItem> = bottomNavItems): List<BottomNavItem>` filters unknown and duplicate keys while retaining the configured order and falls back to all registered items when no configured key is valid.
+- `orderedBottomNavItems(order: List<String>, registeredItems: List<BottomNavItem> = bottomNavItems): List<BottomNavItem>` filters unknown and duplicate keys, appends registered items missing from an older order, and falls back to all registered items when no configured key is valid.
 - `primaryPageIndex(route: String?, items: List<BottomNavItem>): Int` returns the matching index or `0` for an unknown route.
 - `NavHostController.navigateToPrimary(route: String)` performs tab-style navigation with `popUpTo(findStartDestination()) { saveState = true }`, `launchSingleTop = true`, and `restoreState = true`.
 
@@ -46,7 +46,7 @@ class PrimaryNavigationTest {
             listOf("xiaohongshu", "missing", "xiaohongshu", "home")
         ).map { it.route }
 
-        assertEquals(listOf("xiaohongshu", "home"), routes)
+        assertEquals(listOf("xiaohongshu", "home", "douyin"), routes)
     }
 
     @Test
@@ -84,7 +84,9 @@ fun orderedBottomNavItems(
     val configured = order.mapNotNull { key ->
         distinctRegistered.find { it.route == key }
     }.distinctBy { it.route }
-    return configured.ifEmpty { distinctRegistered }
+    val configuredRoutes = configured.map { it.route }.toSet()
+    val missing = distinctRegistered.filterNot { it.route in configuredRoutes }
+    return (configured + missing).ifEmpty { distinctRegistered }
 }
 
 fun primaryPageIndex(route: String?, items: List<BottomNavItem>): Int {
@@ -228,6 +230,7 @@ LaunchedEffect(currentRoute, primaryRoutes) {
 
 LaunchedEffect(pagerState, primaryRoutes, currentRoute) {
     snapshotFlow { pagerState.settledPage }
+        .drop(1)
         .distinctUntilChanged()
         .collectLatest { page ->
             val route = primaryRoutes.getOrNull(page)

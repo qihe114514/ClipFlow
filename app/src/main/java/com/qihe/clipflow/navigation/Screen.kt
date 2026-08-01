@@ -71,7 +71,9 @@ fun orderedBottomNavItems(
     val configured = order.mapNotNull { key ->
         distinctRegistered.find { it.route == key }
     }.distinctBy { it.route }
-    return configured.ifEmpty { distinctRegistered }
+    val configuredRoutes = configured.map { it.route }.toSet()
+    val missing = distinctRegistered.filterNot { it.route in configuredRoutes }
+    return (configured + missing).ifEmpty { distinctRegistered }
 }
 
 fun primaryPageIndex(route: String?, items: List<BottomNavItem>): Int {
