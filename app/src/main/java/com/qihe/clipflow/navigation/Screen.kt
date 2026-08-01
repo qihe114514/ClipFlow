@@ -9,6 +9,8 @@ import androidx.compose.material.icons.outlined.MusicNote
 import androidx.compose.material.icons.outlined.Shop
 import androidx.compose.ui.graphics.vector.ImageVector
 import android.net.Uri
+import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavHostController
 
 sealed class Screen(val route: String) {
     data object Home : Screen("home")
@@ -60,3 +62,26 @@ val bottomNavItems = listOf(
         unselectedIcon = Icons.Outlined.Shop
     )
 )
+
+fun orderedBottomNavItems(
+    order: List<String>,
+    registeredItems: List<BottomNavItem> = bottomNavItems,
+): List<BottomNavItem> {
+    val distinctRegistered = registeredItems.distinctBy { it.route }
+    val configured = order.mapNotNull { key ->
+        distinctRegistered.find { it.route == key }
+    }.distinctBy { it.route }
+    return configured.ifEmpty { distinctRegistered }
+}
+
+fun primaryPageIndex(route: String?, items: List<BottomNavItem>): Int {
+    return items.indexOfFirst { it.route == route }.coerceAtLeast(0)
+}
+
+fun NavHostController.navigateToPrimary(route: String) {
+    navigate(route) {
+        popUpTo(graph.findStartDestination().id) { saveState = true }
+        launchSingleTop = true
+        restoreState = true
+    }
+}
