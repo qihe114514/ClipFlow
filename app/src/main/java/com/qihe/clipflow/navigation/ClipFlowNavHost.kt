@@ -161,15 +161,26 @@ fun ClipFlowNavHost() {
                 }
             ) { innerPadding ->
                 Box(
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding)
                 ) {
+                    if (showBottomBar) {
+                        MainPager(
+                            navController = navController,
+                            pages = primaryItems,
+                            pagerState = pagerState,
+                            stateHolder = pagerStateHolder,
+                            currentRoute = currentRoute,
+                            sourceUrl = currentSourceUrl,
+                        )
+                    }
+
                     NavHost(
                         navController = navController,
                         startDestination = primaryRoutes.firstOrNull { it == defaultPage }
                             ?: primaryRoutes.first(),
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(innerPadding),
+                        modifier = Modifier.fillMaxSize(),
                     enterTransition = {
                         val from = initialState.destination.route?.substringBefore("?")
                         val to = targetState.destination.route?.substringBefore("?")
@@ -212,14 +223,7 @@ fun ClipFlowNavHost() {
                     }
                     ) {
                         composable(Screen.Home.route) {
-                            MainPager(
-                                navController = navController,
-                                pages = primaryItems,
-                                pagerState = pagerState,
-                                stateHolder = pagerStateHolder,
-                                currentRoute = currentRoute,
-                                sourceUrl = currentSourceUrl,
-                            )
+                            Spacer(Modifier.fillMaxSize())
                         }
                         composable(
                             route = Screen.Douyin.destinationRoute,
@@ -230,16 +234,7 @@ fun ClipFlowNavHost() {
                                     defaultValue = null
                                 }
                             )
-                        ) {
-                            MainPager(
-                                navController = navController,
-                                pages = primaryItems,
-                                pagerState = pagerState,
-                                stateHolder = pagerStateHolder,
-                                currentRoute = currentRoute,
-                                sourceUrl = currentSourceUrl,
-                            )
-                        }
+                        ) { Spacer(Modifier.fillMaxSize()) }
                         composable(
                             route = Screen.Xiaohongshu.destinationRoute,
                             arguments = listOf(
@@ -249,16 +244,7 @@ fun ClipFlowNavHost() {
                                     defaultValue = null
                                 }
                             )
-                        ) {
-                            MainPager(
-                                navController = navController,
-                                pages = primaryItems,
-                                pagerState = pagerState,
-                                stateHolder = pagerStateHolder,
-                                currentRoute = currentRoute,
-                                sourceUrl = currentSourceUrl,
-                            )
-                        }
+                        ) { Spacer(Modifier.fillMaxSize()) }
                         composable(Screen.History.route) { HistoryScreen(navController) }
                         composable(Screen.Settings.route) { SettingsScreen(navController) }
                         composable(Screen.About.route) { AboutScreen(navController) }
@@ -308,6 +294,7 @@ fun ClipFlowNavHost() {
                     currentDestination = currentDestination,
                     prefs = prefs,
                     backdrop = backdrop,
+                    pagerState = pagerState,
                     modifier = Modifier.align(Alignment.BottomCenter)
                 )
             }

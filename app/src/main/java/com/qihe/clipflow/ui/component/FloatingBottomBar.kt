@@ -83,6 +83,20 @@ import kotlin.math.sqrt
 
 val LocalFloatingBottomBarTabScale = staticCompositionLocalOf { { 1f } }
 
+private fun indicatorValue(
+    dampedValue: Float,
+    externalPosition: (() -> Float)?,
+    externalActive: (() -> Boolean)?,
+    tabsCount: Int,
+): Float {
+    val value = if (externalPosition != null && externalActive?.invoke() == true) {
+        externalPosition()
+    } else {
+        dampedValue
+    }
+    return value.coerceIn(0f, (tabsCount - 1).coerceAtLeast(0).toFloat())
+}
+
 private val iosIndicatorSpecular: Highlight = Highlight(
     width = 1.dp,
     alpha = 1f,
@@ -181,6 +195,8 @@ fun FloatingBottomBar(
     onSelected: (index: Int) -> Unit,
     backdrop: Backdrop,
     tabsCount: Int,
+    indicatorPosition: (() -> Float)? = null,
+    indicatorPositionActive: (() -> Boolean)? = null,
     isBlurEnabled: Boolean = true,
     content: @Composable RowScope.() -> Unit
 ) {
@@ -278,9 +294,15 @@ fun FloatingBottomBar(
         InteractiveHighlight(
             animationScope = animationScope,
             position = { size, _ ->
+                val indicator = indicatorValue(
+                    dampedValue = dampedDragAnimation.value,
+                    externalPosition = indicatorPosition,
+                    externalActive = indicatorPositionActive,
+                    tabsCount = tabsCount,
+                )
                 Offset(
-                    if (isLtr) (dampedDragAnimation.value + 0.5f) * tabWidthPx + panelOffset
-                    else size.width - (dampedDragAnimation.value + 0.5f) * tabWidthPx + panelOffset,
+                    if (isLtr) (indicator + 0.5f) * tabWidthPx + panelOffset
+                    else size.width - (indicator + 0.5f) * tabWidthPx + panelOffset,
                     size.height / 2f
                 )
             }
@@ -392,7 +414,13 @@ fun FloatingBottomBar(
                     Modifier
                         .padding(horizontal = 4.dp)
                         .graphicsLayer {
-                            val progressOffset = dampedDragAnimation.value * tabWidthPx
+                            val indicator = indicatorValue(
+                                dampedValue = dampedDragAnimation.value,
+                                externalPosition = indicatorPosition,
+                                externalActive = indicatorPositionActive,
+                                tabsCount = tabsCount,
+                            )
+                            val progressOffset = indicator * tabWidthPx
                             translationX = if (isLtr) progressOffset + panelOffset else -progressOffset + panelOffset
                         }
                         .then(interactiveHighlight.gestureModifier)
@@ -441,7 +469,13 @@ fun FloatingBottomBar(
                     Modifier
                         .padding(horizontal = 4.dp)
                         .graphicsLayer {
-                            val progressOffset = dampedDragAnimation.value * tabWidthPx
+                            val indicator = indicatorValue(
+                                dampedValue = dampedDragAnimation.value,
+                                externalPosition = indicatorPosition,
+                                externalActive = indicatorPositionActive,
+                                tabsCount = tabsCount,
+                            )
+                            val progressOffset = indicator * tabWidthPx
                             translationX = if (isLtr) progressOffset + panelOffset else -progressOffset + panelOffset
                         }
                         .then(dampedDragAnimation.modifier)

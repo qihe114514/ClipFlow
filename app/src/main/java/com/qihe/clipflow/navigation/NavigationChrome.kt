@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.pager.PagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.History
@@ -88,6 +89,7 @@ fun FloatingBottomBar(
     currentDestination: NavDestination?,
     prefs: AppPreferences,
     backdrop: Backdrop,
+    pagerState: PagerState,
     modifier: Modifier = Modifier
 ) {
     val bottomBarOrder by produceState(initialValue = listOf("home", "douyin", "xiaohongshu")) {
@@ -119,6 +121,14 @@ fun FloatingBottomBar(
         onSelected = { index -> navigateTo(items.getOrNull(index)) },
         backdrop = backdrop,
         tabsCount = items.size,
+        indicatorPosition = {
+            pagerIndicatorPosition(
+                currentPage = pagerState.currentPage,
+                currentPageOffsetFraction = pagerState.currentPageOffsetFraction,
+                pageCount = items.size,
+            )
+        },
+        indicatorPositionActive = { pagerState.isScrollInProgress },
         isBlurEnabled = true,
     ) {
         items.forEach { item ->
