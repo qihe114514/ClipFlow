@@ -6,7 +6,7 @@
 
 **Architecture:** Keep the current MVVM/data layer and secondary NavHost destinations. Add a template-compatible theme and bottom-bar layer, then make the main route a three-page `HorizontalPager` whose pages are the existing Home, Douyin, and Xiaohongshu screens. Persist only the renderer choice in DataStore; Miuix is the default and Material is the alternate renderer.
 
-**Tech Stack:** Kotlin 2.4, Gradle 9.5.1, AGP 9.2.1, Jetpack Compose BOM 2026.05.01, Miuix 0.9.2, Material 3, Navigation Compose, Room, DataStore, Retrofit, Coil.
+**Tech Stack:** Kotlin 2.4.0, Gradle 9.6.0, AGP 9.1.0, Jetpack Compose BOM 2026.05.01, Miuix 0.9.2, Material 3, Navigation Compose, Room, DataStore, Retrofit, Coil.
 
 ## Global Constraints
 
@@ -15,7 +15,7 @@
 - Home must not render a parser input.
 - The persisted UI-mode key is `ui_mode`; missing or invalid values resolve to `miuix`.
 - The borrowed shell is GPLv3; retain its license text and document the source URL.
-- Use JVM 17 and Android compile/target SDK 36 on this machine.
+- Use JVM 17 and Android compile/target SDK 37 on this machine.
 
 ---
 
@@ -146,4 +146,3 @@
 - [ ] Run `./gradlew :app:assembleDebug`.
 - [ ] Run `./gradlew :app:assembleRelease` and verify
   `app/build/outputs/apk/release/app-release.apk` exists.
-

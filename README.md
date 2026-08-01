@@ -150,7 +150,11 @@ ClipFlow/
 
 ## 📄 开源协议
 
-MIT License
+GNU General Public License v3.0 (GPLv3)
+
+The application shell and Miuix/Material UI patterns are adapted from
+[KernelSU-Style-UI-Kit](https://github.com/chenaizhang/KernelSU-Style-UI-Kit),
+licensed under GPLv3. See [LICENSE](LICENSE) for the full license text.
 
 ---
 

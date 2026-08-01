@@ -2,6 +2,7 @@ package com.qihe.clipflow.navigation
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -31,6 +32,13 @@ import com.qihe.clipflow.ui.about.AboutScreen
 import com.qihe.clipflow.ui.xiaohongshu.XiaohongshuScreen
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import top.yukonga.miuix.kmp.blur.layerBackdrop
+import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
+import top.yukonga.miuix.kmp.theme.ColorSchemeMode
+import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.theme.ThemeColorSpec
+import top.yukonga.miuix.kmp.theme.ThemeController
+import top.yukonga.miuix.kmp.theme.ThemePaletteStyle
 
 @Composable
 fun ClipFlowNavHost() {
@@ -85,9 +93,31 @@ fun ClipFlowNavHost() {
 
     val showBottomBar = currentRoute in bottomBarRoutes
     val showTopBar = currentRoute != null
+    val isDark = isSystemInDarkTheme()
+    val miuixController = remember(isDark) {
+        ThemeController(
+            ColorSchemeMode.System,
+            isDark = isDark,
+            paletteStyle = ThemePaletteStyle.TonalSpot,
+            colorSpec = ThemeColorSpec.Spec2021,
+        )
+    }
 
-    BackgroundWallpaperLayer {
+    MiuixTheme(controller = miuixController) {
+        val surfaceColor = MiuixTheme.colorScheme.surface
+        val backdrop = rememberLayerBackdrop {
+            drawRect(surfaceColor.copy(alpha = 0.18f))
+            drawContent()
+        }
+
         Box(modifier = Modifier.fillMaxSize()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .then(if (showBottomBar) Modifier.layerBackdrop(backdrop) else Modifier)
+            ) {
+                BackgroundWallpaperLayer {
+                    Box(modifier = Modifier.fillMaxSize()) {
             Scaffold(
                 modifier = Modifier.fillMaxSize(),
                 containerColor = Color.Transparent,
@@ -100,16 +130,19 @@ fun ClipFlowNavHost() {
                     }
                 }
             ) { innerPadding ->
-                NavHost(
-                    navController = navController,
-                    startDestination = when (defaultPage) {
-                        "douyin" -> Screen.Douyin.route
-                        "xiaohongshu" -> Screen.Xiaohongshu.route
-                        else -> Screen.Home.route
-                    },
-                    modifier = Modifier
-                        .padding(innerPadding)
-                        .then(if (showBottomBar) Modifier.padding(bottom = 80.dp) else Modifier),
+                Box(
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    NavHost(
+                        navController = navController,
+                        startDestination = when (defaultPage) {
+                            "douyin" -> Screen.Douyin.route
+                            "xiaohongshu" -> Screen.Xiaohongshu.route
+                            else -> Screen.Home.route
+                        },
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(innerPadding),
                     enterTransition = {
                         val from = initialState.destination.route?.substringBefore("?")
                         val to = targetState.destination.route?.substringBefore("?")
@@ -132,47 +165,40 @@ fun ClipFlowNavHost() {
                     popExitTransition = {
                         fadeOut(tween(300)) + slideOutHorizontally(tween(300)) { it / 4 }
                     }
-                ) {
-                    composable(Screen.Home.route) { HomeScreen(navController) }
-                    composable(
-                        route = Screen.Douyin.destinationRoute,
-                        arguments = listOf(
-                            navArgument(Screen.Douyin.sourceUrlArgument) {
-                                type = NavType.StringType
-                                nullable = true
-                                defaultValue = null
-                            }
-                        )
-                    ) { entry ->
-                        DouyinScreen(entry.arguments?.getString(Screen.Douyin.sourceUrlArgument))
+                    ) {
+                        composable(Screen.Home.route) { HomeScreen(navController) }
+                        composable(
+                            route = Screen.Douyin.destinationRoute,
+                            arguments = listOf(
+                                navArgument(Screen.Douyin.sourceUrlArgument) {
+                                    type = NavType.StringType
+                                    nullable = true
+                                    defaultValue = null
+                                }
+                            )
+                        ) { entry ->
+                            DouyinScreen(entry.arguments?.getString(Screen.Douyin.sourceUrlArgument))
+                        }
+                        composable(
+                            route = Screen.Xiaohongshu.destinationRoute,
+                            arguments = listOf(
+                                navArgument(Screen.Xiaohongshu.sourceUrlArgument) {
+                                    type = NavType.StringType
+                                    nullable = true
+                                    defaultValue = null
+                                }
+                            )
+                        ) { entry ->
+                            XiaohongshuScreen(entry.arguments?.getString(Screen.Xiaohongshu.sourceUrlArgument))
+                        }
+                        composable(Screen.History.route) { HistoryScreen(navController) }
+                        composable(Screen.Settings.route) { SettingsScreen(navController) }
+                        composable(Screen.About.route) { AboutScreen(navController) }
                     }
-                    composable(
-                        route = Screen.Xiaohongshu.destinationRoute,
-                        arguments = listOf(
-                            navArgument(Screen.Xiaohongshu.sourceUrlArgument) {
-                                type = NavType.StringType
-                                nullable = true
-                                defaultValue = null
-                            }
-                        )
-                    ) { entry ->
-                        XiaohongshuScreen(entry.arguments?.getString(Screen.Xiaohongshu.sourceUrlArgument))
-                    }
-                    composable(Screen.History.route) { HistoryScreen(navController) }
-                    composable(Screen.Settings.route) { SettingsScreen(navController) }
-                    composable(Screen.About.route) { AboutScreen(navController) }
                 }
             }
 
             // ========== 悬浮底栏 ==========
-            if (showBottomBar) {
-                FloatingBottomBar(
-                    navController = navController,
-                    currentDestination = currentDestination,
-                    prefs = prefs,
-                    modifier = Modifier.align(Alignment.BottomCenter)
-                )
-            }
 
             // 全局下载药丸（跨页面持久）
             val pillVisible by DownloadPillState.visible.collectAsState()
@@ -200,5 +226,24 @@ fun ClipFlowNavHost() {
                     .padding(top = 8.dp)
             )
         }
+            }
+        }
+
+        if (showBottomBar) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.BottomCenter)
+            ) {
+                FloatingBottomBar(
+                    navController = navController,
+                    currentDestination = currentDestination,
+                    prefs = prefs,
+                    backdrop = backdrop,
+                    modifier = Modifier.align(Alignment.BottomCenter)
+                )
+            }
+        }
     }
+}
 }

@@ -1,20 +1,14 @@
 package com.qihe.clipflow.navigation
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.defaultMinSize
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.History
@@ -29,16 +23,23 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavDestination
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavHostController
 import com.qihe.clipflow.data.preferences.AppPreferences
+import com.qihe.clipflow.ui.component.FloatingBottomBar as LiquidFloatingBottomBar
+import com.qihe.clipflow.ui.component.FloatingBottomBarItem
+import top.yukonga.miuix.kmp.basic.Icon as MiuixIcon
+import top.yukonga.miuix.kmp.basic.Text as MiuixText
+import top.yukonga.miuix.kmp.blur.Backdrop
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -86,40 +87,62 @@ fun FloatingBottomBar(
     navController: NavHostController,
     currentDestination: NavDestination?,
     prefs: AppPreferences,
+    backdrop: Backdrop,
     modifier: Modifier = Modifier
 ) {
-    val isDark = isSystemInDarkTheme()
     val bottomBarOrder by produceState(initialValue = listOf("home", "douyin", "xiaohongshu")) {
         prefs.bottomBarOrder.collect { value = it }
     }
     val items = bottomBarOrder.mapNotNull { key -> bottomNavItems.find { it.route == key } }
-    val shape = RoundedCornerShape(28.dp)
-    val containerColor = if (isDark) Color.Black.copy(alpha = 0.55f) else Color.White.copy(alpha = 0.55f)
-    val borderColor = if (isDark) Color.White.copy(alpha = 0.08f) else Color.White.copy(alpha = 0.25f)
+    if (items.isEmpty()) return
 
-    Row(
-        modifier = modifier.navigationBarsPadding().padding(horizontal = 20.dp, vertical = 12.dp)
-            .clip(shape).background(containerColor, shape).border(0.5.dp, borderColor, shape).padding(horizontal = 6.dp, vertical = 6.dp),
-        horizontalArrangement = Arrangement.SpaceEvenly
+    val selectedIndex = items.indexOfFirst { item ->
+        currentDestination?.hierarchy?.any { it.route?.substringBefore("?") == item.route } == true
+    }.coerceAtLeast(0)
+    val selectedIndexState = rememberUpdatedState(selectedIndex)
+    val selectedIndexProvider = remember { { selectedIndexState.value } }
+
+    fun navigateTo(item: BottomNavItem?) {
+        if (item == null) return
+        navController.navigate(item.route) {
+            launchSingleTop = true
+            restoreState = true
+        }
+    }
+
+    LiquidFloatingBottomBar(
+        modifier = modifier
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = {},
+            )
+            .padding(bottom = 12.dp + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()),
+        selectedIndex = selectedIndexProvider,
+        onSelected = { index -> navigateTo(items.getOrNull(index)) },
+        backdrop = backdrop,
+        tabsCount = items.size,
+        isBlurEnabled = true,
     ) {
         items.forEach { item ->
-            val selected = currentDestination?.hierarchy?.any { it.route?.substringBefore("?") == item.route } == true
-            val labelColor = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-            Box(
-                modifier = Modifier.weight(1f).clip(RoundedCornerShape(22.dp))
-                    .then(if (selected) Modifier.background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f), RoundedCornerShape(22.dp)) else Modifier)
-                    .clickable {
-                        if (!selected) navController.navigate(item.route) {
-                            launchSingleTop = true
-                            restoreState = true
-                        }
-                    }.padding(vertical = 8.dp),
-                contentAlignment = Alignment.Center
+            FloatingBottomBarItem(
+                onClick = { navigateTo(item) },
+                modifier = Modifier.defaultMinSize(minWidth = 76.dp),
             ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(if (selected) item.selectedIcon else item.unselectedIcon, item.label, tint = labelColor, modifier = Modifier.size(24.dp))
-                    Text(item.label, style = MaterialTheme.typography.labelSmall, color = labelColor, fontWeight = if (selected) FontWeight.Medium else FontWeight.Normal)
-                }
+                MiuixIcon(
+                    imageVector = item.selectedIcon,
+                    contentDescription = item.label,
+                    tint = MiuixTheme.colorScheme.onSurface,
+                )
+                MiuixText(
+                    text = item.label,
+                    fontSize = 11.sp,
+                    lineHeight = 14.sp,
+                    color = MiuixTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    softWrap = false,
+                    overflow = TextOverflow.Visible,
+                )
             }
         }
     }
