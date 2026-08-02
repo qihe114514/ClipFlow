@@ -52,8 +52,8 @@ ClipFlow 是一款 Android 平台的无水印短视频/图集解析下载工具�
 | 图片加载 | Coil |
 | 本地存储 | Room (SQLite) |
 | 导航 | Navigation Compose |
-| 最低 SDK | Android 12 (API 31) |
-| 目标 SDK | Android 14 (API 36) |
+| 最低 SDK | Android 10 (API 29) |
+| 目标 SDK | API 37 |
 | 语言 | Kotlin |
 
 ---
