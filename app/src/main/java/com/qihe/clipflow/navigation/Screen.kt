@@ -80,24 +80,6 @@ fun primaryPageIndex(route: String?, items: List<BottomNavItem>): Int {
     return items.indexOfFirst { it.route == route }.coerceAtLeast(0)
 }
 
-fun pagerIndicatorPosition(
-    currentPage: Int,
-    currentPageOffsetFraction: Float,
-    pageCount: Int,
-): Float {
-    if (pageCount <= 1) return 0f
-    return (currentPage + currentPageOffsetFraction)
-        .coerceIn(0f, (pageCount - 1).toFloat())
-}
-
-fun pagerIndicatorPositionActive(
-    isScrollInProgress: Boolean,
-    currentPage: Int,
-    selectedIndex: Int,
-): Boolean {
-    return isScrollInProgress || currentPage != selectedIndex
-}
-
 fun NavHostController.navigateToPrimary(route: String) {
     navigate(route) {
         popUpTo(graph.findStartDestination().id) { saveState = true }

@@ -27,6 +27,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -39,7 +40,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.dropShadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -53,7 +53,7 @@ import androidx.compose.ui.util.fastCoerceIn
 import androidx.compose.ui.util.fastRoundToInt
 import androidx.compose.ui.util.lerp
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 import com.qihe.clipflow.ui.component.liquid.InnerShadow
 import com.qihe.clipflow.ui.component.liquid.innerShadow
@@ -72,6 +72,7 @@ import top.yukonga.miuix.kmp.blur.highlight.LightSource
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import top.yukonga.miuix.kmp.blur.sensor.rememberDeviceTilt
+import top.yukonga.miuix.kmp.theme.LocalContentColor
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlin.math.PI
 import kotlin.math.abs
@@ -84,17 +85,11 @@ val LocalFloatingBottomBarTabScale = staticCompositionLocalOf { { 1f } }
 
 internal fun indicatorValue(
     dampedValue: Float,
-    externalPosition: (() -> Float)?,
-    externalActive: (() -> Boolean)?,
     tabsCount: Int,
-): Float {
-    val value = if (externalPosition != null && externalActive?.invoke() == true) {
-        externalPosition()
-    } else {
-        dampedValue
-    }
-    return value.coerceIn(0f, (tabsCount - 1).coerceAtLeast(0).toFloat())
-}
+): Float = dampedValue.coerceIn(
+    0f,
+    (tabsCount - 1).coerceAtLeast(0).toFloat(),
+)
 
 private val iosIndicatorSpecular: Highlight = Highlight(
     width = 1.dp,
@@ -194,14 +189,13 @@ fun FloatingBottomBar(
     onSelected: (index: Int) -> Unit,
     backdrop: Backdrop,
     tabsCount: Int,
-    indicatorPosition: (() -> Float)? = null,
-    indicatorPositionActive: (() -> Boolean)? = null,
     isBlurEnabled: Boolean = true,
     content: @Composable RowScope.() -> Unit
 ) {
     val isInDark = isSystemInDarkTheme()
     val pillShape = remember { CircleShape }
     val accentColor = MiuixTheme.colorScheme.primary
+    val tabContentColor = MiuixTheme.colorScheme.onSurface
     val surfaceContainer = MiuixTheme.colorScheme.surfaceContainer
     val containerColor = if (isBlurEnabled) surfaceContainer.copy(0.4f) else surfaceContainer
 
@@ -225,6 +219,8 @@ fun FloatingBottomBar(
             }
         }
     }
+
+    var currentIndex by remember(selectedIndex) { mutableIntStateOf(selectedIndex()) }
 
     class DampedDragAnimationHolder {
         var instance: DampedDragAnimation? = null
@@ -257,8 +253,8 @@ fun FloatingBottomBar(
             onDragStarted = {},
             onDragStopped = {
                 val targetIndex = targetValue.fastRoundToInt().fastCoerceIn(0, tabsCount - 1)
-                animateToValue(targetIndex.toFloat(), animatePress = false)
-                onSelected(targetIndex)
+                currentIndex = targetIndex
+                animateToValue(targetIndex.toFloat())
                 animationScope.launch {
                     offsetAnimation.animateTo(0f, spring(1f, 300f, 0.5f))
                 }
@@ -277,11 +273,17 @@ fun FloatingBottomBar(
         ).also { holder.instance = it }
     }
 
-    LaunchedEffect(dampedDragAnimation) {
+    LaunchedEffect(selectedIndex) {
         snapshotFlow { selectedIndex() }
-            .distinctUntilChanged()
+            .collectLatest { currentIndex = it }
+    }
+
+    LaunchedEffect(dampedDragAnimation) {
+        snapshotFlow { currentIndex }
+            .drop(1)
             .collectLatest { index ->
-                dampedDragAnimation.snapToValue(index.toFloat())
+                dampedDragAnimation.animateToValue(index.toFloat())
+                onSelected(index)
             }
     }
 
@@ -289,15 +291,9 @@ fun FloatingBottomBar(
         InteractiveHighlight(
             animationScope = animationScope,
             position = { size, _ ->
-                val indicator = indicatorValue(
-                    dampedValue = dampedDragAnimation.value,
-                    externalPosition = indicatorPosition,
-                    externalActive = indicatorPositionActive,
-                    tabsCount = tabsCount,
-                )
                 Offset(
-                    if (isLtr) (indicator + 0.5f) * tabWidthPx + panelOffset
-                    else size.width - (indicator + 0.5f) * tabWidthPx + panelOffset,
+                    if (isLtr) (dampedDragAnimation.value + 0.5f) * tabWidthPx + panelOffset
+                    else size.width - (dampedDragAnimation.value + 0.5f) * tabWidthPx + panelOffset,
                     size.height / 2f
                 )
             }
@@ -332,7 +328,7 @@ fun FloatingBottomBar(
                 .clickable(
                     interactionSource = remember { MutableInteractionSource() },
                     indication = null,
-                    onClick = {}
+                    onClick = {},
                 )
                 .then(
                     if (isBlurEnabled) {
@@ -364,14 +360,18 @@ fun FloatingBottomBar(
                 .height(64.dp)
                 .padding(4.dp),
             verticalAlignment = Alignment.CenterVertically,
-            content = content
-        )
+        ) {
+            CompositionLocalProvider(LocalContentColor provides tabContentColor) {
+                content()
+            }
+        }
 
         if (isBlurEnabled) {
             CompositionLocalProvider(
                 LocalFloatingBottomBarTabScale provides {
                     lerp(1f, 1.2f, dampedDragAnimation.pressProgress)
-                }
+                },
+                LocalContentColor provides accentColor,
             ) {
                 Row(
                     Modifier
@@ -394,10 +394,9 @@ fun FloatingBottomBar(
                         )
                         .then(interactiveHighlight.modifier)
                         .height(56.dp)
-                        .padding(horizontal = 4.dp)
-                        .graphicsLayer(colorFilter = ColorFilter.tint(accentColor)),
+                        .padding(horizontal = 4.dp),
                     verticalAlignment = Alignment.CenterVertically,
-                    content = content
+                    content = content,
                 )
             }
         }
@@ -409,13 +408,10 @@ fun FloatingBottomBar(
                     Modifier
                         .padding(horizontal = 4.dp)
                         .graphicsLayer {
-                            val indicator = indicatorValue(
+                            val progressOffset = indicatorValue(
                                 dampedValue = dampedDragAnimation.value,
-                                externalPosition = indicatorPosition,
-                                externalActive = indicatorPositionActive,
                                 tabsCount = tabsCount,
-                            )
-                            val progressOffset = indicator * tabWidthPx
+                            ) * tabWidthPx
                             translationX = if (isLtr) progressOffset + panelOffset else -progressOffset + panelOffset
                         }
                         .then(interactiveHighlight.gestureModifier)
@@ -464,13 +460,10 @@ fun FloatingBottomBar(
                     Modifier
                         .padding(horizontal = 4.dp)
                         .graphicsLayer {
-                            val indicator = indicatorValue(
+                            val progressOffset = indicatorValue(
                                 dampedValue = dampedDragAnimation.value,
-                                externalPosition = indicatorPosition,
-                                externalActive = indicatorPositionActive,
                                 tabsCount = tabsCount,
-                            )
-                            val progressOffset = indicator * tabWidthPx
+                            ) * tabWidthPx
                             translationX = if (isLtr) progressOffset + panelOffset else -progressOffset + panelOffset
                         }
                         .then(dampedDragAnimation.modifier)

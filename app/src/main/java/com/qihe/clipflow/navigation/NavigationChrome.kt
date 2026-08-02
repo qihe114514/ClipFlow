@@ -1,7 +1,5 @@
 package com.qihe.clipflow.navigation
 
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.defaultMinSize
@@ -9,7 +7,6 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.pager.PagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.History
@@ -24,8 +21,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
@@ -35,11 +30,9 @@ import androidx.navigation.NavHostController
 import com.qihe.clipflow.data.preferences.AppPreferences
 import com.qihe.clipflow.ui.component.FloatingBottomBar as LiquidFloatingBottomBar
 import com.qihe.clipflow.ui.component.FloatingBottomBarItem
-import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Icon as MiuixIcon
 import top.yukonga.miuix.kmp.basic.Text as MiuixText
 import top.yukonga.miuix.kmp.blur.Backdrop
-import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -86,7 +79,7 @@ fun ClipFlowTopBar(currentRoute: String?, navController: NavHostController) {
 fun FloatingBottomBar(
     prefs: AppPreferences,
     backdrop: Backdrop,
-    pagerState: PagerState,
+    primaryPagerState: PrimaryPagerState,
     modifier: Modifier = Modifier
 ) {
     val bottomBarOrder by produceState(initialValue = listOf("home", "douyin", "xiaohongshu")) {
@@ -95,57 +88,28 @@ fun FloatingBottomBar(
     val items = orderedBottomNavItems(bottomBarOrder)
     if (items.isEmpty()) return
 
-    val selectedIndexProvider = remember { { pagerState.currentPage } }
-    val scope = rememberCoroutineScope()
-    val selectPage: (Int) -> Unit = { index ->
-        if (index in items.indices) {
-            scope.launch { pagerState.animateScrollToPage(index) }
-        }
-    }
-
     LiquidFloatingBottomBar(
         modifier = modifier
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null,
-                onClick = {},
-            )
             .padding(bottom = 12.dp + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()),
-        selectedIndex = selectedIndexProvider,
-        onSelected = selectPage,
+        selectedIndex = { primaryPagerState.selectedPage },
+        onSelected = primaryPagerState::animateToPage,
         backdrop = backdrop,
         tabsCount = items.size,
-        indicatorPosition = {
-            pagerIndicatorPosition(
-                currentPage = pagerState.currentPage,
-                currentPageOffsetFraction = pagerState.currentPageOffsetFraction,
-                pageCount = items.size,
-            )
-        },
-        indicatorPositionActive = {
-            pagerIndicatorPositionActive(
-                isScrollInProgress = pagerState.isScrollInProgress,
-                currentPage = pagerState.currentPage,
-                selectedIndex = selectedIndexProvider(),
-            )
-        },
         isBlurEnabled = true,
     ) {
         items.forEachIndexed { index, item ->
             FloatingBottomBarItem(
-                onClick = { selectPage(index) },
+                onClick = { primaryPagerState.animateToPage(index) },
                 modifier = Modifier.defaultMinSize(minWidth = 76.dp),
             ) {
                 MiuixIcon(
                     imageVector = item.selectedIcon,
                     contentDescription = item.label,
-                    tint = MiuixTheme.colorScheme.onSurface,
                 )
                 MiuixText(
                     text = item.label,
                     fontSize = 11.sp,
                     lineHeight = 14.sp,
-                    color = MiuixTheme.colorScheme.onSurface,
                     maxLines = 1,
                     softWrap = false,
                     overflow = TextOverflow.Visible,

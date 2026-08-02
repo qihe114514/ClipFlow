@@ -98,6 +98,7 @@ fun ClipFlowNavHost() {
         initialPage = primaryPageIndex(currentRoute ?: defaultPage, primaryItems),
         pageCount = { primaryItems.size },
     )
+    val primaryPagerState = rememberPrimaryPagerState(pagerState)
     val pagerStateHolder = rememberSaveableStateHolder()
     val currentSourceUrl = when (currentRoute) {
         Screen.Douyin.route -> navBackStackEntry?.arguments?.getString(Screen.Douyin.sourceUrlArgument)
@@ -108,8 +109,12 @@ fun ClipFlowNavHost() {
     LaunchedEffect(currentRoute, primaryRoutes) {
         val targetPage = primaryRoutes.indexOf(currentRoute)
         if (targetPage >= 0 && pagerState.settledPage != targetPage) {
-            pagerState.animateScrollToPage(targetPage)
+            primaryPagerState.animateToPage(targetPage)
         }
+    }
+
+    LaunchedEffect(primaryPagerState, pagerState.currentPage) {
+        primaryPagerState.syncPage()
     }
 
     LaunchedEffect(pagerState, primaryRoutes) {
@@ -294,7 +299,7 @@ fun ClipFlowNavHost() {
                 FloatingBottomBar(
                     prefs = prefs,
                     backdrop = backdrop,
-                    pagerState = pagerState,
+                    primaryPagerState = primaryPagerState,
                     modifier = Modifier.align(Alignment.BottomCenter)
                 )
             }

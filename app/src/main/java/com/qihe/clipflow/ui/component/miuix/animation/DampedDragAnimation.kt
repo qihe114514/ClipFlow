@@ -2,6 +2,7 @@ package com.qihe.clipflow.ui.component.miuix.animation
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.pointerInput
@@ -30,11 +31,11 @@ class DampedDragAnimation(
     private val velocityAnimationSpec =
         spring(0.5f, 300f, visibilityThreshold * 10f)
     private val pressProgressAnimationSpec =
-        spring(1f, 1000f, 0.001f)
+        tween<Float>(120)
     private val scaleXAnimationSpec =
-        spring(0.6f, 250f, 0.001f)
+        tween<Float>(140)
     private val scaleYAnimationSpec =
-        spring(0.7f, 250f, 0.001f)
+        tween<Float>(140)
 
     private val valueAnimation =
         Animatable(initialValue, visibilityThreshold)
@@ -49,6 +50,7 @@ class DampedDragAnimation(
 
     private val velocityTracker = VelocityTracker()
     private var pressAnimationJob: Job? = null
+    private var valueAnimationJob: Job? = null
 
     val value: Float get() = valueAnimation.value
     val targetValue: Float get() = valueAnimation.targetValue
@@ -116,7 +118,8 @@ class DampedDragAnimation(
     }
 
     fun animateToValue(value: Float, animatePress: Boolean = true) {
-        animationScope.launch {
+        valueAnimationJob?.cancel()
+        valueAnimationJob = animationScope.launch {
             if (animatePress) press()
             val targetValue = value.coerceIn(valueRange)
             valueAnimation.animateTo(targetValue, valueAnimationSpec)
