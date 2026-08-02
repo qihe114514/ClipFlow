@@ -16,3 +16,4 @@ local.properties
 *.keystore
 /gradle-dist
 gradle-bin.zip
+/.worktrees/
