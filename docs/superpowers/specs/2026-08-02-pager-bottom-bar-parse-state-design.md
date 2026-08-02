@@ -1,58 +1,42 @@
-# Pager, Bottom Bar, and Parse State Design
+# 页面滑动、底栏与解析状态设计
 
-## Goal
+## 目标
 
-Make primary-page swipes and bottom-bar taps settle immediately, keep the
-bottom-bar indicator responsive during the transition, and prevent a cleared
-parse result from being replayed when the user returns to a page.
+让主页面滑动和底栏点击立即响应，切换完成后底栏选中指示器不再延迟收回，并防止清除后的解析结果返回页面时被重新解析。
 
-## Scope
+## 范围
 
-- Primary pages remain the existing Home, Douyin, and Xiaohongshu pages.
-- History, Settings, About, downloads, and parser APIs remain unchanged.
-- Normal page changes preserve each parser ViewModel state.
-- Clear resets the parser page to an empty state and must not trigger the last
-  external source URL again.
+- 主页面仍为现有的 Home、Douyin、Xiaohongshu。
+- History、Settings、About、下载功能和解析接口保持不变。
+- 普通页面切换保留各解析 ViewModel 状态。
+- 清除后重置解析页状态，不能再次触发上一次外部 sourceUrl。
 
-## State Ownership
+## 状态归属
 
-`PagerState` is the visual source of truth for primary-page position:
+PagerState 是主页面视觉位置的唯一来源：
 
-- Horizontal swipes update the indicator from the pager's fractional position.
-- Bottom-bar taps launch a pager scroll directly, so the indicator moves as
-  soon as the tap is handled.
-- A settled pager page synchronizes the primary NavController route for the
-  top bar, deep-link compatibility, and secondary-page navigation.
-- A route-to-pager effect remains only for entering a primary page from an
-  external route or from a secondary destination.
+- 横向滑动时，底栏指示器跟随 pager 的小数位置。
+- 底栏点击直接启动 pager 滑动，点击处理后指示器立即移动。
+- pager 到达 settled page 后，再同步主页面 NavController 路由，用于顶栏标题、深链和次级页面导航。
+- 只有从外部路由或次级页面进入主页面时，才由路由反向驱动 pager。
 
-The custom bottom bar keeps its local damped position only for its own drag
-gesture. Pager-driven position handoff must not press the indicator or wait
-for an unrelated damped animation before accepting another input.
+自定义底栏只保留自身拖拽使用的阻尼位置。pager 的位置交接不再触发按压动画，也不等待无关的阻尼动画完成。
 
-## Parse Source Handling
+## 解析参数处理
 
-The `sourceUrl` navigation argument is an external one-shot input. A parser
-screen may apply it only when it is a new non-blank value for that screen. A
-normal tab switch does not reparse the current ViewModel state. Clearing the
-page invalidates the consumed source input, so returning to the page cannot
-replay it.
+导航参数 sourceUrl 是一次性外部输入。解析页只在收到新的非空值时应用它；普通标签切换不重新解析当前 ViewModel 状态。清除后保留该外部参数已消费的记录，因此返回页面不会重放解析。
 
-## Failure and Interaction Rules
+## 交互规则
 
-- Tapping another bottom-bar item while a page transition is running must
-  interrupt or replace the current pager animation and begin the new one.
-- Completing a swipe must leave the indicator at the destination immediately,
-  without a delayed press/release state.
-- A parser result remains visible after switching away and back.
-- After clear, input, result, loading, error, and result metadata are empty;
-  download session state remains preserved.
+- 页面过渡期间点击其他底栏项，当前过渡可以被中断或替换，并立即开始新的页面过渡。
+- 滑动完成后，指示器立即停在目标位置，不再保留延迟的按压/释放态。
+- 解析结果在切换页面后返回仍然可见。
+- 清除后输入、结果、加载态、错误和结果元数据为空；下载会话状态继续保留。
 
-## Verification
+## 验证
 
-- Unit-test fractional pager position and active-state behavior, including the
-  settled handoff path without a delayed animation requirement.
-- Unit-test one-shot external source consumption and clear invalidation.
-- Run focused JVM tests and the offline debug build with the repository's
-  Gradle 8.4 distribution.
-- Use `git diff --check` and inspect the final diff for unrelated changes.
+- 测试 pager 小数位置和激活状态，包括已完成页面交接时不依赖延迟动画。
+- 测试外部 sourceUrl 只消费一次，以及清除后不会被重放。
+- 使用仓库内 Gradle 8.4 分发版运行聚焦 JVM 测试和离线 debug 构建。
+- 运行 git diff --check，检查最终 diff 没有无关修改。
+
