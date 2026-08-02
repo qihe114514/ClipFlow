@@ -13,7 +13,7 @@ android {
 
     defaultConfig {
         applicationId = "com.qihe.clipflow"
-        minSdk = 31
+        minSdk = 29
         targetSdk = 37
         versionCode = 28
         versionName = "3.0"

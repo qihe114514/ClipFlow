@@ -1,5 +1,6 @@
 package com.qihe.clipflow.ui.components
 
+import android.app.Activity
 import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
@@ -61,6 +62,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.qihe.clipflow.data.api.model.DouyinStatistics
@@ -180,11 +184,23 @@ private fun InlineVideoDialog(show: Boolean, videoUrl: String, onDismiss: () -> 
     )
 }
 
+private fun setSystemBarsHidden(activity: Activity?, hidden: Boolean) {
+    val window = activity?.window ?: return
+    val controller = WindowCompat.getInsetsController(window, window.decorView)
+    controller.systemBarsBehavior =
+        WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+    if (hidden) {
+        controller.hide(WindowInsetsCompat.Type.systemBars())
+    } else {
+        controller.show(WindowInsetsCompat.Type.systemBars())
+    }
+}
+
 @Composable
 private fun FullscreenVideoDialog(show: Boolean, videoUrl: String, onDismiss: () -> Unit) {
     if (!show || videoUrl.isEmpty()) return
     val context = LocalContext.current
-    val activity = context as? android.app.Activity
+    val activity = context as? Activity
     val player = remember(videoUrl) {
         androidx.media3.exoplayer.ExoPlayer.Builder(context).build().apply {
             setMediaItem(androidx.media3.common.MediaItem.fromUri(videoUrl))
@@ -207,14 +223,11 @@ private fun FullscreenVideoDialog(show: Boolean, videoUrl: String, onDismiss: ()
     }
     LaunchedEffect(isLandscapeVideo) {
         if (isLandscapeVideo) activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
-        activity?.window?.insetsController?.apply {
-            hide(android.view.WindowInsets.Type.statusBars() or android.view.WindowInsets.Type.navigationBars())
-            systemBarsBehavior = android.view.WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-        }
+        setSystemBarsHidden(activity, true)
     }
     fun close() {
         activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
-        activity?.window?.insetsController?.show(android.view.WindowInsets.Type.statusBars() or android.view.WindowInsets.Type.navigationBars())
+        setSystemBarsHidden(activity, false)
         onDismiss()
     }
     Dialog(

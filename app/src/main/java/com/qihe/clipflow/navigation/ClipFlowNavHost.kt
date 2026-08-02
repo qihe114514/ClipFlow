@@ -1,5 +1,6 @@
 package com.qihe.clipflow.navigation
 
+import android.os.Build
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -135,18 +136,30 @@ fun ClipFlowNavHost() {
         )
     }
 
+    val liquidBottomBarEnabled = supportsLiquidBottomBar(Build.VERSION.SDK_INT)
+
     MiuixTheme(controller = miuixController) {
         val surfaceColor = MiuixTheme.colorScheme.surface
-        val backdrop = rememberLayerBackdrop {
-            drawRect(surfaceColor.copy(alpha = 0.18f))
-            drawContent()
+        val backdrop = if (liquidBottomBarEnabled) {
+            rememberLayerBackdrop {
+                drawRect(surfaceColor.copy(alpha = 0.18f))
+                drawContent()
+            }
+        } else {
+            null
         }
 
         Box(modifier = Modifier.fillMaxSize()) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .then(if (showBottomBar) Modifier.layerBackdrop(backdrop) else Modifier)
+                    .then(
+                        if (showBottomBar && backdrop != null) {
+                            Modifier.layerBackdrop(backdrop)
+                        } else {
+                            Modifier
+                        }
+                    )
             ) {
                 BackgroundWallpaperLayer {
                     Box(modifier = Modifier.fillMaxSize()) {

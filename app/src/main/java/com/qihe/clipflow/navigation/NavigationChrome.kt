@@ -94,7 +94,7 @@ fun FloatingBottomBar(
     navController: NavHostController,
     currentDestination: NavDestination?,
     prefs: AppPreferences,
-    backdrop: Backdrop,
+    backdrop: Backdrop?,
     pagerState: PagerState,
     modifier: Modifier = Modifier
 ) {
@@ -141,7 +141,7 @@ fun FloatingBottomBar(
                 selectedIndex = selectedIndexProvider(),
             )
         },
-        isBlurEnabled = true,
+        isBlurEnabled = backdrop != null,
     ) {
         items.forEach { item ->
             FloatingBottomBarItem(
