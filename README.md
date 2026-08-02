@@ -5,8 +5,8 @@
 复制分享链接，粘贴到 ClipFlow，一键解析并保存视频、图片和音乐。
 
 <p align="center">
-  <img src="screenshots/user-home.jpg" width="30%" alt="ClipFlow 首页" />
-  <img src="screenshots/user-douyin.jpg" width="30%" alt="抖音解析页面" />
+  <img src="screenshots/user-home.jpg" width="42%" alt="ClipFlow 首页" />
+  <img src="screenshots/user-douyin.jpg" width="42%" alt="抖音解析页面" />
 </p>
 <p align="center">
   <img src="screenshots/clipflow-demo.gif" width="90%" alt="ClipFlow 使用演示" />
