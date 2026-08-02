@@ -37,7 +37,6 @@ data class SettingsUiState(
     val imageSavePath: String = "",
     val audioSavePath: String = "",
     val wallpaperUri: String = "",
-    val wallpaperType: String = "image",
     val wallpaperOpacity: Float = 75f,
     val wallpaperEnabled: Boolean = true,
     val defaultPage: String = "home",
@@ -57,7 +56,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             launch { prefs.imageSavePath.collect { _uiState.value = _uiState.value.copy(imageSavePath = it) } }
             launch { prefs.audioSavePath.collect { _uiState.value = _uiState.value.copy(audioSavePath = it) } }
             launch { prefs.wallpaperUri.collect { _uiState.value = _uiState.value.copy(wallpaperUri = it) } }
-            launch { prefs.wallpaperType.collect { _uiState.value = _uiState.value.copy(wallpaperType = it) } }
             launch { prefs.wallpaperOpacity.collect { _uiState.value = _uiState.value.copy(wallpaperOpacity = it) } }
             launch { prefs.wallpaperEnabled.collect { _uiState.value = _uiState.value.copy(wallpaperEnabled = it) } }
             launch { prefs.defaultPage.collect { _uiState.value = _uiState.value.copy(defaultPage = it) } }
@@ -73,7 +71,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun resetImageSavePath() { viewModelScope.launch { prefs.setImageSavePath("") } }
     fun resetAudioSavePath() { viewModelScope.launch { prefs.setAudioSavePath("") } }
     fun setWallpaperUri(uri: String) { viewModelScope.launch { prefs.setWallpaperUri(uri) } }
-    fun setWallpaperType(type: String) { viewModelScope.launch { prefs.setWallpaperType(type) } }
     fun setWallpaperOpacity(o: Float) { viewModelScope.launch { prefs.setWallpaperOpacity(o) } }
     fun setWallpaperEnabled(e: Boolean) { viewModelScope.launch { prefs.setWallpaperEnabled(e) } }
     fun setDefaultPage(page: String) { viewModelScope.launch { prefs.setDefaultPage(page) } }
@@ -96,17 +93,6 @@ fun SettingsScreen(
         uri?.let {
             context.contentResolver.takePersistableUriPermission(it, android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
             viewModel.setWallpaperUri(it.toString())
-            viewModel.setWallpaperType("image")
-        }
-    }
-
-    val videoPickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
-    ) { uri: Uri? ->
-        uri?.let {
-            context.contentResolver.takePersistableUriPermission(it, android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            viewModel.setWallpaperUri(it.toString())
-            viewModel.setWallpaperType("video")
         }
     }
 
@@ -184,16 +170,10 @@ fun SettingsScreen(
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     FilterChip(
-                        selected = uiState.wallpaperType == "image",
+                        selected = uiState.wallpaperUri.isNotEmpty(),
                         onClick = { imagePickerLauncher.launch("image/*") },
                         label = { Text("选择图片") },
                         leadingIcon = { Icon(Icons.Filled.Image, null, Modifier.size(16.dp)) }
-                    )
-                    FilterChip(
-                        selected = uiState.wallpaperType == "video",
-                        onClick = { videoPickerLauncher.launch("video/*") },
-                        label = { Text("选择视频") },
-                        leadingIcon = { Icon(Icons.Filled.Videocam, null, Modifier.size(16.dp)) }
                     )
                     if (uiState.wallpaperUri.isNotEmpty()) {
                         FilterChip(

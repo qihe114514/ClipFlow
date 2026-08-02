@@ -1,7 +1,6 @@
 package com.qihe.clipflow.navigation
 
 import android.net.Uri
-import android.widget.VideoView
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
@@ -14,7 +13,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.viewinterop.AndroidView
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.qihe.clipflow.R
@@ -29,18 +27,15 @@ fun BackgroundWallpaperLayer(content: @Composable () -> Unit) {
     val isDark = isSystemInDarkTheme()
 
     var wallpaperUri by remember { mutableStateOf("") }
-    var wallpaperType by remember { mutableStateOf("image") }
     var opacityAmount by remember { mutableFloatStateOf(75f) }
     var enabled by remember { mutableStateOf(true) }
 
     LaunchedEffect(Unit) {
         wallpaperUri = prefs.wallpaperUri.first()
-        wallpaperType = prefs.wallpaperType.first()
         opacityAmount = prefs.wallpaperOpacity.first()
         enabled = prefs.wallpaperEnabled.first()
 
         launch { prefs.wallpaperUri.collect { wallpaperUri = it } }
-        launch { prefs.wallpaperType.collect { wallpaperType = it } }
         launch { prefs.wallpaperOpacity.collect { opacityAmount = it } }
         launch { prefs.wallpaperEnabled.collect { enabled = it } }
     }
@@ -60,21 +55,7 @@ fun BackgroundWallpaperLayer(content: @Composable () -> Unit) {
                     .then(Modifier.blur(25.dp))
                     .clipToBounds()
             ) {
-                if (useCustom && wallpaperType == "video") {
-                    AndroidView(
-                        factory = { ctx ->
-                            VideoView(ctx).apply {
-                                setVideoURI(Uri.parse(wallpaperUri))
-                                setOnPreparedListener { mp ->
-                                    mp.isLooping = true
-                                    mp.setVolume(0f, 0f)
-                                }
-                                start()
-                            }
-                        },
-                        modifier = Modifier.fillMaxSize()
-                    )
-                } else if (useCustom) {
+                if (useCustom) {
                     AsyncImage(
                         model = ImageRequest.Builder(context)
                             .data(Uri.parse(wallpaperUri))
