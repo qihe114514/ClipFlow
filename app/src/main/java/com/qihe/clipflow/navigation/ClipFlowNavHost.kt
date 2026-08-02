@@ -292,8 +292,6 @@ fun ClipFlowNavHost() {
                     .align(Alignment.BottomCenter)
             ) {
                 FloatingBottomBar(
-                    navController = navController,
-                    currentDestination = currentDestination,
                     prefs = prefs,
                     backdrop = backdrop,
                     pagerState = pagerState,

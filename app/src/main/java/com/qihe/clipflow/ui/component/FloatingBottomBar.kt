@@ -27,11 +27,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.staticCompositionLocalOf
@@ -57,7 +54,6 @@ import androidx.compose.ui.util.fastRoundToInt
 import androidx.compose.ui.util.lerp
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 import com.qihe.clipflow.ui.component.liquid.InnerShadow
 import com.qihe.clipflow.ui.component.liquid.innerShadow
@@ -90,10 +86,9 @@ internal fun indicatorValue(
     dampedValue: Float,
     externalPosition: (() -> Float)?,
     externalActive: (() -> Boolean)?,
-    handoffActive: Boolean = false,
     tabsCount: Int,
 ): Float {
-    val value = if (externalPosition != null && (externalActive?.invoke() == true || handoffActive)) {
+    val value = if (externalPosition != null && externalActive?.invoke() == true) {
         externalPosition()
     } else {
         dampedValue
@@ -231,8 +226,6 @@ fun FloatingBottomBar(
         }
     }
 
-    var currentIndex by remember(selectedIndex) { mutableIntStateOf(selectedIndex()) }
-
     class DampedDragAnimationHolder {
         var instance: DampedDragAnimation? = null
     }
@@ -264,8 +257,7 @@ fun FloatingBottomBar(
             onDragStarted = {},
             onDragStopped = {
                 val targetIndex = targetValue.fastRoundToInt().fastCoerceIn(0, tabsCount - 1)
-                currentIndex = targetIndex
-                animateToValue(targetIndex.toFloat())
+                animateToValue(targetIndex.toFloat(), animatePress = false)
                 onSelected(targetIndex)
                 animationScope.launch {
                     offsetAnimation.animateTo(0f, spring(1f, 300f, 0.5f))
@@ -285,39 +277,13 @@ fun FloatingBottomBar(
         ).also { holder.instance = it }
     }
 
-    val indicatorPositionState = rememberUpdatedState(indicatorPosition)
-    val indicatorActiveState = rememberUpdatedState(indicatorPositionActive)
-    var indicatorHandoffActive by remember { mutableStateOf(false) }
-
-    LaunchedEffect(selectedIndex) {
-        snapshotFlow { selectedIndex() }.collectLatest { currentIndex = it }
-    }
     LaunchedEffect(dampedDragAnimation) {
-        snapshotFlow { currentIndex }.drop(1).collectLatest { index ->
-            dampedDragAnimation.animateToValue(index.toFloat())
-        }
-    }
-
-    LaunchedEffect(dampedDragAnimation) {
-        snapshotFlow { indicatorActiveState.value?.invoke() == true }
+        snapshotFlow { selectedIndex() }
             .distinctUntilChanged()
-            .collectLatest { active ->
-                if (active) {
-                    indicatorHandoffActive = true
-                    dampedDragAnimation.press()
-                    snapshotFlow { indicatorPositionState.value?.invoke() }
-                        .collectLatest { position ->
-                            position?.let { dampedDragAnimation.snapToValue(it) }
-                        }
-                } else if (indicatorPositionState.value != null && indicatorActiveState.value != null) {
-                    val finalPosition = indicatorPositionState.value?.invoke()
-                        ?: currentIndex.toFloat()
-                    dampedDragAnimation.snapToValue(finalPosition)
-                    indicatorHandoffActive = false
-                    dampedDragAnimation.release()
-                }
+            .collectLatest { index ->
+                dampedDragAnimation.snapToValue(index.toFloat())
             }
-        }
+    }
 
     val interactiveHighlight = remember(animationScope, tabWidthPx) {
         InteractiveHighlight(
@@ -327,7 +293,6 @@ fun FloatingBottomBar(
                     dampedValue = dampedDragAnimation.value,
                     externalPosition = indicatorPosition,
                     externalActive = indicatorPositionActive,
-                    handoffActive = indicatorHandoffActive,
                     tabsCount = tabsCount,
                 )
                 Offset(
@@ -448,7 +413,6 @@ fun FloatingBottomBar(
                                 dampedValue = dampedDragAnimation.value,
                                 externalPosition = indicatorPosition,
                                 externalActive = indicatorPositionActive,
-                                handoffActive = indicatorHandoffActive,
                                 tabsCount = tabsCount,
                             )
                             val progressOffset = indicator * tabWidthPx
@@ -504,7 +468,6 @@ fun FloatingBottomBar(
                                 dampedValue = dampedDragAnimation.value,
                                 externalPosition = indicatorPosition,
                                 externalActive = indicatorPositionActive,
-                                handoffActive = indicatorHandoffActive,
                                 tabsCount = tabsCount,
                             )
                             val progressOffset = indicator * tabWidthPx

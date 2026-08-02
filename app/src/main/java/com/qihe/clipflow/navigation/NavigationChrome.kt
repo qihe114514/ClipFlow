@@ -25,18 +25,17 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.navigation.NavDestination
-import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavHostController
 import com.qihe.clipflow.data.preferences.AppPreferences
 import com.qihe.clipflow.ui.component.FloatingBottomBar as LiquidFloatingBottomBar
 import com.qihe.clipflow.ui.component.FloatingBottomBarItem
+import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Icon as MiuixIcon
 import top.yukonga.miuix.kmp.basic.Text as MiuixText
 import top.yukonga.miuix.kmp.blur.Backdrop
@@ -85,8 +84,6 @@ fun ClipFlowTopBar(currentRoute: String?, navController: NavHostController) {
 
 @Composable
 fun FloatingBottomBar(
-    navController: NavHostController,
-    currentDestination: NavDestination?,
     prefs: AppPreferences,
     backdrop: Backdrop,
     pagerState: PagerState,
@@ -98,15 +95,12 @@ fun FloatingBottomBar(
     val items = orderedBottomNavItems(bottomBarOrder)
     if (items.isEmpty()) return
 
-    val selectedIndex = items.indexOfFirst { item ->
-        currentDestination?.hierarchy?.any { it.route?.substringBefore("?") == item.route } == true
-    }.coerceAtLeast(0)
-    val selectedIndexState = rememberUpdatedState(selectedIndex)
-    val selectedIndexProvider = remember { { selectedIndexState.value } }
-
-    fun navigateTo(item: BottomNavItem?) {
-        if (item == null) return
-        navController.navigateToPrimary(item.route)
+    val selectedIndexProvider = remember { { pagerState.currentPage } }
+    val scope = rememberCoroutineScope()
+    val selectPage: (Int) -> Unit = { index ->
+        if (index in items.indices) {
+            scope.launch { pagerState.animateScrollToPage(index) }
+        }
     }
 
     LiquidFloatingBottomBar(
@@ -118,7 +112,7 @@ fun FloatingBottomBar(
             )
             .padding(bottom = 12.dp + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()),
         selectedIndex = selectedIndexProvider,
-        onSelected = { index -> navigateTo(items.getOrNull(index)) },
+        onSelected = selectPage,
         backdrop = backdrop,
         tabsCount = items.size,
         indicatorPosition = {
@@ -137,9 +131,9 @@ fun FloatingBottomBar(
         },
         isBlurEnabled = true,
     ) {
-        items.forEach { item ->
+        items.forEachIndexed { index, item ->
             FloatingBottomBarItem(
-                onClick = { navigateTo(item) },
+                onClick = { selectPage(index) },
                 modifier = Modifier.defaultMinSize(minWidth = 76.dp),
             ) {
                 MiuixIcon(

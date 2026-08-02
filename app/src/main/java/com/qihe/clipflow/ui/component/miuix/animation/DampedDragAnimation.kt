@@ -2,7 +2,6 @@ package com.qihe.clipflow.ui.component.miuix.animation
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.spring
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.pointerInput
@@ -10,12 +9,8 @@ import androidx.compose.ui.input.pointer.util.VelocityTracker
 import androidx.compose.ui.unit.IntSize
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.android.awaitFrame
-import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import com.qihe.clipflow.ui.component.miuix.modifier.inspectDragGestures
-import kotlin.math.abs
 
 class DampedDragAnimation(
     private val animationScope: CoroutineScope,
@@ -102,13 +97,6 @@ class DampedDragAnimation(
     fun release() {
         pressAnimationJob?.cancel()
         pressAnimationJob = animationScope.launch {
-            awaitFrame()
-            if (value != targetValue) {
-                val threshold = (valueRange.endInclusive - valueRange.start) * 0.025f
-                snapshotFlow { valueAnimation.value to valueAnimation.targetValue }
-                    .filter { (value, target) -> abs(value - target) < threshold }
-                    .first()
-            }
             launch { pressProgressAnimation.animateTo(0f, pressProgressAnimationSpec) }
             launch { scaleXAnimation.animateTo(initialScale, scaleXAnimationSpec) }
             launch { scaleYAnimation.animateTo(initialScale, scaleYAnimationSpec) }
@@ -127,15 +115,15 @@ class DampedDragAnimation(
         }
     }
 
-    fun animateToValue(value: Float) {
+    fun animateToValue(value: Float, animatePress: Boolean = true) {
         animationScope.launch {
-            press()
+            if (animatePress) press()
             val targetValue = value.coerceIn(valueRange)
             valueAnimation.animateTo(targetValue, valueAnimationSpec)
             if (velocity != 0f) {
                 velocityAnimation.animateTo(0f, velocityAnimationSpec)
             }
-            release()
+            if (animatePress) release()
         }
     }
 
