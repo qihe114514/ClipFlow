@@ -34,8 +34,8 @@ fun DouyinScreen(
     var showTutorial by remember { mutableStateOf(false) }
 
     LaunchedEffect(sourceUrl) {
-        sourceUrl?.takeIf { it.isNotBlank() }?.let {
-            viewModel.onUrlChange(it)
+        viewModel.consumeSourceUrl(sourceUrl)?.let { url ->
+            viewModel.onUrlChange(url)
             viewModel.parse()
         }
     }

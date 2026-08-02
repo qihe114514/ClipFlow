@@ -10,11 +10,23 @@ import com.qihe.clipflow.data.api.model.MediaInfo
 import com.qihe.clipflow.data.api.model.VideoBackupItem
 import com.qihe.clipflow.data.repository.SupportedPlatform
 import com.qihe.clipflow.util.DownloadState
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+
+internal class OneShotSourceUrl {
+    private var consumedUrl: String? = null
+
+    fun consume(sourceUrl: String?): String? {
+        val url = sourceUrl?.trim()?.takeIf { it.isNotEmpty() } ?: return null
+        if (url == consumedUrl) return null
+        consumedUrl = url
+        return url
+    }
+}
 
 data class ParsePageUiState(
     val inputUrl: String = "",
@@ -50,6 +62,9 @@ open class PlatformParseViewModel(
 
     private val _uiState = MutableStateFlow(ParsePageUiState())
     val uiState: StateFlow<ParsePageUiState> = _uiState
+    private val sourceUrlGate = OneShotSourceUrl()
+    private var parseJob: Job? = null
+    private var parseRequestId = 0L
 
     init {
         viewModelScope.launch {
@@ -70,7 +85,14 @@ open class PlatformParseViewModel(
         _uiState.update { it.copy(inputUrl = url, error = null) }
     }
 
+    fun consumeSourceUrl(sourceUrl: String?): String? {
+        return sourceUrlGate.consume(sourceUrl)
+    }
+
     fun clearUrl() {
+        parseRequestId++
+        parseJob?.cancel()
+        parseJob = null
         _uiState.value = ParsePageUiState(
             downloadStates = _uiState.value.downloadStates,
             showDownloadDialog = _uiState.value.showDownloadDialog,
@@ -90,8 +112,10 @@ open class PlatformParseViewModel(
             return
         }
         val sourceUrl = parseSupport.normalizeInput(rawInput)
+        val requestId = ++parseRequestId
+        parseJob?.cancel()
 
-        viewModelScope.launch {
+        parseJob = viewModelScope.launch {
             _uiState.update {
                 it.copy(
                     isParsing = true,
@@ -104,32 +128,39 @@ open class PlatformParseViewModel(
                 )
             }
 
-            parseSupport.parse(sourceUrl).fold(
+            val result = parseSupport.parse(sourceUrl)
+            if (requestId != parseRequestId) return@launch
+
+            result.fold(
                 onSuccess = { result ->
-                    _uiState.update {
-                        it.copy(
-                            isParsing = false,
-                            parseResult = result.items,
-                            parseTitle = result.title,
-                            parseDesc = result.desc,
-                            parseCover = result.cover,
-                            authorName = result.authorName,
-                            authorAvatar = result.authorAvatar,
-                            contentType = result.contentType,
-                            shareUrl = result.shareUrl,
-                            stats = result.stats,
-                            videoBackups = result.videoBackups,
-                            videoUrl = result.items.firstOrNull()?.url.orEmpty()
-                        )
+                    if (requestId == parseRequestId) {
+                        _uiState.update {
+                            it.copy(
+                                isParsing = false,
+                                parseResult = result.items,
+                                parseTitle = result.title,
+                                parseDesc = result.desc,
+                                parseCover = result.cover,
+                                authorName = result.authorName,
+                                authorAvatar = result.authorAvatar,
+                                contentType = result.contentType,
+                                shareUrl = result.shareUrl,
+                                stats = result.stats,
+                                videoBackups = result.videoBackups,
+                                videoUrl = result.items.firstOrNull()?.url.orEmpty()
+                            )
+                        }
+                        parseSupport.saveHistory(sourceUrl, result)
                     }
-                    parseSupport.saveHistory(sourceUrl, result)
                 },
                 onFailure = { error ->
-                    _uiState.update {
-                        it.copy(
-                            isParsing = false,
-                            error = parseSupport.userMessage(error)
-                        )
+                    if (requestId == parseRequestId) {
+                        _uiState.update {
+                            it.copy(
+                                isParsing = false,
+                                error = parseSupport.userMessage(error)
+                            )
+                        }
                     }
                 }
             )

@@ -17,8 +17,8 @@ fun XiaohongshuScreen(
     val uiState by viewModel.uiState.collectAsState()
 
     LaunchedEffect(sourceUrl) {
-        sourceUrl?.takeIf { it.isNotBlank() }?.let {
-            viewModel.onUrlChange(it)
+        viewModel.consumeSourceUrl(sourceUrl)?.let { url ->
+            viewModel.onUrlChange(url)
             viewModel.parse()
         }
     }
