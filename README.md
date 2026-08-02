@@ -7,7 +7,9 @@
 <p align="center">
   <img src="screenshots/user-home.jpg" width="30%" alt="ClipFlow 首页" />
   <img src="screenshots/user-douyin.jpg" width="30%" alt="抖音解析页面" />
-  <img src="screenshots/clipflow-demo.gif" width="30%" alt="ClipFlow 使用演示" />
+</p>
+<p align="center">
+  <img src="screenshots/clipflow-demo.gif" width="90%" alt="ClipFlow 使用演示" />
 </p>
 
 ## 下载
