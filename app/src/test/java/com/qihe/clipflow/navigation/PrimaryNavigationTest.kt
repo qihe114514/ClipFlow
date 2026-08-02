@@ -46,4 +46,13 @@ class PrimaryNavigationTest {
         assertEquals(false, pagerIndicatorPositionActive(false, 1, 1))
     }
 
+    @Test
+    fun liquidBottomBarRequiresApi33() {
+        assertEquals(false, supportsLiquidBottomBar(29))
+        assertEquals(false, supportsLiquidBottomBar(30))
+        assertEquals(false, supportsLiquidBottomBar(32))
+        assertEquals(true, supportsLiquidBottomBar(33))
+        assertEquals(true, supportsLiquidBottomBar(37))
+    }
+
 }

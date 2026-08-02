@@ -83,6 +83,12 @@ fun ClipFlowTopBar(currentRoute: String?, navController: NavHostController) {
     )
 }
 
+private const val LIQUID_BOTTOM_BAR_MIN_SDK = 33
+
+internal fun supportsLiquidBottomBar(sdkInt: Int): Boolean {
+    return sdkInt >= LIQUID_BOTTOM_BAR_MIN_SDK
+}
+
 @Composable
 fun FloatingBottomBar(
     navController: NavHostController,
