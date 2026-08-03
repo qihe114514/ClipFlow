@@ -171,7 +171,11 @@ private fun BilibiliLoginDialog(onSuccess: () -> Unit, onDismiss: () -> Unit) {
                 }
                 if (qrRemaining == 0) qrStatus = "二维码已过期，请刷新"
             },
-            onFailure = { errorMessage = "二维码获取失败，请检查网络后刷新" }
+            onFailure = {
+                qrRemaining = 0
+                qrStatus = "二维码获取失败，请刷新"
+                errorMessage = "二维码获取失败：${it.message ?: "请检查网络后刷新"}"
+            }
         )
     }
 

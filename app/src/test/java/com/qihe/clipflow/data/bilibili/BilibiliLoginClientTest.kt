@@ -36,6 +36,23 @@ class BilibiliLoginClientTest {
     }
 
     @Test
+    fun generateQrCodeRetriesTransientFailure() = runBlocking {
+        val factory = QueueCallFactory(
+            FakeResponse(failure = IOException("temporary network failure")),
+            FakeResponse(
+                """
+                {"code":0,"data":{"url":"https://account.bilibili.com/scan?q=1","qrcode_key":"key"}}
+                """.trimIndent()
+            )
+        )
+
+        val result = BilibiliLoginClient(factory).generateQrCode().getOrThrow()
+
+        assertEquals("key", result.key)
+        assertEquals(2, factory.requests.size)
+    }
+
+    @Test
     fun successfulQrPollReturnsMergedResponseCookies() = runBlocking {
         val factory = QueueCallFactory(
             FakeResponse(
@@ -69,8 +86,9 @@ class BilibiliLoginClientTest {
     }
 
     private data class FakeResponse(
-        val body: String,
-        val cookies: List<String> = emptyList()
+        val body: String = "",
+        val cookies: List<String> = emptyList(),
+        val failure: IOException? = null
     )
 
     private class QueueCallFactory(vararg responses: FakeResponse) : Call.Factory {
@@ -88,6 +106,7 @@ class BilibiliLoginClientTest {
                 override fun execute(): Response {
                     check(!executed)
                     executed = true
+                    response.failure?.let { throw it }
                     val headers = Headers.Builder().apply {
                         response.cookies.forEach { add("Set-Cookie", it) }
                     }.build()

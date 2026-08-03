@@ -1,9 +1,11 @@
 package com.qihe.clipflow.data.bilibili
 
+import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.annotations.SerializedName
 import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import okhttp3.Call
 import okhttp3.FormBody
@@ -21,21 +23,33 @@ class BilibiliLoginClient(
     private val cookieLock = Any()
     private val cookieHeaders = mutableListOf<String>()
 
-    suspend fun generateQrCode(): Result<BilibiliQrCode> = withContext(Dispatchers.IO) {
-        runCatching {
-            val data = execute(
-                Request.Builder()
-                    .url("$passportBaseUrl/x/passport-login/web/qrcode/generate?source=main_web")
-                    .get()
-                    .build(),
-                BilibiliQrGenerateData::class.java
-            )
-            BilibiliQrCode(
-                url = requireNotNull(data.url).takeIf(String::isNotBlank)
-                    ?: error("Bilibili QR URL is missing"),
-                key = requireNotNull(data.qrCodeKey).takeIf(String::isNotBlank)
-                    ?: error("Bilibili QR key is missing")
-            )
+    suspend fun generateQrCode(): Result<BilibiliQrCode> {
+        val result = withContext(Dispatchers.IO) {
+            var lastFailure: Throwable = IllegalStateException("Bilibili QR generation failed")
+            repeat(qrGenerationAttempts) { attempt ->
+                val current = runCatching {
+                    val data = execute(
+                        Request.Builder()
+                            .url("$passportBaseUrl/x/passport-login/web/qrcode/generate?source=main_web")
+                            .get()
+                            .build(),
+                        BilibiliQrGenerateData::class.java
+                    )
+                    BilibiliQrCode(
+                        url = requireNotNull(data.url).takeIf(String::isNotBlank)
+                            ?: error("Bilibili QR URL is missing"),
+                        key = requireNotNull(data.qrCodeKey).takeIf(String::isNotBlank)
+                            ?: error("Bilibili QR key is missing")
+                    )
+                }
+                current.exceptionOrNull()?.let { lastFailure = it }
+                if (current.isSuccess) return@withContext current
+                if (attempt + 1 < qrGenerationAttempts) delay(qrGenerationRetryDelayMs)
+            }
+            Result.failure(lastFailure)
+        }
+        return result.onFailure { error ->
+            Log.e("BilibiliLogin", "QR generation failed: ${error.javaClass.simpleName}: ${error.message}")
         }
     }
 
@@ -190,6 +204,8 @@ class BilibiliLoginClient(
     )
 
     companion object {
+        private const val qrGenerationAttempts = 3
+        private const val qrGenerationRetryDelayMs = 500L
         private const val passportBaseUrl = "https://passport.bilibili.com"
         private const val desktopUserAgent =
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
