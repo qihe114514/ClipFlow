@@ -138,6 +138,9 @@ dependencies {
     // Gson
     implementation("com.google.code.gson:gson:2.10.1")
 
+    // QR code rendering for the Bilibili web login URL
+    implementation("com.google.zxing:core:3.5.3")
+
     // Accompanist (system UI controller for edge-to-edge)
     implementation("com.google.accompanist:accompanist-systemuicontroller:0.34.0")
 
