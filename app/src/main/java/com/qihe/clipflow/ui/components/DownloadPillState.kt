@@ -1,5 +1,6 @@
 package com.qihe.clipflow.ui.components
 
+import com.qihe.clipflow.util.DownloadProgress
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
@@ -18,14 +19,14 @@ object DownloadPillState {
     var sourceRoute: String = "douyin"
 
     fun show(progress: Float, speedText: String, onClick: () -> Unit) {
-        _progress.value = progress
+        _progress.value = DownloadProgress.clamp(progress)
         _speedText.value = speedText
         _onClick = onClick
         _visible.value = true
     }
 
     fun update(progress: Float, speedText: String) {
-        _progress.value = progress
+        _progress.value = DownloadProgress.clamp(progress)
         _speedText.value = speedText
     }
 

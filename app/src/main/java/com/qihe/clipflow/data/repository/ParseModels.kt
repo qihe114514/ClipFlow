@@ -16,12 +16,14 @@ data class ParseResult(
     val musicTitle: String = "",
     val shareUrl: String = "",
     val stats: DouyinStatistics? = null,
-    val videoBackups: List<VideoBackupItem> = emptyList()
+    val videoBackups: List<VideoBackupItem> = emptyList(),
+    val bilibili: BilibiliVideoDetails? = null
 )
 
 enum class SupportedPlatform {
     DOUYIN,
-    XIAOHONGSHU
+    XIAOHONGSHU,
+    BILIBILI
 }
 
 enum class ParseErrorKind {

@@ -224,6 +224,7 @@ fun HistoryScreen(
                                     val route = when (item.platform) {
                                         "douyin" -> Screen.Douyin.withSourceUrl(item.url)
                                         "xiaohongshu" -> Screen.Xiaohongshu.withSourceUrl(item.url)
+                                        "bilibili" -> Screen.Bilibili.withSourceUrl(item.url)
                                         else -> Screen.Home.route
                                     }
                                     navController.navigate(route) {

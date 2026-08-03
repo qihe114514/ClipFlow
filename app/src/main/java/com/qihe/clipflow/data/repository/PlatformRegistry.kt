@@ -60,6 +60,24 @@ object PlatformRegistry {
                 }
             ),
             createParser = ::XiaohongshuPlatformParser
+        ),
+        PlatformRegistration(
+            descriptor = PlatformDescriptor(
+                platform = SupportedPlatform.BILIBILI,
+                historyKey = "bilibili",
+                fallbackContentType = "video",
+                defaultTitle = { "B站视频" },
+                errorMessage = { failure ->
+                    when (failure.kind) {
+                        ParseErrorKind.EMPTY_INPUT -> "请粘贴 B 站视频链接"
+                        ParseErrorKind.INVALID_INPUT -> "请输入有效的 B 站视频链接"
+                        ParseErrorKind.REMOTE_FAILURE -> failure.detail ?: "B 站解析失败，请稍后重试"
+                        ParseErrorKind.NO_DOWNLOADABLE_CONTENT -> "没有可用的 B 站视频流"
+                        ParseErrorKind.UNEXPECTED -> "B 站解析失败，请检查链接后重试"
+                    }
+                }
+            ),
+            createParser = { BilibiliPlatformParser() }
         )
     )
 

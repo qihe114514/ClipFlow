@@ -1,6 +1,6 @@
 # ClipFlow
 
-> 抖音、小红书无水印下载工具
+> 抖音、小红书、哔哩哔哩视频下载工具
 
 复制分享链接，粘贴到 ClipFlow，一键解析并保存视频、图片和音乐。
 
@@ -16,7 +16,7 @@
 
 [下载最新版 APK](https://github.com/qihe114514/ClipFlow/releases/latest) · [查看所有版本](https://github.com/qihe114514/ClipFlow/releases)
 
-当前版本：**v3.1** · 最低支持：**Android 10**
+当前版本：**v3.2** · 最低支持：**Android 10**
 
 ## 主要功能
 
@@ -41,6 +41,7 @@
 | 语言 | Kotlin |
 
 - 抖音、小红书无水印视频下载
+- 哔哩哔哩视频解析（登录后按账号权限获取清晰度）
 - 图集、实况图片和音乐下载
 - 自动读取剪贴板分享链接
 - 下载进度、完成通知和后台下载
@@ -77,6 +78,6 @@
 
 - GitHub：[qihe114514/ClipFlow](https://github.com/qihe114514/ClipFlow)
 - 许可证：GPLv3，详见 [LICENSE](LICENSE)
-- 解析服务：[BugPk-Api](https://api.bugpk.com/)
+- 依赖：Jetpack Compose、AndroidX、Navigation Compose、Room、DataStore、Media3、Retrofit、OkHttp、Gson、Coil、Miuix、Accompanist 和友盟 SDK 等，第三方组件按各自许可证提供。
 
-请只下载自己有权保存和使用的内容，并遵守相关平台的服务条款和版权规定。
+B 站解析使用用户主动登录后获得的本地加密会话，只请求该账号有权访问的资源，不绕过付费、地区或会员限制。请只下载自己有权保存和使用的内容，并遵守相关平台的服务条款和版权规定。关于页的“开源与须知”中提供了完整说明。

@@ -30,6 +30,7 @@ import com.qihe.clipflow.ui.components.DownloadPillState
 import com.qihe.clipflow.ui.history.HistoryScreen
 import com.qihe.clipflow.ui.settings.SettingsScreen
 import com.qihe.clipflow.ui.about.AboutScreen
+import com.qihe.clipflow.ui.about.OpenSourceScreen
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -104,6 +105,7 @@ fun ClipFlowNavHost() {
     val currentSourceUrl = when (currentRoute) {
         Screen.Douyin.route -> navBackStackEntry?.arguments?.getString(Screen.Douyin.sourceUrlArgument)
         Screen.Xiaohongshu.route -> navBackStackEntry?.arguments?.getString(Screen.Xiaohongshu.sourceUrlArgument)
+        Screen.Bilibili.route -> navBackStackEntry?.arguments?.getString(Screen.Bilibili.sourceUrlArgument)
         else -> null
     }
 
@@ -265,9 +267,20 @@ fun ClipFlowNavHost() {
                                 }
                             )
                         ) { Spacer(Modifier.fillMaxSize()) }
+                        composable(
+                            route = Screen.Bilibili.destinationRoute,
+                            arguments = listOf(
+                                navArgument(Screen.Bilibili.sourceUrlArgument) {
+                                    type = NavType.StringType
+                                    nullable = true
+                                    defaultValue = null
+                                }
+                            )
+                        ) { Spacer(Modifier.fillMaxSize()) }
                         composable(Screen.History.route) { HistoryScreen(navController) }
                         composable(Screen.Settings.route) { SettingsScreen(navController) }
                         composable(Screen.About.route) { AboutScreen(navController) }
+                        composable(Screen.OpenSource.route) { OpenSourceScreen() }
                     }
                 }
             }
@@ -285,6 +298,7 @@ fun ClipFlowNavHost() {
                 onClick = {
                     val route = when (DownloadPillState.sourceRoute) {
                         "xiaohongshu" -> Screen.Xiaohongshu.route
+                        "bilibili" -> Screen.Bilibili.route
                         else -> Screen.Douyin.route
                     }
                     navController.navigate(route) {

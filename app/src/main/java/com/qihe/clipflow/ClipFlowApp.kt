@@ -4,6 +4,7 @@ import android.app.Application
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.os.Build
+import com.qihe.clipflow.data.bilibili.BilibiliSessionStore
 import com.umeng.commonsdk.UMConfigure
 
 class ClipFlowApp : Application() {
@@ -20,6 +21,7 @@ class ClipFlowApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        BilibiliSessionStore.initialize(this)
         createNotificationChannels()
         // 预初始化：每次冷启动必须调用（主线程），不含 init，不采集数据
         UMConfigure.setLogEnabled(false)

@@ -46,9 +46,9 @@ class DownloadCoordinator(
 
         jobs[item.id]?.cancel()
         jobs[item.id] = scope.launch {
-            val result = downloadManager.downloadWithProgress(item.url, fileName) { state ->
+            val result = downloadManager.downloadWithProgress(item.url, fileName, onProgress = { state ->
                 updateItemState(item.id, state)
-            }
+            })
 
             result.onSuccess { tempFile ->
                 val savedUri = MediaStoreHelper.saveToGallery(appContext, tempFile, item.type)
@@ -62,7 +62,7 @@ class DownloadCoordinator(
                         item.id,
                         latestState(item.id).copy(
                             isComplete = false,
-                            error = "±£´æµ½Ïà²áÊ§°Ü"
+                            error = "ï¿½ï¿½ï¿½æµ½ï¿½ï¿½ï¿½Ê§ï¿½ï¿½"
                         )
                     )
                 }

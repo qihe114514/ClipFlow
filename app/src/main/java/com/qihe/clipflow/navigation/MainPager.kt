@@ -7,6 +7,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.saveable.SaveableStateHolder
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
+import com.qihe.clipflow.ui.bilibili.BilibiliScreen
 import com.qihe.clipflow.ui.douyin.DouyinScreen
 import com.qihe.clipflow.ui.home.HomeScreen
 import com.qihe.clipflow.ui.xiaohongshu.XiaohongshuScreen
@@ -34,6 +35,9 @@ fun MainPager(
                     sourceUrl = sourceUrl.takeIf { currentRoute == route },
                 )
                 Screen.Xiaohongshu.route -> XiaohongshuScreen(
+                    sourceUrl = sourceUrl.takeIf { currentRoute == route },
+                )
+                Screen.Bilibili.route -> BilibiliScreen(
                     sourceUrl = sourceUrl.takeIf { currentRoute == route },
                 )
             }

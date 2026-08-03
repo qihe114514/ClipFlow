@@ -10,7 +10,7 @@ class PrimaryNavigationTest {
             listOf("xiaohongshu", "missing", "xiaohongshu", "home")
         ).map { it.route }
 
-        assertEquals(listOf("xiaohongshu", "home", "douyin"), routes)
+        assertEquals(listOf("xiaohongshu", "home", "douyin", "bilibili"), routes)
     }
 
     @Test

@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.qihe.clipflow.BuildConfig
 import com.qihe.clipflow.data.preferences.AppPreferences
+import com.qihe.clipflow.navigation.Screen
 import com.qihe.clipflow.ui.components.GlassCard
 import com.qihe.clipflow.ui.components.PrivacyConsentDialog
 import com.qihe.clipflow.util.UpdateManager
@@ -33,7 +34,7 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalFoundationApi::class)
 @Suppress("DEPRECATION")
 @Composable
-fun AboutScreen(_navController: NavHostController) {
+fun AboutScreen(navController: NavHostController) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val prefs = remember { AppPreferences(context) }
@@ -75,7 +76,7 @@ fun AboutScreen(_navController: NavHostController) {
         Spacer(Modifier.height(4.dp))
 
         Text(
-            text = "抖音 · 小红书无水印解析",
+            text = "抖音 · 小红书 · 哔哩哔哩解析",
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -103,7 +104,7 @@ fun AboutScreen(_navController: NavHostController) {
                     modifier = Modifier.padding(vertical = 8.dp),
                     color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.15f)
                 )
-                AboutInfoRow(label = "最低支持", value = "Android 12+")
+                AboutInfoRow(label = "最低支持", value = "Android 10+")
                 HorizontalDivider(
                     modifier = Modifier.padding(vertical = 8.dp),
                     color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.15f)
@@ -364,6 +365,56 @@ fun AboutScreen(_navController: NavHostController) {
         Spacer(Modifier.height(16.dp))
         Spacer(Modifier.height(16.dp))
 
+        // ========== 开源与须知 ==========
+        Text(
+            text = "开源与须知",
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 8.dp)
+        )
+
+        GlassCard(
+            modifier = Modifier.fillMaxWidth(),
+            onClick = { navController.navigate(Screen.OpenSource.route) }
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Code,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(22.dp)
+                )
+                Spacer(Modifier.width(14.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "开源协议与使用须知",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Text(
+                        text = "许可证、第三方库和平台使用说明",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Icon(
+                    imageVector = Icons.Filled.ChevronRight,
+                    contentDescription = "查看",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+        }
+
+        Spacer(Modifier.height(16.dp))
         // ========== 隐私 ==========
         Text(
             text = "隐私",

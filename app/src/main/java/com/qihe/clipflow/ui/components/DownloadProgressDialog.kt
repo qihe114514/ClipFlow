@@ -23,7 +23,7 @@ import com.qihe.clipflow.util.DownloadState
 fun DownloadProgressDialog(
     state: DownloadState?,
     onDismiss: () -> Unit,
-    onBackground: () -> Unit = {}
+    onBackground: (() -> Unit)? = null
 ) {
     AlertDialog(
         onDismissRequest = { if (state?.isComplete == true) onDismiss() },
@@ -95,7 +95,7 @@ fun DownloadProgressDialog(
                         Text("关闭")
                     }
                 }
-            } else if (state?.isDownloading == true) {
+            } else if (state?.isDownloading == true && onBackground != null) {
                 TextButton(onClick = onBackground) {
                     Text("后台下载")
                 }

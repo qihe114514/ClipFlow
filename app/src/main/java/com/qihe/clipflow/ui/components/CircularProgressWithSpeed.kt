@@ -10,13 +10,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.qihe.clipflow.util.DownloadProgress
 
 @Composable
 fun CircularProgressWithSpeed(
@@ -29,11 +29,8 @@ fun CircularProgressWithSpeed(
     trackColor: Color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
 ) {
     val animatedProgress by animateFloatAsState(
-        targetValue = progress,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessLow
-        ),
+        targetValue = DownloadProgress.clamp(progress),
+        animationSpec = tween(durationMillis = 220, easing = FastOutSlowInEasing),
         label = "progress"
     )
 
@@ -60,9 +57,7 @@ fun CircularProgressWithSpeed(
             )
 
             drawArc(
-                brush = Brush.sweepGradient(
-                    listOf(progressColor, progressColor.copy(alpha = 0.6f))
-                ),
+                color = progressColor,
                 startAngle = -90f,
                 sweepAngle = 360f * animatedProgress,
                 useCenter = false,

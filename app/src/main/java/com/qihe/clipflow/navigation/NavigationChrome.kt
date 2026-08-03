@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.qihe.clipflow.data.preferences.AppPreferences
+import com.qihe.clipflow.ui.bilibili.BilibiliAccountAction
 import com.qihe.clipflow.ui.component.FloatingBottomBar as LiquidFloatingBottomBar
 import com.qihe.clipflow.ui.component.FloatingBottomBarItem
 import top.yukonga.miuix.kmp.basic.Icon as MiuixIcon
@@ -37,7 +38,12 @@ import top.yukonga.miuix.kmp.blur.Backdrop
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ClipFlowTopBar(currentRoute: String?, navController: NavHostController) {
-    val isDetailPage = currentRoute in setOf(Screen.History.route, Screen.Settings.route, Screen.About.route)
+    val isDetailPage = currentRoute in setOf(
+        Screen.History.route,
+        Screen.Settings.route,
+        Screen.About.route,
+        Screen.OpenSource.route,
+    )
     CenterAlignedTopAppBar(
         navigationIcon = {
             if (isDetailPage) {
@@ -51,10 +57,12 @@ fun ClipFlowTopBar(currentRoute: String?, navController: NavHostController) {
                 text = when (currentRoute) {
                     Screen.Home.route -> "ClipFlow"
                     Screen.Douyin.route -> "抖音解析"
+                    Screen.Bilibili.route -> "Bilibili"
                     Screen.Xiaohongshu.route -> "小红书解析"
                     Screen.History.route -> "解析历史"
                     Screen.Settings.route -> "设置"
                     Screen.About.route -> "关于"
+                    Screen.OpenSource.route -> "开源与须知"
                     else -> "ClipFlow"
                 },
                 style = MaterialTheme.typography.titleLarge
@@ -64,6 +72,9 @@ fun ClipFlowTopBar(currentRoute: String?, navController: NavHostController) {
             if (!isDetailPage) {
                 IconButton(onClick = { navController.navigate(Screen.History.route) }) {
                     Icon(Icons.Outlined.History, contentDescription = "历史")
+                }
+                if (currentRoute == Screen.Bilibili.route) {
+                    BilibiliAccountAction()
                 }
                 IconButton(onClick = { navController.navigate(Screen.Settings.route) }) {
                     Icon(Icons.Outlined.Settings, contentDescription = "设置")

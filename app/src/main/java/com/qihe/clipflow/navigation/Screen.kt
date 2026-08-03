@@ -2,9 +2,11 @@ package com.qihe.clipflow.navigation
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.LiveTv
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Shop
 import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.LiveTv
 import androidx.compose.material.icons.outlined.MusicNote
 import androidx.compose.material.icons.outlined.Shop
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -30,9 +32,18 @@ sealed class Screen(val route: String) {
             return "$route?$sourceUrlArgument=${Uri.encode(sourceUrl)}"
         }
     }
+    data object Bilibili : Screen("bilibili") {
+        const val sourceUrlArgument = "sourceUrl"
+        val destinationRoute = "$route?$sourceUrlArgument={$sourceUrlArgument}"
+
+        fun withSourceUrl(sourceUrl: String): String {
+            return "$route?" + sourceUrlArgument + "=" + Uri.encode(sourceUrl)
+        }
+    }
     data object History : Screen("history")
     data object Settings : Screen("settings")
     data object About : Screen("about")
+    data object OpenSource : Screen("open-source")
 }
 
 data class BottomNavItem(
@@ -60,6 +71,12 @@ val bottomNavItems = listOf(
         route = Screen.Xiaohongshu.route,
         selectedIcon = Icons.Filled.Shop,
         unselectedIcon = Icons.Outlined.Shop
+    ),
+    BottomNavItem(
+        label = "B站",
+        route = Screen.Bilibili.route,
+        selectedIcon = Icons.Filled.LiveTv,
+        unselectedIcon = Icons.Outlined.LiveTv
     )
 )
 

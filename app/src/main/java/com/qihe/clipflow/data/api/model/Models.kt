@@ -84,7 +84,8 @@ data class ContentItem(
     val url: String,
     val thumbnailUrl: String? = null,
     val mediaInfo: MediaInfo? = null,
-    val description: String = ""
+    val description: String = "",
+    val companionUrl: String? = null
 )
 
 @Keep

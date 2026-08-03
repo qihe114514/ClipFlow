@@ -1,6 +1,8 @@
 package com.qihe.clipflow.util
 
 import android.content.Context
+import android.util.Log
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -26,7 +28,17 @@ data class DownloadState(
     val savedMediaUri: String? = null
 )
 
+object DownloadProgress {
+    fun fraction(downloadedBytes: Long, totalBytes: Long): Float {
+        if (totalBytes <= 0L) return 0f
+        return (downloadedBytes.toDouble() / totalBytes.toDouble()).toFloat().coerceIn(0f, 1f)
+    }
+
+    fun clamp(value: Float): Float = value.takeIf { it.isFinite() }?.coerceIn(0f, 1f) ?: 0f
+}
+
 class DownloadManager(private val context: Context) {
+    private companion object { const val TAG = "ClipFlowDownload" }
 
     private val client = OkHttpClient.Builder()
         .connectTimeout(30, TimeUnit.SECONDS)
@@ -39,95 +51,106 @@ class DownloadManager(private val context: Context) {
     suspend fun downloadWithProgress(
         url: String,
         fileName: String,
-        onProgress: (DownloadState) -> Unit
+        onProgress: (DownloadState) -> Unit,
+        requestHeaders: Map<String, String> = emptyMap()
+    ): Result<File> = downloadWithProgress(listOf(url), fileName, onProgress, requestHeaders)
+
+    suspend fun downloadWithProgress(
+        urls: List<String>,
+        fileName: String,
+        onProgress: (DownloadState) -> Unit,
+        requestHeaders: Map<String, String> = emptyMap()
     ): Result<File> {
         emitState(DownloadState(isDownloading = true), onProgress)
 
         return withContext(Dispatchers.IO) {
-            try {
-                val tempDir = File(context.cacheDir, "downloads")
-                if (!tempDir.exists()) {
-                    tempDir.mkdirs()
-                }
+            val tempDir = File(context.cacheDir, "downloads").apply { mkdirs() }
+            val tempFile = File(tempDir, fileName)
+            var lastError: Exception? = null
 
-                val tempFile = File(tempDir, fileName)
-                val request = Request.Builder()
-                    .url(url)
-                    .addHeader("User-Agent", "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36")
-                    .build()
+            val candidates = urls.filter { it.isNotBlank() }.distinct()
+            for ((attempt, url) in candidates.withIndex()) {
+                try {
+                    tempFile.delete()
+                    val requestBuilder = Request.Builder()
+                        .url(url)
+                        .addHeader("User-Agent", "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36")
+                    requestHeaders.forEach { (name, value) -> requestBuilder.header(name, value) }
 
-                client.newCall(request).execute().use { response ->
-                    if (!response.isSuccessful) {
-                        throw IOException("ÏÂÔØÊ§°Ü: HTTP ${response.code}")
-                    }
+                    val host = runCatching { java.net.URI(url).host ?: "unknown" }.getOrDefault("unknown")
+                    Log.i(TAG, "download attempt=${attempt + 1}/${candidates.size} host=$host")
+                    client.newCall(requestBuilder.build()).execute().use { response ->
+                        if (!response.isSuccessful) {
+                            Log.w(TAG, "download rejected host=" + host + " code=" + response.code)
+                            throw IOException("ä¸‹è½½å¤±è´¥: HTTP ${response.code}")
+                        }
+                        val body = response.body ?: throw IOException("å“åº”ä½“ä¸ºç©º")
+                        val totalBytes = body.contentLength()
+                        val buffer = Buffer()
+                        var downloadedBytes = 0L
+                        var lastUpdateTime = System.currentTimeMillis()
+                        var lastBytes = 0L
 
-                    val body = response.body ?: throw IOException("ÏìÓ¦ÌåÎª¿Õ")
-                    val totalBytes = body.contentLength()
-                    val buffer = Buffer()
-                    var downloadedBytes = 0L
-                    var lastUpdateTime = System.currentTimeMillis()
-                    var lastBytes = 0L
-
-                    body.source().use { source ->
-                        tempFile.sink().buffer().use { sink ->
-                            var bytesRead: Long
-                            while (source.read(buffer, 8192).also { bytesRead = it } != -1L) {
-                                sink.write(buffer, bytesRead)
-                                downloadedBytes += bytesRead
-
-                                val now = System.currentTimeMillis()
-                                val elapsedMs = (now - lastUpdateTime).coerceAtLeast(1)
-                                val speed = (downloadedBytes - lastBytes) * 1000 / elapsedMs
-
-                                if (now - lastUpdateTime >= 200) {
-                                    emitState(
-                                        DownloadState(
-                                            progress = if (totalBytes > 0) downloadedBytes.toFloat() / totalBytes else 0f,
-                                            speedText = formatSpeed(speed),
-                                            isDownloading = true,
-                                            totalBytes = totalBytes,
-                                            downloadedBytes = downloadedBytes
-                                        ),
-                                        onProgress
-                                    )
-                                    lastUpdateTime = now
-                                    lastBytes = downloadedBytes
+                        body.source().use { source ->
+                            tempFile.sink().buffer().use { sink ->
+                                var bytesRead: Long
+                                while (source.read(buffer, 8192).also { bytesRead = it } != -1L) {
+                                    sink.write(buffer, bytesRead)
+                                    downloadedBytes += bytesRead
+                                    val now = System.currentTimeMillis()
+                                    if (now - lastUpdateTime >= 200) {
+                                        val elapsedMs = (now - lastUpdateTime).coerceAtLeast(1)
+                                        val speed = (downloadedBytes - lastBytes) * 1000 / elapsedMs
+                                        emitState(
+                                            DownloadState(
+                                                progress = DownloadProgress.fraction(downloadedBytes, totalBytes),
+                                                speedText = formatSpeed(speed),
+                                                isDownloading = true,
+                                                totalBytes = totalBytes,
+                                                downloadedBytes = downloadedBytes
+                                            ),
+                                            onProgress
+                                        )
+                                        lastUpdateTime = now
+                                        lastBytes = downloadedBytes
+                                    }
                                 }
                             }
-                            sink.flush()
                         }
-                    }
 
-                    val completedState = DownloadState(
-                        progress = 1f,
-                        speedText = "",
-                        isDownloading = false,
-                        isComplete = true,
-                        totalBytes = totalBytes,
-                        downloadedBytes = downloadedBytes
-                    )
-                    emitState(completedState, onProgress)
-                    Result.success(tempFile)
+                        emitState(
+                            DownloadState(
+                                progress = 1f,
+                                isDownloading = false,
+                                isComplete = true,
+                                totalBytes = totalBytes,
+                                downloadedBytes = downloadedBytes
+                            ),
+                            onProgress
+                        )
+                        Log.i(TAG, "download complete host=$host bytes=$downloadedBytes")
+                        return@withContext Result.success(tempFile)
+                    }
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    Log.w(TAG, "download attempt failed type=${e::class.java.simpleName}")
+                    lastError = e
                 }
-            } catch (e: Exception) {
-                emitState(
-                    DownloadState(
-                        isDownloading = false,
-                        error = e.message ?: "ÏÂÔØÊ§°Ü"
-                    ),
-                    onProgress
-                )
-                Result.failure(e)
             }
+
+            tempFile.delete()
+            val error = lastError ?: IOException("ä¸‹è½½åœ°å€ä¸ºç©º")
+            emitState(DownloadState(isDownloading = false, error = error.message ?: "ä¸‹è½½å¤±è´¥"), onProgress)
+            Result.failure(error)
         }
     }
-
     suspend fun download(
         url: String,
         fileName: String,
         onComplete: (File) -> Unit
     ) {
-        downloadWithProgress(url, fileName) { }.onSuccess(onComplete)
+        downloadWithProgress(url, fileName, onProgress = {}).onSuccess(onComplete)
     }
 
     fun reset() {
