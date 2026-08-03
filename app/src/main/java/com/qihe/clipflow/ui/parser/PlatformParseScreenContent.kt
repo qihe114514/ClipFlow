@@ -59,7 +59,7 @@ fun PlatformParseScreenContent(
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             item(key = "input") {
-                ParseInputCard(
+                PlatformParseInputCard(
                     inputUrl = uiState.inputUrl,
                     isParsing = uiState.isParsing,
                     placeholder = placeholder,
@@ -117,7 +117,7 @@ fun PlatformParseScreenContent(
 }
 
 @Composable
-private fun ParseInputCard(
+fun PlatformParseInputCard(
     inputUrl: String,
     isParsing: Boolean,
     placeholder: String,

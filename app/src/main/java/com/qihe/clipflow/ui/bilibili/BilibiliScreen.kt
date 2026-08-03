@@ -1,21 +1,18 @@
 package com.qihe.clipflow.ui.bilibili
 
+import android.content.ClipboardManager
+import android.content.Context
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -28,6 +25,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.qihe.clipflow.ui.components.DownloadProgressDialog
 import com.qihe.clipflow.ui.components.GlassCard
 import com.qihe.clipflow.ui.components.ParseInfoCard
+import com.qihe.clipflow.ui.parser.PlatformParseInputCard
 
 @Composable
 fun BilibiliScreen(
@@ -35,6 +33,7 @@ fun BilibiliScreen(
     viewModel: BilibiliViewModel = viewModel(viewModelStoreOwner = LocalContext.current as androidx.activity.ComponentActivity)
 ) {
     val state by viewModel.state.collectAsState()
+    val context = LocalContext.current
     LaunchedEffect(sourceUrl) {
         sourceUrl?.let {
             viewModel.setInput(it)
@@ -48,25 +47,22 @@ fun BilibiliScreen(
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
         item {
-            GlassCard {
-                Column {
-                    OutlinedTextField(
-                        value = state.input,
-                        onValueChange = viewModel::setInput,
-                        modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text("粘贴 B 站视频链接...") },
-                        singleLine = true
-                    )
-                    Spacer(Modifier.height(10.dp))
-                    Button(
-                        onClick = viewModel::parse,
-                        enabled = !state.loading && state.input.isNotBlank(),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        if (state.loading) CircularProgressIndicator(Modifier.padding(2.dp)) else Text("开始解析")
+            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
+            PlatformParseInputCard(
+                inputUrl = state.input,
+                isParsing = state.loading,
+                placeholder = "粘贴 B 站视频链接...",
+                accent = MaterialTheme.colorScheme.primary,
+                onUrlChange = viewModel::setInput,
+                onClearOrPaste = { hasInput ->
+                    if (hasInput) {
+                        viewModel.setInput("")
+                    } else {
+                        clipboard?.primaryClip?.getItemAt(0)?.text?.toString()?.let(viewModel::setInput)
                     }
-                }
-            }
+                },
+                onParse = { viewModel.parse() }
+            )
         }
         state.error?.let { error -> item { Text(error, color = MaterialTheme.colorScheme.error) } }
         state.result?.let { result ->

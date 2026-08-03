@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>ClipFlow 30s 4:3 Promo</title>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      :root {
+        --canvas: #0b0d14;
+        --ink: #f7f8ff;
+        --muted: #aeb6cb;
+        --blue: #6b9dfc;
+        --purple: #9b7bfc;
+        --cyan: #00d4d4;
+        --red: #ff3b5c;
+        --line: rgba(230, 235, 255, 0.18);
+      }
+
+      @font-face {
+        font-family: "Microsoft YaHei";
+        src: local("Microsoft YaHei");
+      }
+
+      * { box-sizing: border-box; }
+
+      html, body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        overflow: hidden;
+        background: var(--canvas);
+        color: var(--ink);
+        font-family: "Microsoft YaHei", sans-serif;
+      }
+
+      body { display: grid; place-items: center; }
+
+      #clipflow-30s-4x3 {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background:
+          radial-gradient(circle at 12% 20%, rgba(107, 157, 252, 0.2), rgba(107, 157, 252, 0) 32%),
+          radial-gradient(circle at 90% 86%, rgba(155, 123, 252, 0.17), rgba(155, 123, 252, 0) 33%),
+          #0b0d14;
+      }
+
+      .scene-content {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        width: 100%;
+        height: 100%;
+        padding: 82px 108px 96px;
+        gap: 28px;
+      }
+
+      .scene {
+        position: absolute;
+        inset: 0;
+        z-index: 1;
+        overflow: hidden;
+        opacity: 0;
+        visibility: hidden;
+        background:
+          radial-gradient(circle at 18% 36%, rgba(107, 157, 252, 0.11), rgba(107, 157, 252, 0) 28%),
+          radial-gradient(circle at 86% 72%, rgba(155, 123, 252, 0.12), rgba(155, 123, 252, 0) 30%),
+          #0b0d14;
+      }
+
+      .scene::after {
+        content: "";
+        position: absolute;
+        inset: 76px 88px;
+        z-index: 0;
+        border: 1px solid rgba(230, 235, 255, 0.07);
+        border-radius: 28px;
+        pointer-events: none;
+      }
+
+      .scene-layout {
+        position: relative;
+        z-index: 2;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+        height: 100%;
+        gap: 64px;
+      }
+
+      .ambient, .ambient::before, .ambient::after {
+        position: absolute;
+        pointer-events: none;
+      }
+
+      .ambient {
+        inset: 0;
+        z-index: 0;
+        overflow: hidden;
+      }
+
+      .ambient::before {
+        content: "";
+        inset: 10% -18% 45% 50%;
+        border: 1px solid rgba(107, 157, 252, 0.15);
+        border-radius: 50%;
+        transform: rotate(-18deg);
+      }
+
+      .ambient::after {
+        content: "";
+        inset: 48% 45% 4% -22%;
+        border: 1px solid rgba(155, 123, 252, 0.14);
+        border-radius: 50%;
+        transform: rotate(19deg);
+      }
+
+      .ribbon {
+        position: absolute;
+        width: 68%;
+        height: 18px;
+        border: 1px solid rgba(107, 157, 252, 0.36);
+        border-left-color: transparent;
+        border-right-color: transparent;
+        border-radius: 50%;
+        opacity: 0.45;
+        filter: blur(1px);
+      }
+
+      .ribbon.one { top: 24%; left: -18%; transform: rotate(-17deg); }
+      .ribbon.two { top: 65%; left: 48%; border-color: rgba(155, 123, 252, 0.34); transform: rotate(13deg); }
+      .ribbon.three { top: 82%; left: -12%; border-color: rgba(0, 212, 212, 0.26); transform: rotate(-8deg); }
+
+      .copy-column {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 24px;
+        width: 650px;
+        min-width: 0;
+      }
+
+      .copy-column.center { align-items: center; text-align: center; }
+
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        color: var(--muted);
+        font-size: 22px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+      }
+
+      .eyebrow::before {
+        content: "";
+        width: 34px;
+        height: 2px;
+        background: var(--blue);
+      }
+
+      h1, h2, p { margin: 0; }
+
+      h1 {
+        max-width: 650px;
+        font-size: 82px;
+        line-height: 1.06;
+        letter-spacing: 0.01em;
+        font-weight: 900;
+      }
+
+      h2 {
+        max-width: 640px;
+        font-size: 66px;
+        line-height: 1.08;
+        letter-spacing: 0.01em;
+        font-weight: 900;
+      }
+
+      .body-copy {
+        max-width: 560px;
+        color: var(--muted);
+        font-size: 27px;
+        line-height: 1.48;
+      }
+
+      .brand-lockup {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+      }
+
+      .brand-lockup img {
+        width: 88px;
+        height: 88px;
+        border-radius: 24px;
+        box-shadow: 0 18px 48px rgba(107, 157, 252, 0.3);
+      }
+
+      .brand-name {
+        font-size: 58px;
+        line-height: 1;
+        font-weight: 900;
+      }
+
+      .brand-subtitle {
+        margin-top: 8px;
+        color: var(--muted);
+        font-size: 22px;
+      }
+
+      .accent-word { color: var(--blue); }
+      .cyan-word { color: var(--cyan); }
+      .red-word { color: var(--red); }
+
+      .phone-frame {
+        position: relative;
+        flex: 0 0 auto;
+        width: 420px;
+        aspect-ratio: 9 / 16;
+        padding: 11px;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        border-radius: 42px;
+        background: rgba(255, 255, 255, 0.08);
+        box-shadow: 0 32px 78px rgba(0, 0, 0, 0.5), 0 0 0 10px rgba(107, 157, 252, 0.06);
+        overflow: hidden;
+      }
+
+      .phone-frame::before {
+        content: "";
+        position: absolute;
+        top: 17px;
+        left: 50%;
+        z-index: 3;
+        width: 96px;
+        height: 24px;
+        border-radius: 20px;
+        background: rgba(5, 7, 12, 0.9);
+        transform: translateX(-50%);
+      }
+
+      .phone-screen {
+        display: block;
+        width: 100%;
+        height: 100%;
+        border-radius: 33px;
+        object-fit: contain;
+        object-position: center;
+        background: #171a27;
+      }
+
+      .screen-sheen {
+        position: absolute;
+        inset: 11px;
+        z-index: 2;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 33px;
+        background: linear-gradient(112deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0) 26%, rgba(155, 123, 252, 0.08));
+        pointer-events: none;
+      }
+
+      .phone-frame.compact { width: 320px; }
+
+      .flow-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        max-width: 560px;
+        padding: 17px 22px;
+        border: 1px solid rgba(107, 157, 252, 0.38);
+        border-radius: 18px;
+        color: #dfe7ff;
+        background: rgba(24, 37, 71, 0.72);
+        font-size: 24px;
+        line-height: 1.25;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .flow-chip::before {
+        content: "↗";
+        display: grid;
+        place-items: center;
+        width: 32px;
+        height: 32px;
+        border-radius: 10px;
+        color: var(--canvas);
+        background: var(--blue);
+        font-weight: 900;
+      }
+
+      .stat-row, .platform-row, .path-row {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        flex-wrap: wrap;
+      }
+
+      .stat, .platform-tag, .path-tag {
+        padding: 13px 18px;
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.06);
+        color: var(--muted);
+        font-size: 21px;
+        font-weight: 750;
+      }
+
+      .stat strong { color: var(--ink); }
+      .platform-tag.douyin { color: var(--cyan); border-color: rgba(0, 212, 212, 0.46); }
+      .platform-tag.xhs { color: var(--red); border-color: rgba(255, 59, 92, 0.46); }
+      .platform-tag.bili { color: #c7b5ff; border-color: rgba(155, 123, 252, 0.52); }
+      .path-tag { font-size: 19px; color: #dfe7ff; }
+
+      .progress-wrap {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        color: var(--muted);
+        font-size: 20px;
+      }
+
+      .progress-bar {
+        width: 290px;
+        height: 8px;
+        overflow: hidden;
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.12);
+      }
+
+      .progress-bar::after {
+        display: none;
+      }
+
+      .progress-fill {
+        display: block;
+        width: 74%;
+        height: 100%;
+        border-radius: inherit;
+        background: linear-gradient(90deg, var(--blue), var(--purple));
+      }
+
+      .platform-cards {
+        display: flex;
+        align-items: flex-end;
+        gap: 20px;
+      }
+
+      .mini-card {
+        position: relative;
+        width: 220px;
+        height: 390px;
+        padding: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.24);
+        border-radius: 26px;
+        background: rgba(255, 255, 255, 0.08);
+        box-shadow: 0 24px 54px rgba(0, 0, 0, 0.36);
+        overflow: hidden;
+      }
+
+      .mini-card.tall { height: 470px; }
+      .mini-card img { width: 100%; height: 100%; border-radius: 20px; object-fit: contain; background: #171a27; }
+
+      .mini-label {
+        position: absolute;
+        left: 18px;
+        bottom: 18px;
+        padding: 9px 13px;
+        border-radius: 11px;
+        color: var(--ink);
+        background: rgba(11, 13, 20, 0.82);
+        font-size: 18px;
+        font-weight: 800;
+      }
+
+      .feature-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+        width: 560px;
+      }
+
+      .feature-card {
+        min-height: 122px;
+        padding: 20px;
+        border: 1px solid rgba(230, 235, 255, 0.13);
+        border-radius: 18px;
+        background: rgba(20, 25, 40, 0.76);
+      }
+
+      .feature-card strong { display: block; font-size: 26px; }
+      .feature-card span { display: block; margin-top: 8px; color: var(--muted); font-size: 19px; }
+
+      .caption-track {
+        position: absolute;
+        left: 108px;
+        right: 108px;
+        bottom: 48px;
+        z-index: 20;
+        height: 70px;
+        display: flex;
+        justify-content: center;
+        pointer-events: none;
+      }
+
+      .caption {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 13px 24px;
+        border: 1px solid rgba(230, 235, 255, 0.24);
+        border-radius: 13px;
+        color: var(--ink);
+        background: rgba(11, 13, 20, 0.82);
+        font-size: 28px;
+        font-weight: 800;
+        letter-spacing: 0.01em;
+        opacity: 0;
+        visibility: hidden;
+        white-space: nowrap;
+      }
+
+      .transition {
+        position: absolute;
+        inset: 0;
+        z-index: 30;
+        opacity: 0;
+        visibility: hidden;
+        transform: translateX(-100%);
+        background: rgba(107, 157, 252, 0.96);
+        pointer-events: none;
+      }
+
+      .transition::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        right: 14%;
+        width: 22%;
+        height: 100%;
+        background: rgba(155, 123, 252, 0.9);
+        transform: skewX(-16deg);
+      }
+
+      .transition.platform { background: rgba(0, 212, 212, 0.94); }
+
+      .scene-1 .copy-column { width: 690px; }
+      .scene-2 .copy-column, .scene-3 .copy-column { width: 650px; }
+      .scene-4 .scene-content { padding-top: 120px; }
+      .scene-4 .copy-column { width: 600px; }
+      .scene-5 .scene-layout { justify-content: center; gap: 76px; }
+      .scene-5 .copy-column { width: 560px; }
+
+      @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after {
+          animation-duration: 0.001ms !important;
+          transition-duration: 0.001ms !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main id="clipflow-30s-4x3" data-composition-id="clipflow-30s-4x3" data-start="0" data-duration="30" data-width="1440" data-height="1080">
+      <audio id="promo-audio" data-start="0" data-duration="30" data-track-index="0" src="audio/mix.wav" data-volume="1"></audio>
+
+      <div class="ambient" data-layout-ignore="">
+        <div class="ribbon one" data-layout-ignore=""></div>
+        <div class="ribbon two" data-layout-ignore=""></div>
+        <div class="ribbon three" data-layout-ignore=""></div>
+      </div>
+
+      <section id="scene-brand" class="scene clip scene-1" data-start="0" data-duration="4" data-track-index="1">
+        <div class="scene-content">
+          <div class="scene-layout">
+            <div class="copy-column scene-1-copy">
+              <div class="eyebrow">ClipFlow / Android</div>
+              <div class="brand-lockup scene-1-brand">
+                <img src="assets/clipflow-icon.png" alt="ClipFlow 图标">
+                <div>
+                  <div class="brand-name">ClipFlow</div>
+                  <div class="brand-subtitle">把分享链接，变成清晰的本地文件</div>
+                </div>
+              </div>
+              <h1 class="scene-1-title">复制链接，<span class="accent-word">保存</span>想要的内容</h1>
+              <div class="flow-chip scene-1-chip">分享链接 → ClipFlow → 本地保存</div>
+            </div>
+            <div class="phone-frame scene-1-phone">
+              <img class="phone-screen" src="assets/device-home.png" alt="ClipFlow 主页">
+              <div class="screen-sheen" data-layout-ignore=""></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="scene-parse" class="scene clip scene-2" data-start="4" data-duration="7" data-track-index="2">
+        <div class="scene-content">
+          <div class="scene-layout">
+            <div class="copy-column scene-2-copy">
+              <div class="eyebrow">第一步 / 解析</div>
+              <h2 class="scene-2-title">粘贴分享链接，<span class="cyan-word">一键解析</span></h2>
+              <p class="body-copy">自动读取剪贴板，进入对应平台，链接和操作都保持简单。</p>
+              <div class="flow-chip scene-2-chip">douyin.com / shared-video</div>
+              <div class="platform-row">
+                <div class="platform-tag douyin">抖音</div>
+                <div class="platform-tag xhs">小红书</div>
+                <div class="platform-tag bili">哔哩哔哩</div>
+              </div>
+            </div>
+            <div class="phone-frame scene-2-phone">
+              <img class="phone-screen" src="assets/device-douyin.png" alt="ClipFlow 抖音解析页面">
+              <div class="screen-sheen" data-layout-ignore=""></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="scene-result" class="scene clip scene-3" data-start="11" data-duration="8" data-track-index="3">
+        <div class="scene-content">
+          <div class="scene-layout">
+            <div class="copy-column scene-3-copy">
+              <div class="eyebrow">第二步 / 选择与保存</div>
+              <h2 class="scene-3-title">清晰度、内容、进度，<span class="accent-word">一眼看懂</span></h2>
+              <p class="body-copy">有原画就优先选择原画；视频、图集和音乐，按需要分别保存。</p>
+              <div class="stat-row">
+                <div class="stat"><strong>原画</strong> 优先</div>
+                <div class="stat"><strong>无水印</strong> 下载</div>
+              </div>
+              <div class="progress-wrap">
+                <div class="progress-bar"><span class="progress-fill"></span></div>
+                <span>下载进度实时显示</span>
+              </div>
+            </div>
+            <div class="phone-frame scene-3-phone">
+              <img class="phone-screen" src="assets/fallback-douyin.jpg" alt="ClipFlow 解析结果和下载界面">
+              <div class="screen-sheen" data-layout-ignore=""></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="scene-breadth" class="scene clip scene-4" data-start="19" data-duration="6" data-track-index="4">
+        <div class="scene-content">
+          <div class="scene-layout">
+            <div class="copy-column scene-4-copy">
+              <div class="eyebrow">更多平台 / 更好整理</div>
+              <h2 class="scene-4-title">一个工作流，覆盖常用内容</h2>
+              <div class="platform-row">
+                <div class="platform-tag douyin">抖音</div>
+                <div class="platform-tag xhs">小红书</div>
+                <div class="platform-tag bili">哔哩哔哩</div>
+              </div>
+              <div class="feature-grid">
+                <div class="feature-card"><strong>历史记录</strong><span>搜索、回看、重新打开</span></div>
+                <div class="feature-card"><strong>后台下载</strong><span>通知栏查看完成状态</span></div>
+                <div class="feature-card"><strong>分类保存</strong><span>视频 · 图片 · 音乐</span></div>
+                <div class="feature-card"><strong>Android 10+</strong><span>从 Android 10 开始支持</span></div>
+              </div>
+            </div>
+            <div class="platform-cards">
+              <div class="mini-card">
+                <img src="assets/device-xiaohongshu.png" alt="小红书解析页面">
+                <div class="mini-label">小红书</div>
+              </div>
+              <div class="mini-card tall">
+                <img src="assets/device-home.png" alt="ClipFlow 主页">
+                <div class="mini-label">ClipFlow</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="scene-close" class="scene clip scene-5" data-start="25" data-duration="5" data-track-index="5">
+        <div class="scene-content">
+          <div class="scene-layout">
+            <div class="phone-frame compact scene-5-phone">
+              <img class="phone-screen" src="assets/device-home.png" alt="ClipFlow 主页">
+              <div class="screen-sheen" data-layout-ignore=""></div>
+            </div>
+            <div class="copy-column scene-5-copy">
+              <div class="eyebrow">把内容留在自己手里</div>
+              <div class="brand-lockup scene-5-brand">
+                <img src="assets/clipflow-icon.png" alt="ClipFlow 图标">
+                <div>
+                  <div class="brand-name">ClipFlow</div>
+                  <div class="brand-subtitle">开源 · 免费 · Android</div>
+                </div>
+              </div>
+              <h2 class="scene-5-title">清晰、直接、随时可回看</h2>
+              <div class="path-row">
+                <div class="path-tag">Movies / ClipFlow</div>
+                <div class="path-tag">Pictures / ClipFlow</div>
+                <div class="path-tag">Music / ClipFlow</div>
+              </div>
+              <p class="body-copy">请只下载自己有权保存和使用的内容。</p>
+              <div class="micro-note">github.com/qihe114514/ClipFlow</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div id="transition-a" class="transition" data-layout-ignore=""></div>
+      <div id="transition-b" class="transition" data-layout-ignore=""></div>
+      <div id="transition-c" class="transition platform" data-layout-ignore=""></div>
+      <div id="transition-d" class="transition" data-layout-ignore=""></div>
+
+      <div class="caption-track" aria-hidden="true">
+        <div id="caption-0" class="caption">复制链接，保存想要的内容</div>
+        <div id="caption-1" class="caption">粘贴分享链接，一键解析</div>
+        <div id="caption-2" class="caption">原画 · 无水印 · 进度清晰可见</div>
+        <div id="caption-3" class="caption">抖音 · 小红书 · 哔哩哔哩</div>
+        <div id="caption-4" class="caption">ClipFlow · 开源 · 免费</div>
+      </div>
+    </main>
+
+    <script>
+      window.__timelines = window.__timelines || {};
+      var tl = gsap.timeline({ paused: true });
+
+      function showScene(selector, time) {
+        tl.set(selector, { autoAlpha: 1 }, time);
+      }
+
+      function liquidTransition(selector, time) {
+        tl.set(selector, { autoAlpha: 1, xPercent: -100 }, time);
+        tl.to(selector, { xPercent: 0, duration: 0.22, ease: "power4.in" }, time);
+        tl.to(selector, { xPercent: 100, duration: 0.28, ease: "expo.out" }, time + 0.22);
+        tl.set(selector, { autoAlpha: 0, xPercent: -100 }, time + 0.52);
+      }
+
+      function caption(selector, start, end, x, scale) {
+        tl.set(selector, { autoAlpha: 0, y: 18, x: x || 0, scale: scale || 0.96 }, 0);
+        tl.to(selector, { y: 0, x: 0, scale: 1, autoAlpha: 1, duration: 0.36, ease: "back.out(1.2)" }, start);
+        tl.set(selector, { autoAlpha: 0 }, end);
+      }
+
+      showScene("#scene-brand", 0.1);
+      tl.from("#scene-brand .scene-1-copy", { x: -64, autoAlpha: 0, duration: 0.72, ease: "expo.out" }, 0.18);
+      tl.from("#scene-brand .scene-1-phone", { x: 82, rotation: 3, scale: 0.9, autoAlpha: 0, duration: 0.78, ease: "back.out(1.25)" }, 0.3);
+      tl.from("#scene-brand .scene-1-chip", { y: 22, autoAlpha: 0, duration: 0.4, ease: "power2.out" }, 0.78);
+      caption("#caption-0", 0.48, 3.72, 0, 0.96);
+
+      liquidTransition("#transition-a", 3.72);
+      showScene("#scene-parse", 4.02);
+      tl.from("#scene-parse .scene-2-copy", { x: -74, autoAlpha: 0, duration: 0.62, ease: "power3.out" }, 4.12);
+      tl.from("#scene-parse .scene-2-phone", { x: 78, rotation: -2.5, scale: 0.93, autoAlpha: 0, duration: 0.72, ease: "power4.out" }, 4.18);
+      tl.from("#scene-parse .platform-tag", { y: 24, autoAlpha: 0, duration: 0.34, stagger: 0.09, ease: "back.out(1.3)" }, 5.3);
+      tl.to("#scene-parse .scene-2-phone", { y: -13, duration: 1.2, repeat: 1, yoyo: true, ease: "sine.inOut" }, 6.2);
+      caption("#caption-1", 4.62, 10.72, -10, 0.97);
+
+      liquidTransition("#transition-b", 10.72);
+      showScene("#scene-result", 11.02);
+      tl.from("#scene-result .scene-3-copy", { x: -60, autoAlpha: 0, duration: 0.58, ease: "power2.out" }, 11.1);
+      tl.from("#scene-result .scene-3-phone", { x: 76, rotation: 2.2, scale: 0.92, autoAlpha: 0, duration: 0.76, ease: "expo.out" }, 11.16);
+      tl.from("#scene-result .stat", { y: 22, autoAlpha: 0, duration: 0.34, stagger: 0.1, ease: "back.out(1.35)" }, 12.5);
+      tl.from("#scene-result .progress-wrap", { x: -24, autoAlpha: 0, duration: 0.42, ease: "sine.out" }, 13.0);
+      tl.to("#scene-result .progress-fill", { width: "92%", duration: 1.2, ease: "power1.inOut" }, 14.1);
+      caption("#caption-2", 11.72, 18.72, 12, 0.97);
+
+      liquidTransition("#transition-c", 18.72);
+      showScene("#scene-breadth", 19.02);
+      tl.from("#scene-breadth .scene-4-copy", { x: -66, autoAlpha: 0, duration: 0.64, ease: "power4.out" }, 19.12);
+      tl.from("#scene-breadth .mini-card", { y: 54, rotation: -2, scale: 0.9, autoAlpha: 0, duration: 0.64, stagger: 0.12, ease: "back.out(1.25)" }, 19.2);
+      tl.from("#scene-breadth .feature-card", { y: 20, autoAlpha: 0, duration: 0.3, stagger: 0.08, ease: "power3.out" }, 20.05);
+      caption("#caption-3", 19.46, 24.72, -8, 0.97);
+
+      liquidTransition("#transition-d", 24.72);
+      showScene("#scene-close", 25.02);
+      tl.from("#scene-close .scene-5-phone", { x: -58, rotation: -2, scale: 0.9, autoAlpha: 0, duration: 0.7, ease: "back.out(1.2)" }, 25.12);
+      tl.from("#scene-close .scene-5-copy", { x: 68, autoAlpha: 0, duration: 0.7, ease: "expo.out" }, 25.22);
+      tl.from("#scene-close .path-tag", { y: 20, autoAlpha: 0, duration: 0.32, stagger: 0.08, ease: "power2.out" }, 26.18);
+      caption("#caption-4", 25.62, 29.36, 0, 0.96);
+      tl.to("#scene-close", { autoAlpha: 0, duration: 0.42, ease: "power2.in" }, 29.58);
+      tl.to("#clipflow-30s-4x3", { backgroundColor: "#05060a", duration: 0.42, ease: "sine.inOut" }, 29.58);
+
+      tl.to(".ribbon.one", { x: 88, duration: 7, repeat: 3, yoyo: true, ease: "sine.inOut" }, 0.2);
+      tl.to(".ribbon.two", { x: -100, duration: 9, repeat: 2, yoyo: true, ease: "sine.inOut" }, 0.2);
+      tl.to(".ribbon.three", { x: 64, duration: 8, repeat: 2, yoyo: true, ease: "sine.inOut" }, 0.2);
+
+      window.__timelines["clipflow-30s-4x3"] = tl;
+    </script>
+  </body>
+</html>
