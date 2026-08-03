@@ -98,6 +98,7 @@ data class BilibiliDurl(
     val url: String? = null
 )
 
+@Keep
 data class BilibiliAccount(
     val mid: Long,
     val name: String,
@@ -107,6 +108,7 @@ data class BilibiliAccount(
     val coins: Double = 0.0
 )
 
+@Keep
 data class BilibiliSession(
     val cookie: String,
     val account: BilibiliAccount? = null

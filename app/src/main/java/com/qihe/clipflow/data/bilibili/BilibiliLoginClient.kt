@@ -1,6 +1,7 @@
 package com.qihe.clipflow.data.bilibili
 
 import android.util.Log
+import androidx.annotation.Keep
 import com.google.gson.Gson
 import com.google.gson.annotations.SerializedName
 import com.google.gson.reflect.TypeToken
@@ -173,31 +174,37 @@ class BilibiliLoginClient(
         synchronized(cookieLock) { cookieHeaders += headers }
     }
 
+    @Keep
     private data class BilibiliQrGenerateData(
         val url: String? = null,
         @SerializedName("qrcode_key") val qrCodeKey: String? = null
     )
 
+    @Keep
     private data class BilibiliQrPollData(
         val url: String? = null,
         @SerializedName("refresh_token") val refreshToken: String? = null,
         val code: Int = 86101
     )
 
+    @Keep
     private data class BilibiliGeetestData(
         val challenge: String? = null,
         val gt: String? = null
     )
 
+    @Keep
     private data class BilibiliCaptchaData(
         val token: String? = null,
         val geetest: BilibiliGeetestData? = null
     )
 
+    @Keep
     private data class BilibiliSmsSendData(
         @SerializedName("captcha_key") val captchaKey: String? = null
     )
 
+    @Keep
     private data class BilibiliSmsLoginData(
         val status: Int = -1,
         val message: String? = null
