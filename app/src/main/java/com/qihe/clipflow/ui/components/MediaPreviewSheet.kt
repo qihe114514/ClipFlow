@@ -457,6 +457,7 @@ private fun ImagePreviewPage(
     }
 }
 
+@Suppress("DEPRECATION")
 @Composable
 private fun VideoControls(
     modifier: Modifier,
@@ -531,7 +532,7 @@ private fun VideoControls(
                 Spacer(Modifier.weight(1f))
                 IconButton(onClick = onToggleMute) {
                     Icon(
-                        imageVector = if (isMuted) Icons.AutoMirrored.Filled.VolumeOff else Icons.AutoMirrored.Filled.VolumeUp,
+                        imageVector = if (isMuted) Icons.Filled.VolumeOff else Icons.Filled.VolumeUp,
                         contentDescription = if (isMuted) "取消静音" else "静音"
                     )
                 }
