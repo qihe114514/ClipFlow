@@ -1,7 +1,6 @@
 package com.qihe.clipflow.ui.components
 
 import android.app.Activity
-import android.content.pm.ActivityInfo
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -31,8 +30,6 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ExpandMore
-import androidx.compose.material.icons.filled.Fullscreen
-import androidx.compose.material.icons.filled.FullscreenExit
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Replay
@@ -63,6 +60,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -71,6 +69,7 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.media3.common.MediaItem
+import androidx.media3.common.MimeTypes
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.VideoSize
@@ -83,6 +82,7 @@ import androidx.media3.ui.compose.SURFACE_TYPE_TEXTURE_VIEW
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.qihe.clipflow.data.api.model.ContentItem
+import com.qihe.clipflow.data.bilibili.BilibiliSessionStore
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import java.util.Locale
@@ -99,9 +99,6 @@ fun MediaPreviewSheet(
     val activity = context as? Activity
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val pagerState = rememberPagerState(pageCount = { items.size })
-    var isFullscreen by remember { mutableStateOf(false) }
-    var restoreOrientation by remember { mutableStateOf<Int?>(null) }
-    var restoreSystemBars by remember { mutableStateOf<Boolean?>(null) }
     var failedImagePages by remember { mutableStateOf(emptySet<Int>()) }
     var controlsVisible by remember { mutableStateOf(true) }
     var showLongPressSpeed by remember { mutableStateOf(false) }
@@ -126,13 +123,18 @@ fun MediaPreviewSheet(
         ?.takeIf { it.previewKind == PreviewMediaKind.VIDEO }
         ?.companionUrl
         ?.takeIf { it.isNotBlank() }
-    val player = remember(currentVideoUrl, currentAudioUrl) {
+    val isBilibiliVideo = currentItem?.id?.startsWith("bilibili_") == true
+    val player = remember(currentVideoUrl, currentAudioUrl, isBilibiliVideo) {
         currentVideoUrl?.let { url ->
-            val requestHeaders = if (currentAudioUrl != null) {
-                mapOf(
-                    "User-Agent" to BILIBILI_PREVIEW_USER_AGENT,
-                    "Referer" to BILIBILI_PREVIEW_REFERER
-                )
+            val requestHeaders = if (isBilibiliVideo) {
+                buildMap {
+                    put("User-Agent", BILIBILI_PREVIEW_USER_AGENT)
+                    put("Referer", BILIBILI_PREVIEW_REFERER)
+                    put("Origin", BILIBILI_PREVIEW_ORIGIN)
+                    BilibiliSessionStore.session()?.cookie
+                        ?.takeIf { it.isNotBlank() }
+                        ?.let { put("Cookie", it) }
+                }
             } else {
                 emptyMap()
             }
@@ -141,11 +143,24 @@ fun MediaPreviewSheet(
                 .setDefaultRequestProperties(requestHeaders)
             val mediaSourceFactory = DefaultMediaSourceFactory(dataSourceFactory)
             ExoPlayer.Builder(context, mediaSourceFactory).build().apply {
-                val videoSource = mediaSourceFactory.createMediaSource(MediaItem.fromUri(url))
+                val videoItem = if (isBilibiliVideo) {
+                    MediaItem.Builder()
+                        .setUri(url)
+                        .setMimeType(MimeTypes.VIDEO_MP4)
+                        .build()
+                } else {
+                    MediaItem.fromUri(url)
+                }
+                val videoSource = mediaSourceFactory.createMediaSource(videoItem)
                 val source = currentAudioUrl?.let { audioUrl ->
                     MergingMediaSource(
                         videoSource,
-                        mediaSourceFactory.createMediaSource(MediaItem.fromUri(audioUrl))
+                        mediaSourceFactory.createMediaSource(
+                            MediaItem.Builder()
+                                .setUri(audioUrl)
+                                .setMimeType(MimeTypes.AUDIO_MP4)
+                                .build()
+                        )
                     )
                 } ?: videoSource
                 setMediaSource(source)
@@ -215,49 +230,22 @@ fun MediaPreviewSheet(
         }
     }
 
-    DisposableEffect(isFullscreen, activity) {
+    DisposableEffect(activity) {
+        val statusBarsVisible = activity?.let(::areStatusBarsVisible) ?: true
+        setStatusBarVisible(activity, false)
         onDispose {
-            if (isFullscreen) {
-                restoreFullscreenState(activity, restoreOrientation, restoreSystemBars)
-            }
-        }
-    }
-
-    LaunchedEffect(isFullscreen, isLandscapeVideo) {
-        if (isFullscreen) {
-            if (isLandscapeVideo) {
-                activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
-            }
-            setSystemBarsVisible(activity, false)
+            setStatusBarVisible(activity, statusBarsVisible)
         }
     }
 
     BackHandler(enabled = true) {
-        isFullscreen = false
-        restoreFullscreenState(activity, restoreOrientation, restoreSystemBars)
-        onDismiss()
-    }
-
-    fun setFullscreen(enabled: Boolean) {
-        if (enabled == isFullscreen) return
-        if (enabled) {
-            restoreOrientation = activity?.requestedOrientation
-            restoreSystemBars = activity?.let(::areSystemBarsVisible) ?: true
-            isFullscreen = true
-        } else {
-            isFullscreen = false
-            restoreFullscreenState(activity, restoreOrientation, restoreSystemBars)
-        }
-    }
-
-    fun closeSheet() {
-        setFullscreen(false)
         onDismiss()
     }
 
     ModalBottomSheet(
-        onDismissRequest = ::closeSheet,
+        onDismissRequest = onDismiss,
         sheetState = sheetState,
+        contentWindowInsets = { androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0) },
         containerColor = Color.Black,
         contentColor = Color.White,
         tonalElevation = 0.dp,
@@ -274,7 +262,6 @@ fun MediaPreviewSheet(
             modifier = Modifier
                 .fillMaxWidth()
                 .fillMaxSize()
-                .navigationBarsPadding()
         ) {
             Box(
                 modifier = Modifier
@@ -293,6 +280,7 @@ fun MediaPreviewSheet(
                                 player = if (page == pagerState.currentPage) player else null,
                                 videoWidth = videoWidth,
                                 videoHeight = videoHeight,
+                                isLandscapeVideo = isLandscapeVideo,
                                 onToggleControls = { controlsVisible = !controlsVisible },
                                 onLongPress = {
                                     player?.setPlaybackSpeed(2f)
@@ -319,7 +307,7 @@ fun MediaPreviewSheet(
                 }
 
                 IconButton(
-                    onClick = ::closeSheet,
+                    onClick = onDismiss,
                     modifier = Modifier
                         .align(Alignment.TopEnd)
                         .statusBarsPadding()
@@ -341,7 +329,9 @@ fun MediaPreviewSheet(
 
                 if (currentItem?.previewKind == PreviewMediaKind.VIDEO && player != null) {
                     VideoControls(
-                        modifier = Modifier.align(Alignment.BottomCenter),
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .navigationBarsPadding(),
                         player = player,
                         controlsVisible = controlsVisible,
                         isPlaying = isPlaying,
@@ -351,7 +341,6 @@ fun MediaPreviewSheet(
                         scrubPosition = scrubPosition,
                         isMuted = isMuted,
                         selectedSpeed = selectedSpeed,
-                        isFullscreen = isFullscreen,
                         playerError = playerError,
                         onPlayPause = {
                             if (player.isPlaying) player.pause() else player.play()
@@ -383,7 +372,6 @@ fun MediaPreviewSheet(
                             player.setPlaybackSpeed(it)
                             controlsVisible = true
                         },
-                        onFullscreen = { setFullscreen(!isFullscreen) },
                         onRetry = {
                             playerError = null
                             player.prepare()
@@ -413,6 +401,7 @@ private fun VideoPreviewPage(
     player: ExoPlayer?,
     videoWidth: Int,
     videoHeight: Int,
+    isLandscapeVideo: Boolean,
     onToggleControls: () -> Unit,
     onLongPress: () -> Unit,
     onLongPressRelease: () -> Unit
@@ -453,6 +442,7 @@ private fun VideoPreviewPage(
                     .fillMaxWidth()
                     .aspectRatio(aspectRatio, matchHeightConstraintsFirst = true)
                     .align(Alignment.Center)
+                    .graphicsLayer { rotationZ = if (isLandscapeVideo) 90f else 0f }
             } else {
                 Modifier.fillMaxSize()
             }
@@ -463,6 +453,7 @@ private fun VideoPreviewPage(
 private const val BILIBILI_PREVIEW_USER_AGENT =
     "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Safari/537.36"
 private const val BILIBILI_PREVIEW_REFERER = "https://www.bilibili.com/"
+private const val BILIBILI_PREVIEW_ORIGIN = "https://www.bilibili.com"
 
 @Composable
 private fun ImagePreviewPage(
@@ -515,14 +506,12 @@ private fun VideoControls(
     scrubPosition: Float,
     isMuted: Boolean,
     selectedSpeed: Float,
-    isFullscreen: Boolean,
     playerError: PlaybackException?,
     onPlayPause: () -> Unit,
     onSeekChange: (Float) -> Unit,
     onSeekFinished: () -> Unit,
     onToggleMute: () -> Unit,
     onSpeedSelected: (Float) -> Unit,
-    onFullscreen: () -> Unit,
     onRetry: () -> Unit
 ) {
     AnimatedVisibility(
@@ -582,12 +571,6 @@ private fun VideoControls(
                     )
                 }
                 SpeedMenu(selectedSpeed = selectedSpeed, onSpeedSelected = onSpeedSelected)
-                IconButton(onClick = onFullscreen) {
-                    Icon(
-                        imageVector = if (isFullscreen) Icons.Filled.FullscreenExit else Icons.Filled.Fullscreen,
-                        contentDescription = if (isFullscreen) "退出全屏" else "全屏"
-                    )
-                }
             }
         }
     }
@@ -624,29 +607,19 @@ private fun formatPreviewTime(millis: Long): String {
     return String.format(Locale.US, "%d:%02d", totalSeconds / 60, totalSeconds % 60)
 }
 
-private fun areSystemBarsVisible(activity: Activity): Boolean =
+private fun areStatusBarsVisible(activity: Activity): Boolean =
     ViewCompat.getRootWindowInsets(activity.window.decorView)
-        ?.isVisible(WindowInsetsCompat.Type.systemBars())
+        ?.isVisible(WindowInsetsCompat.Type.statusBars())
         ?: true
 
-private fun setSystemBarsVisible(activity: Activity?, visible: Boolean) {
+private fun setStatusBarVisible(activity: Activity?, visible: Boolean) {
     val window = activity?.window ?: return
     val controller = WindowCompat.getInsetsController(window, window.decorView)
     controller.systemBarsBehavior =
         androidx.core.view.WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
     if (visible) {
-        controller.show(WindowInsetsCompat.Type.systemBars())
+        controller.show(WindowInsetsCompat.Type.statusBars())
     } else {
-        controller.hide(WindowInsetsCompat.Type.systemBars())
+        controller.hide(WindowInsetsCompat.Type.statusBars())
     }
-}
-
-private fun restoreFullscreenState(
-    activity: Activity?,
-    orientation: Int?,
-    systemBarsVisible: Boolean?
-) {
-    if (activity == null) return
-    orientation?.let { activity.requestedOrientation = it }
-    systemBarsVisible?.let { setSystemBarsVisible(activity, it) }
 }
