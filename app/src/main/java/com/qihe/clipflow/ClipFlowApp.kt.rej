@@ -1,0 +1,17 @@
+diff a/app/src/main/java/com/qihe/clipflow/ClipFlowApp.kt b/app/src/main/java/com/qihe/clipflow/ClipFlowApp.kt	(rejected hunks)
+@@ -4,6 +4,7 @@ import android.app.Application
+ import android.app.NotificationChannel
+ import android.app.NotificationManager
+ import android.os.Build
++import com.qihe.clipflow.data.bilibili.BilibiliSessionStore
+ import com.umeng.commonsdk.UMConfigure
+ 
+ class ClipFlowApp : Application() {
+@@ -20,6 +21,7 @@ class ClipFlowApp : Application() {
+ 
+     override fun onCreate() {
+         super.onCreate()
++        BilibiliSessionStore.initialize(this)
+         createNotificationChannels()
+         // ?????????????????????? init??????
+         UMConfigure.setLogEnabled(false)

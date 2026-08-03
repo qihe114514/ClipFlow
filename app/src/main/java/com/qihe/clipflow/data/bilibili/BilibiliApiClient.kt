@@ -30,7 +30,7 @@ object BilibiliApiClient {
                 val request = chain.request()
                 if (isBilibiliHost(request.url.host)) {
                     val builder = request.newBuilder().header("User-Agent", browserUserAgent)
-                    BilibiliSessionStore.session()?.cookie?.takeIf { it.isNotBlank() }?.let {
+                    if (request.header("Cookie") == null) BilibiliSessionStore.session()?.cookie?.takeIf { it.isNotBlank() }?.let {
                         builder.header("Cookie", it)
                     }
                     chain.proceed(builder.build())
@@ -48,6 +48,15 @@ object BilibiliApiClient {
             .addConverterFactory(GsonConverterFactory.create(GsonBuilder().setLenient().create()))
             .build()
             .create(BilibiliApi::class.java)
+    }
+
+    val authenticatedApi: BilibiliAuthenticatedApi by lazy {
+        Retrofit.Builder()
+            .baseUrl("https://api.bilibili.com/")
+            .client(httpClient)
+            .addConverterFactory(GsonConverterFactory.create(GsonBuilder().setLenient().create()))
+            .build()
+            .create(BilibiliAuthenticatedApi::class.java)
     }
 
     val shortUrlResolver = BilibiliShortUrlResolver { url ->

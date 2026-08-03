@@ -1,0 +1,17 @@
+diff a/app/src/main/java/com/qihe/clipflow/navigation/MainPager.kt b/app/src/main/java/com/qihe/clipflow/navigation/MainPager.kt	(rejected hunks)
+@@ -10,6 +10,7 @@ import androidx.navigation.NavHostController
+ import com.qihe.clipflow.ui.douyin.DouyinScreen
+ import com.qihe.clipflow.ui.home.HomeScreen
+ import com.qihe.clipflow.ui.xiaohongshu.XiaohongshuScreen
++import com.qihe.clipflow.ui.bilibili.BilibiliScreen
+ 
+ @Composable
+ fun MainPager(
+@@ -36,6 +37,7 @@ fun MainPager(
+                 Screen.Xiaohongshu.route -> XiaohongshuScreen(
+                     sourceUrl = sourceUrl.takeIf { currentRoute == route },
+                 )
++                Screen.Bilibili.route -> BilibiliScreen()
+             }
+         }
+     }

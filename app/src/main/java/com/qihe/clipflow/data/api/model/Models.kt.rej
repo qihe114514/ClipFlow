@@ -1,0 +1,11 @@
+diff a/app/src/main/java/com/qihe/clipflow/data/api/model/Models.kt b/app/src/main/java/com/qihe/clipflow/data/api/model/Models.kt	(rejected hunks)
+@@ -84,7 +84,8 @@ data class ContentItem(
+     val url: String,
+     val thumbnailUrl: String? = null,
+     val mediaInfo: MediaInfo? = null,
+-    val description: String = ""
++    val description: String = "",
++    val companionUrl: String? = null
+ )
+ 
+ @Keep
