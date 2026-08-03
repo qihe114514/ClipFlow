@@ -64,6 +64,7 @@ class BilibiliPlatformParserTest {
         assertEquals("Fixture title", parsed.title)
         assertEquals(listOf(80, 64), parsed.bilibili?.qualities?.map { it.id })
         assertEquals(2, parsed.bilibili?.parts?.size)
+        assertEquals("https://fixture/audio", parsed.items.first().companionUrl)
         assertEquals("Fixture Account", session.session()?.account?.name)
         assertEquals(12L, session.session()?.account?.following)
         assertEquals(34L, session.session()?.account?.followers)
@@ -180,9 +181,12 @@ class BilibiliPlatformParserTest {
                 accept_quality = listOf(80, 64),
                 accept_description = listOf("1080P", "720P"),
                 dash = BilibiliDash(
-                    listOf(
+                    video = listOf(
                         BilibiliDashVideo(80, baseUrl = "https://fixture/80"),
                         BilibiliDashVideo(64, baseUrl = "https://fixture/64")
+                    ),
+                    audio = listOf(
+                        BilibiliDashAudio(30280, baseUrl = "https://fixture/audio")
                     )
                 )
             )

@@ -98,7 +98,8 @@ class BilibiliPlatformParser(
                             url = quality.streamUrl,
                             thumbnailUrl = coverUrl,
                             mediaInfo = MediaInfo(resolution = quality.label, format = "DASH"),
-                            description = firstPart.part.orEmpty()
+                            description = firstPart.part.orEmpty(),
+                            companionUrl = quality.audioUrl
                         )
                     },
                     title = video.title.orEmpty(),

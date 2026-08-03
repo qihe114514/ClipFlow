@@ -13,13 +13,14 @@ import androidx.compose.foundation.gestures.awaitLongPressOrCancellation
 import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -45,7 +46,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -55,6 +55,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -73,8 +74,12 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.VideoSize
+import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
+import androidx.media3.exoplayer.source.MergingMediaSource
 import androidx.media3.ui.compose.PlayerSurface
+import androidx.media3.ui.compose.SURFACE_TYPE_TEXTURE_VIEW
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.qihe.clipflow.data.api.model.ContentItem
@@ -92,7 +97,7 @@ fun MediaPreviewSheet(
 
     val context = LocalContext.current
     val activity = context as? Activity
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val pagerState = rememberPagerState(pageCount = { items.size })
     var isFullscreen by remember { mutableStateOf(false) }
     var restoreOrientation by remember { mutableStateOf<Int?>(null) }
@@ -104,6 +109,8 @@ fun MediaPreviewSheet(
     var savedVolume by remember { mutableFloatStateOf(1f) }
     var isMuted by remember { mutableStateOf(false) }
     var isLandscapeVideo by remember { mutableStateOf(false) }
+    var videoWidth by remember { mutableIntStateOf(0) }
+    var videoHeight by remember { mutableIntStateOf(0) }
     var isPlaying by remember { mutableStateOf(false) }
     var duration by remember { mutableLongStateOf(0L) }
     var position by remember { mutableLongStateOf(0L) }
@@ -115,10 +122,33 @@ fun MediaPreviewSheet(
     val currentVideoUrl = currentItem
         ?.takeIf { it.previewKind == PreviewMediaKind.VIDEO }
         ?.url
-    val player = remember(currentVideoUrl) {
+    val currentAudioUrl = currentItem
+        ?.takeIf { it.previewKind == PreviewMediaKind.VIDEO }
+        ?.companionUrl
+        ?.takeIf { it.isNotBlank() }
+    val player = remember(currentVideoUrl, currentAudioUrl) {
         currentVideoUrl?.let { url ->
-            ExoPlayer.Builder(context).build().apply {
-                setMediaItem(MediaItem.fromUri(url))
+            val requestHeaders = if (currentAudioUrl != null) {
+                mapOf(
+                    "User-Agent" to BILIBILI_PREVIEW_USER_AGENT,
+                    "Referer" to BILIBILI_PREVIEW_REFERER
+                )
+            } else {
+                emptyMap()
+            }
+            val dataSourceFactory = DefaultHttpDataSource.Factory()
+                .setAllowCrossProtocolRedirects(true)
+                .setDefaultRequestProperties(requestHeaders)
+            val mediaSourceFactory = DefaultMediaSourceFactory(dataSourceFactory)
+            ExoPlayer.Builder(context, mediaSourceFactory).build().apply {
+                val videoSource = mediaSourceFactory.createMediaSource(MediaItem.fromUri(url))
+                val source = currentAudioUrl?.let { audioUrl ->
+                    MergingMediaSource(
+                        videoSource,
+                        mediaSourceFactory.createMediaSource(MediaItem.fromUri(audioUrl))
+                    )
+                } ?: videoSource
+                setMediaSource(source)
                 prepare()
                 playWhenReady = true
             }
@@ -145,6 +175,8 @@ fun MediaPreviewSheet(
             }
 
             override fun onVideoSizeChanged(videoSize: VideoSize) {
+                videoWidth = videoSize.width
+                videoHeight = videoSize.height
                 isLandscapeVideo = videoSize.width > videoSize.height
             }
         }
@@ -163,6 +195,8 @@ fun MediaPreviewSheet(
         isPlaying = player?.isPlaying == true
         playerError = null
         isLandscapeVideo = false
+        videoWidth = 0
+        videoHeight = 0
         while (isActive) {
             if (player != null) {
                 isPlaying = player.isPlaying
@@ -178,14 +212,6 @@ fun MediaPreviewSheet(
         if (isPlaying) {
             delay(2800)
             controlsVisible = false
-        }
-    }
-
-    LaunchedEffect(isFullscreen) {
-        if (isFullscreen) {
-            sheetState.expand()
-        } else if (sheetState.currentValue != SheetValue.Hidden) {
-            sheetState.partialExpand()
         }
     }
 
@@ -206,9 +232,10 @@ fun MediaPreviewSheet(
         }
     }
 
-    BackHandler(enabled = isFullscreen) {
+    BackHandler(enabled = true) {
         isFullscreen = false
         restoreFullscreenState(activity, restoreOrientation, restoreSystemBars)
+        onDismiss()
     }
 
     fun setFullscreen(enabled: Boolean) {
@@ -246,7 +273,7 @@ fun MediaPreviewSheet(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .then(if (isFullscreen) Modifier.fillMaxSize() else Modifier.heightIn(min = 360.dp, max = 560.dp))
+                .fillMaxSize()
                 .navigationBarsPadding()
         ) {
             Box(
@@ -264,6 +291,8 @@ fun MediaPreviewSheet(
                         PreviewMediaKind.VIDEO -> {
                             VideoPreviewPage(
                                 player = if (page == pagerState.currentPage) player else null,
+                                videoWidth = videoWidth,
+                                videoHeight = videoHeight,
                                 onToggleControls = { controlsVisible = !controlsVisible },
                                 onLongPress = {
                                     player?.setPlaybackSpeed(2f)
@@ -382,6 +411,8 @@ fun MediaPreviewSheet(
 @Composable
 private fun VideoPreviewPage(
     player: ExoPlayer?,
+    videoWidth: Int,
+    videoHeight: Int,
     onToggleControls: () -> Unit,
     onLongPress: () -> Unit,
     onLongPressRelease: () -> Unit
@@ -391,7 +422,7 @@ private fun VideoPreviewPage(
         return
     }
 
-    Box(
+    BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.Black)
@@ -412,12 +443,26 @@ private fun VideoPreviewPage(
                 }
             }
     ) {
+        val aspectRatio = videoWidth.takeIf { it > 0 }
+            ?.let { width -> videoHeight.takeIf { it > 0 }?.let { width.toFloat() / it } }
         PlayerSurface(
             player = player,
-            modifier = Modifier.fillMaxSize()
+            surfaceType = SURFACE_TYPE_TEXTURE_VIEW,
+            modifier = if (aspectRatio != null) {
+                Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(aspectRatio, matchHeightConstraintsFirst = true)
+                    .align(Alignment.Center)
+            } else {
+                Modifier.fillMaxSize()
+            }
         )
     }
 }
+
+private const val BILIBILI_PREVIEW_USER_AGENT =
+    "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Safari/537.36"
+private const val BILIBILI_PREVIEW_REFERER = "https://www.bilibili.com/"
 
 @Composable
 private fun ImagePreviewPage(
