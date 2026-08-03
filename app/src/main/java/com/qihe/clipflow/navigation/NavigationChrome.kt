@@ -75,10 +75,16 @@ fun ClipFlowTopBar(currentRoute: String?, navController: NavHostController) {
     )
 }
 
+private const val LIQUID_BOTTOM_BAR_MIN_SDK = 33
+
+internal fun supportsLiquidBottomBar(sdkInt: Int): Boolean {
+    return sdkInt >= LIQUID_BOTTOM_BAR_MIN_SDK
+}
+
 @Composable
 fun FloatingBottomBar(
     prefs: AppPreferences,
-    backdrop: Backdrop,
+    backdrop: Backdrop?,
     primaryPagerState: PrimaryPagerState,
     modifier: Modifier = Modifier
 ) {
@@ -95,7 +101,7 @@ fun FloatingBottomBar(
         onSelected = primaryPagerState::animateToPage,
         backdrop = backdrop,
         tabsCount = items.size,
-        isBlurEnabled = true,
+        isBlurEnabled = backdrop != null,
     ) {
         items.forEachIndexed { index, item ->
             FloatingBottomBarItem(

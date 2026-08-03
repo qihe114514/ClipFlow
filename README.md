@@ -16,7 +16,7 @@
 
 [下载最新版 APK](https://github.com/qihe114514/ClipFlow/releases/latest) · [查看所有版本](https://github.com/qihe114514/ClipFlow/releases)
 
-当前版本：**v3.1** · 最低支持：**Android 12**
+当前版本：**v3.1** · 最低支持：**Android 10**
 
 ## 主要功能
 
@@ -27,6 +27,18 @@
 实际清晰度取决于原视频和平台返回的资源。解析结果中标有“原画”的选项，就是优先推荐的下载选项。
 
 ### 其他功能
+| 类别 | 技术 |
+|------|------|
+| UI 框架 | Jetpack Compose + Material 3 |
+| 架构 | MVVM (ViewModel + StateFlow) |
+| 网络请求 | Retrofit 2 + OkHttp 4 |
+| JSON 解析 | Gson |
+| 图片加载 | Coil |
+| 本地存储 | Room (SQLite) |
+| 导航 | Navigation Compose |
+| 最低 SDK | Android 10 (API 29) |
+| 目标 SDK | API 37 |
+| 语言 | Kotlin |
 
 - 抖音、小红书无水印视频下载
 - 图集、实况图片和音乐下载
