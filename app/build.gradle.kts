@@ -112,9 +112,10 @@ dependencies {
     implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
 
     // Media3 ExoPlayer (应用内视频播放)
-    implementation("androidx.media3:media3-exoplayer:1.3.1")
-    implementation("androidx.media3:media3-ui:1.3.1")
-    implementation("androidx.media3:media3-common:1.3.1")
+    implementation("androidx.media3:media3-exoplayer:1.10.0")
+    implementation("androidx.media3:media3-ui:1.10.0")
+    implementation("androidx.media3:media3-common:1.10.0")
+    implementation("androidx.media3:media3-ui-compose:1.10.0")
 
     // Room
     implementation("androidx.room:room-runtime:2.8.4")
