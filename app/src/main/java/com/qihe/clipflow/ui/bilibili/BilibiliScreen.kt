@@ -75,7 +75,8 @@ fun BilibiliScreen(
                     authorName = result.authorName,
                     authorAvatar = result.authorAvatar,
                     contentType = "video",
-                    shareUrl = result.shareUrl
+                    shareUrl = result.shareUrl,
+                    previewItems = result.items
                 )
             }
             if (details != null && details.parts.size > 1) {

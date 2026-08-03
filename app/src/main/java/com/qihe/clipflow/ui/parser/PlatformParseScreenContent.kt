@@ -89,7 +89,7 @@ fun PlatformParseScreenContent(
                         contentType = uiState.contentType,
                         shareUrl = uiState.shareUrl,
                         stats = uiState.stats,
-                        videoUrl = uiState.videoUrl
+                        previewItems = items
                     )
                 }
                 item(key = "download_card") {

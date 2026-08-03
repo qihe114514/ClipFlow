@@ -41,7 +41,6 @@ data class ParsePageUiState(
     val shareUrl: String = "",
     val stats: DouyinStatistics? = null,
     val videoBackups: List<VideoBackupItem> = emptyList(),
-    val videoUrl: String = "",
     val isBackgroundDownload: Boolean = false,
     val error: String? = null,
     val downloadStates: Map<String, DownloadState> = emptyMap(),
@@ -124,7 +123,6 @@ open class PlatformParseViewModel(
                     shareUrl = "",
                     stats = null,
                     videoBackups = emptyList(),
-                    videoUrl = ""
                 )
             }
 
@@ -146,8 +144,7 @@ open class PlatformParseViewModel(
                                 contentType = result.contentType,
                                 shareUrl = result.shareUrl,
                                 stats = result.stats,
-                                videoBackups = result.videoBackups,
-                                videoUrl = result.items.firstOrNull()?.url.orEmpty()
+                                videoBackups = result.videoBackups
                             )
                         }
                         parseSupport.saveHistory(sourceUrl, result)

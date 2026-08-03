@@ -1,29 +1,23 @@
 package com.qihe.clipflow.ui.components
 
-import android.app.Activity
 import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
-import android.content.pm.ActivityInfo
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
 import android.widget.Toast
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
@@ -31,25 +25,20 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material.icons.filled.ChatBubbleOutline
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.OpenInBrowser
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -60,13 +49,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
-import androidx.core.view.WindowCompat
-import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.WindowInsetsControllerCompat
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.qihe.clipflow.data.api.model.ContentItem
 import com.qihe.clipflow.data.api.model.DouyinStatistics
 import com.qihe.clipflow.ui.theme.ImageTypeBadge
 import com.qihe.clipflow.ui.theme.LiveTypeBadge
@@ -91,18 +76,22 @@ fun ParseInfoCard(
     contentType: String,
     shareUrl: String = "",
     stats: DouyinStatistics? = null,
-    videoUrl: String = "",
+    previewItems: List<ContentItem> = emptyList(),
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var showSaveDialog by remember { mutableStateOf(false) }
-    var showVideoPlayer by remember { mutableStateOf(false) }
+    var showMediaPreview by remember { mutableStateOf(false) }
     var isExpanded by remember { mutableStateOf(false) }
-    var isFullscreen by rememberSaveable { mutableStateOf(false) }
+    val availablePreviewItems = previewItems.previewableItems()
 
-    InlineVideoDialog(showVideoPlayer, videoUrl, onDismiss = { showVideoPlayer = false }, onFullscreen = { isFullscreen = true })
-    FullscreenVideoDialog(isFullscreen, videoUrl, onDismiss = { isFullscreen = false })
+    if (showMediaPreview) {
+        MediaPreviewSheet(
+            items = availablePreviewItems,
+            onDismiss = { showMediaPreview = false }
+        )
+    }
     if (showSaveDialog) {
         AlertDialog(
             onDismissRequest = { showSaveDialog = false },
@@ -125,7 +114,7 @@ fun ParseInfoCard(
                     model = ImageRequest.Builder(context).data(cover).crossfade(true).build(),
                     contentDescription = null,
                     modifier = Modifier.fillMaxWidth().height(200.dp).clip(RoundedCornerShape(12.dp)).combinedClickable(
-                        onClick = { if (videoUrl.isNotEmpty()) showVideoPlayer = true },
+                        onClick = { if (availablePreviewItems.isNotEmpty()) showMediaPreview = true },
                         onLongClick = { showSaveDialog = true }
                     ),
                     contentScale = ContentScale.Crop
@@ -147,100 +136,6 @@ fun ParseInfoCard(
                     StatItem(Icons.Filled.BookmarkBorder, formatCount(it.collectCount))
                     StatItem(Icons.Filled.Share, formatCount(it.shareCount))
                 }
-            }
-        }
-    }
-}
-
-@Composable
-private fun InlineVideoDialog(show: Boolean, videoUrl: String, onDismiss: () -> Unit, onFullscreen: () -> Unit) {
-    if (!show || videoUrl.isEmpty()) return
-    val context = LocalContext.current
-    val player = remember(videoUrl) {
-        androidx.media3.exoplayer.ExoPlayer.Builder(context).build().apply {
-            setMediaItem(androidx.media3.common.MediaItem.fromUri(videoUrl))
-            prepare()
-            playWhenReady = true
-        }
-    }
-    DisposableEffect(player) { onDispose { player.release() } }
-    AlertDialog(
-        onDismissRequest = { onDismiss() },
-        title = { Text("在线播放", style = MaterialTheme.typography.titleSmall) },
-        text = {
-            Box(Modifier.fillMaxWidth().height(280.dp)) {
-                androidx.compose.ui.viewinterop.AndroidView(
-                    factory = { androidx.media3.ui.PlayerView(it).apply { this.player = player; useController = true } },
-                    modifier = Modifier.fillMaxSize()
-                )
-            }
-        },
-        confirmButton = {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                TextButton(onClick = { onDismiss(); onFullscreen() }) { Text("全屏") }
-                TextButton(onClick = onDismiss) { Text("关闭") }
-            }
-        }
-    )
-}
-
-private fun setSystemBarsHidden(activity: Activity?, hidden: Boolean) {
-    val window = activity?.window ?: return
-    val controller = WindowCompat.getInsetsController(window, window.decorView)
-    controller.systemBarsBehavior =
-        WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-    if (hidden) {
-        controller.hide(WindowInsetsCompat.Type.systemBars())
-    } else {
-        controller.show(WindowInsetsCompat.Type.systemBars())
-    }
-}
-
-@Composable
-private fun FullscreenVideoDialog(show: Boolean, videoUrl: String, onDismiss: () -> Unit) {
-    if (!show || videoUrl.isEmpty()) return
-    val context = LocalContext.current
-    val activity = context as? Activity
-    val player = remember(videoUrl) {
-        androidx.media3.exoplayer.ExoPlayer.Builder(context).build().apply {
-            setMediaItem(androidx.media3.common.MediaItem.fromUri(videoUrl))
-            prepare()
-            playWhenReady = true
-        }
-    }
-    var isLandscapeVideo by remember { mutableStateOf(false) }
-    DisposableEffect(player) {
-        val listener = object : androidx.media3.common.Player.Listener {
-            override fun onVideoSizeChanged(videoSize: androidx.media3.common.VideoSize) {
-                isLandscapeVideo = videoSize.width > videoSize.height
-            }
-        }
-        player.addListener(listener)
-        onDispose {
-            player.removeListener(listener)
-            player.release()
-        }
-    }
-    LaunchedEffect(isLandscapeVideo) {
-        if (isLandscapeVideo) activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
-        setSystemBarsHidden(activity, true)
-    }
-    fun close() {
-        activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
-        setSystemBarsHidden(activity, false)
-        onDismiss()
-    }
-    Dialog(
-        onDismissRequest = ::close,
-        properties = DialogProperties(usePlatformDefaultWidth = false, dismissOnBackPress = true, dismissOnClickOutside = false)
-    ) {
-        Box(Modifier.fillMaxSize().background(Color.Black)) {
-            androidx.compose.ui.viewinterop.AndroidView(
-                factory = { androidx.media3.ui.PlayerView(it).apply { this.player = player; useController = true } },
-                modifier = Modifier.fillMaxSize()
-            )
-            IconButton(onClick = ::close, modifier = Modifier.align(Alignment.TopEnd).statusBarsPadding().padding(8.dp)) {
-                Icon(Icons.Filled.Close, "退出全屏", tint = Color.White, modifier = Modifier.size(28.dp))
             }
         }
     }
