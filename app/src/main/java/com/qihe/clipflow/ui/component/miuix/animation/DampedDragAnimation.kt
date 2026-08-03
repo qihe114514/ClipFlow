@@ -10,8 +10,7 @@ import androidx.compose.ui.input.pointer.util.VelocityTracker
 import androidx.compose.ui.unit.IntSize
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.android.awaitFrame
-import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import com.qihe.clipflow.ui.component.miuix.modifier.inspectDragGestures
@@ -29,7 +28,6 @@ class DampedDragAnimation(
     val onDragStopped: DampedDragAnimation.() -> Unit,
     val onDrag: DampedDragAnimation.(size: IntSize, dragAmount: Offset) -> Unit,
 ) {
-
     private val valueAnimationSpec =
         spring(1f, 1000f, visibilityThreshold)
     private val velocityAnimationSpec =
@@ -54,6 +52,9 @@ class DampedDragAnimation(
 
     private val velocityTracker = VelocityTracker()
     private var pressAnimationJob: Job? = null
+    private var releaseJob: Job? = null
+    private var valueAnimationJob: Job? = null
+    private var pressed = false
 
     val value: Float get() = valueAnimation.value
     val targetValue: Float get() = valueAnimation.targetValue
@@ -61,6 +62,7 @@ class DampedDragAnimation(
     val scaleX: Float get() = scaleXAnimation.value
     val scaleY: Float get() = scaleYAnimation.value
     val velocity: Float get() = velocityAnimation.value
+    internal val isPressed: Boolean get() = pressed
 
     val modifier: Modifier = Modifier.pointerInput(Unit) {
         inspectDragGestures(
@@ -90,6 +92,8 @@ class DampedDragAnimation(
     }
 
     fun press() {
+        releaseJob?.cancel()
+        pressed = true
         velocityTracker.resetTracking()
         pressAnimationJob?.cancel()
         pressAnimationJob = animationScope.launch {
@@ -100,18 +104,21 @@ class DampedDragAnimation(
     }
 
     fun release() {
-        pressAnimationJob?.cancel()
-        pressAnimationJob = animationScope.launch {
-            awaitFrame()
+        pressed = false
+        releaseJob?.cancel()
+        releaseJob = animationScope.launch {
+            delay(16L)
             if (value != targetValue) {
                 val threshold = (valueRange.endInclusive - valueRange.start) * 0.025f
-                snapshotFlow { valueAnimation.value to valueAnimation.targetValue }
-                    .filter { (value, target) -> abs(value - target) < threshold }
-                    .first()
+                snapshotFlow { valueAnimation.value }
+                    .first { abs(it - valueAnimation.targetValue) < threshold }
             }
-            launch { pressProgressAnimation.animateTo(0f, pressProgressAnimationSpec) }
-            launch { scaleXAnimation.animateTo(initialScale, scaleXAnimationSpec) }
-            launch { scaleYAnimation.animateTo(initialScale, scaleYAnimationSpec) }
+            pressAnimationJob?.cancel()
+            pressAnimationJob = animationScope.launch {
+                launch { pressProgressAnimation.animateTo(0f, pressProgressAnimationSpec) }
+                launch { scaleXAnimation.animateTo(initialScale, scaleXAnimationSpec) }
+                launch { scaleYAnimation.animateTo(initialScale, scaleYAnimationSpec) }
+            }
         }
     }
 
@@ -127,15 +134,21 @@ class DampedDragAnimation(
         }
     }
 
-    fun animateToValue(value: Float) {
-        animationScope.launch {
+    fun animateToValue(value: Float, animatePress: Boolean = true) {
+        valueAnimationJob?.cancel()
+        releaseJob?.cancel()
+        if (animatePress) {
             press()
+        } else {
+            release()
+        }
+        valueAnimationJob = animationScope.launch {
             val targetValue = value.coerceIn(valueRange)
             valueAnimation.animateTo(targetValue, valueAnimationSpec)
             if (velocity != 0f) {
                 velocityAnimation.animateTo(0f, velocityAnimationSpec)
             }
-            release()
+            if (animatePress) release()
         }
     }
 

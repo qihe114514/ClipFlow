@@ -5,17 +5,23 @@ import org.junit.Test
 
 class FloatingBottomBarTest {
     @Test
-    fun indicatorHandoffKeepsPagerPositionUntilInternalAnimationCatchesUp() {
+    fun indicatorValueClampsToTheAvailableTabs() {
         assertEquals(
-            1f,
+            0f,
             indicatorValue(
-                dampedValue = 0f,
-                externalPosition = { 1f },
-                externalActive = { false },
-                handoffActive = true,
+                dampedValue = -1f,
                 tabsCount = 3,
             ),
             0.0001f,
         )
+        assertEquals(
+            2f,
+            indicatorValue(
+                dampedValue = 3f,
+                tabsCount = 3,
+            ),
+            0.0001f,
+        )
+        assertEquals(0f, indicatorValue(1f, 0), 0.0001f)
     }
 }
