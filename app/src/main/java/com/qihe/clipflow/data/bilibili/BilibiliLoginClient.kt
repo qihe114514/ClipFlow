@@ -8,6 +8,7 @@ import kotlinx.coroutines.withContext
 import okhttp3.Call
 import okhttp3.FormBody
 import okhttp3.HttpUrl.Companion.toHttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -51,7 +52,13 @@ class BilibiliLoginClient(
                 BilibiliQrPollData::class.java
             )
             val status = mapBilibiliQrCode(data.code, data.url, data.refreshToken)
-            BilibiliQrPollResult(status = status, cookie = if (status is BilibiliQrPollStatus.Success) cookieHeader() else "")
+            val callbackCookies = (status as? BilibiliQrPollStatus.Success)
+                ?.let { extractBilibiliCallbackCookies(it.callbackUrl) }
+                .orEmpty()
+            BilibiliQrPollResult(
+                status = status,
+                cookie = mergeBilibiliCookieHeaders(listOf(callbackCookies, cookieHeader()))
+            )
         }
     }
 
@@ -197,3 +204,18 @@ class BilibiliLoginClient(
         }
     }
 }
+
+internal fun extractBilibiliCallbackCookies(callbackUrl: String): String {
+    val url = callbackUrl.toHttpUrlOrNull() ?: return ""
+    return bilibiliCallbackCookieNames.mapNotNull { name ->
+        url.queryParameter(name)?.takeIf(String::isNotBlank)?.let { "$name=$it" }
+    }.joinToString("; ")
+}
+
+private val bilibiliCallbackCookieNames = listOf(
+    "SESSDATA",
+    "bili_jct",
+    "DedeUserID",
+    "DedeUserID__ckMd5",
+    "sid"
+)

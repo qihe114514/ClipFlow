@@ -40,19 +40,32 @@ class BilibiliLoginClientTest {
         val factory = QueueCallFactory(
             FakeResponse(
                 """
-                {"code":0,"data":{"url":"https://bilibili.com/callback","refresh_token":"refresh","code":0}}
+                {"code":0,"data":{"url":"https://bilibili.com/callback?SESSDATA=from-url&bili_jct=csrf&DedeUserID=42&gourl=https%3A%2F%2Fwww.bilibili.com","refresh_token":"refresh","code":0}}
                 """.trimIndent(),
-                listOf("SESSDATA=one; Path=/", "bili_jct=csrf; HttpOnly")
+                listOf("sid=from-header; Path=/")
             )
         )
 
         val result = BilibiliLoginClient(factory).pollQrCode("key").getOrThrow()
 
         assertEquals(
-            BilibiliQrPollStatus.Success("https://bilibili.com/callback", "refresh"),
+            BilibiliQrPollStatus.Success(
+                "https://bilibili.com/callback?SESSDATA=from-url&bili_jct=csrf&DedeUserID=42&gourl=https%3A%2F%2Fwww.bilibili.com",
+                "refresh"
+            ),
             result.status
         )
-        assertEquals("SESSDATA=one; bili_jct=csrf", result.cookie)
+        assertEquals("SESSDATA=from-url; bili_jct=csrf; DedeUserID=42; sid=from-header", result.cookie)
+    }
+
+    @Test
+    fun callbackCookiesIgnoreRedirectParametersAndDecodeValues() {
+        assertEquals(
+            "SESSDATA=session value; bili_jct=csrf; DedeUserID=42",
+            extractBilibiliCallbackCookies(
+                "https://passport.bilibili.com/login/success?SESSDATA=session%20value&bili_jct=csrf&DedeUserID=42&gourl=https%3A%2F%2Fwww.bilibili.com"
+            )
+        )
     }
 
     private data class FakeResponse(

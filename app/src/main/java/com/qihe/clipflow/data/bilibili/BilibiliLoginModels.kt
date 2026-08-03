@@ -41,7 +41,10 @@ sealed interface BilibiliLoginFailure {
 
 const val bilibiliQrValiditySeconds = 180
 
-fun isBilibiliPhoneValid(phone: String): Boolean = phone.trim().length >= 6
+fun isBilibiliPhoneValid(phone: String): Boolean {
+    val value = phone.trim()
+    return value.length == 11 && value.first() == '1' && value[1] in '3'..'9' && value.all(Char::isDigit)
+}
 
 fun isBilibiliSmsCodeValid(code: String): Boolean = code.length == 6 && code.all(Char::isDigit)
 

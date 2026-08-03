@@ -21,6 +21,7 @@ class BilibiliLoginModelsTest {
     fun loginInputsUseStableGuards() {
         assertTrue(isBilibiliPhoneValid(" 13800138000 "))
         assertFalse(isBilibiliPhoneValid("12345"))
+        assertFalse(isBilibiliPhoneValid("1380013800"))
         assertTrue(isBilibiliSmsCodeValid("123456"))
         assertFalse(isBilibiliSmsCodeValid("12345a"))
         assertEquals(180, bilibiliQrValiditySeconds)
