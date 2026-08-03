@@ -1,6 +1,9 @@
 package com.qihe.clipflow.ui.components
 
 import android.app.Activity
+import android.graphics.Color as AndroidColor
+import android.os.Build
+import android.view.Window
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -22,6 +25,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredHeight
+import androidx.compose.foundation.layout.requiredWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
@@ -60,11 +65,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.DialogWindowProvider
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
@@ -258,6 +266,7 @@ fun MediaPreviewSheet(
             )
         }
     ) {
+        PreviewDialogWindowEffect(activity)
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -415,6 +424,7 @@ private fun VideoPreviewPage(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.Black)
+            .clipToBounds()
             .pointerInput(player) {
                 awaitEachGesture {
                     val down = awaitFirstDown(requireUnconsumed = false)
@@ -438,11 +448,19 @@ private fun VideoPreviewPage(
             player = player,
             surfaceType = SURFACE_TYPE_TEXTURE_VIEW,
             modifier = if (aspectRatio != null) {
-                Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(aspectRatio, matchHeightConstraintsFirst = true)
-                    .align(Alignment.Center)
-                    .graphicsLayer { rotationZ = if (isLandscapeVideo) 90f else 0f }
+                if (isLandscapeVideo) {
+                    val unrotatedWidth = maxOf(maxHeight, maxWidth * aspectRatio)
+                    Modifier
+                        .requiredWidth(unrotatedWidth)
+                        .requiredHeight(unrotatedWidth / aspectRatio)
+                        .align(Alignment.Center)
+                        .graphicsLayer { rotationZ = 90f }
+                } else {
+                    Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(aspectRatio, matchHeightConstraintsFirst = true)
+                        .align(Alignment.Center)
+                }
             } else {
                 Modifier.fillMaxSize()
             }
@@ -622,4 +640,29 @@ private fun setStatusBarVisible(activity: Activity?, visible: Boolean) {
     } else {
         controller.hide(WindowInsetsCompat.Type.statusBars())
     }
+}
+
+@Composable
+private fun PreviewDialogWindowEffect(activity: Activity?) {
+    val view = LocalView.current
+    val dialogWindow = (view.parent as? DialogWindowProvider)?.window
+
+    androidx.compose.runtime.SideEffect {
+        configurePreviewWindow(activity?.window)
+        configurePreviewWindow(dialogWindow)
+    }
+}
+
+private fun configurePreviewWindow(window: Window?) {
+    window ?: return
+    WindowCompat.setDecorFitsSystemWindows(window, false)
+    window.statusBarColor = AndroidColor.TRANSPARENT
+    window.navigationBarColor = AndroidColor.TRANSPARENT
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        window.isNavigationBarContrastEnforced = false
+    }
+    val controller = WindowCompat.getInsetsController(window, window.decorView)
+    controller.systemBarsBehavior =
+        androidx.core.view.WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+    controller.hide(WindowInsetsCompat.Type.statusBars())
 }

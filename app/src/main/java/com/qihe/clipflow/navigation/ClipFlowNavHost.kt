@@ -173,6 +173,7 @@ fun ClipFlowNavHost() {
             Scaffold(
                 modifier = Modifier.fillMaxSize(),
                 containerColor = Color.Transparent,
+                contentWindowInsets = WindowInsets(0, 0, 0, 0),
                 topBar = {
                     if (showTopBar) {
                         ClipFlowTopBar(
