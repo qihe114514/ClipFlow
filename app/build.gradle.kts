@@ -15,8 +15,8 @@ android {
         applicationId = "com.qihe.clipflow"
         minSdk = 31
         targetSdk = 37
-        versionCode = 28
-        versionName = "3.0"
+        versionCode = 42
+        versionName = "3.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
