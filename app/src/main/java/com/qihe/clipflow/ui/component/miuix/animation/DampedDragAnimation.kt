@@ -2,7 +2,7 @@ package com.qihe.clipflow.ui.component.miuix.animation
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.pointerInput
@@ -10,8 +10,11 @@ import androidx.compose.ui.input.pointer.util.VelocityTracker
 import androidx.compose.ui.unit.IntSize
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import com.qihe.clipflow.ui.component.miuix.modifier.inspectDragGestures
+import kotlin.math.abs
 
 class DampedDragAnimation(
     private val animationScope: CoroutineScope,
@@ -25,17 +28,16 @@ class DampedDragAnimation(
     val onDragStopped: DampedDragAnimation.() -> Unit,
     val onDrag: DampedDragAnimation.(size: IntSize, dragAmount: Offset) -> Unit,
 ) {
-
     private val valueAnimationSpec =
         spring(1f, 1000f, visibilityThreshold)
     private val velocityAnimationSpec =
         spring(0.5f, 300f, visibilityThreshold * 10f)
     private val pressProgressAnimationSpec =
-        tween<Float>(120)
+        spring(1f, 1000f, 0.001f)
     private val scaleXAnimationSpec =
-        tween<Float>(140)
+        spring(0.6f, 250f, 0.001f)
     private val scaleYAnimationSpec =
-        tween<Float>(140)
+        spring(0.7f, 250f, 0.001f)
 
     private val valueAnimation =
         Animatable(initialValue, visibilityThreshold)
@@ -50,7 +52,9 @@ class DampedDragAnimation(
 
     private val velocityTracker = VelocityTracker()
     private var pressAnimationJob: Job? = null
+    private var releaseJob: Job? = null
     private var valueAnimationJob: Job? = null
+    private var pressed = false
 
     val value: Float get() = valueAnimation.value
     val targetValue: Float get() = valueAnimation.targetValue
@@ -58,6 +62,7 @@ class DampedDragAnimation(
     val scaleX: Float get() = scaleXAnimation.value
     val scaleY: Float get() = scaleYAnimation.value
     val velocity: Float get() = velocityAnimation.value
+    internal val isPressed: Boolean get() = pressed
 
     val modifier: Modifier = Modifier.pointerInput(Unit) {
         inspectDragGestures(
@@ -87,6 +92,8 @@ class DampedDragAnimation(
     }
 
     fun press() {
+        releaseJob?.cancel()
+        pressed = true
         velocityTracker.resetTracking()
         pressAnimationJob?.cancel()
         pressAnimationJob = animationScope.launch {
@@ -97,11 +104,21 @@ class DampedDragAnimation(
     }
 
     fun release() {
-        pressAnimationJob?.cancel()
-        pressAnimationJob = animationScope.launch {
-            launch { pressProgressAnimation.animateTo(0f, pressProgressAnimationSpec) }
-            launch { scaleXAnimation.animateTo(initialScale, scaleXAnimationSpec) }
-            launch { scaleYAnimation.animateTo(initialScale, scaleYAnimationSpec) }
+        pressed = false
+        releaseJob?.cancel()
+        releaseJob = animationScope.launch {
+            delay(16L)
+            if (value != targetValue) {
+                val threshold = (valueRange.endInclusive - valueRange.start) * 0.025f
+                snapshotFlow { valueAnimation.value }
+                    .first { abs(it - valueAnimation.targetValue) < threshold }
+            }
+            pressAnimationJob?.cancel()
+            pressAnimationJob = animationScope.launch {
+                launch { pressProgressAnimation.animateTo(0f, pressProgressAnimationSpec) }
+                launch { scaleXAnimation.animateTo(initialScale, scaleXAnimationSpec) }
+                launch { scaleYAnimation.animateTo(initialScale, scaleYAnimationSpec) }
+            }
         }
     }
 
@@ -119,8 +136,13 @@ class DampedDragAnimation(
 
     fun animateToValue(value: Float, animatePress: Boolean = true) {
         valueAnimationJob?.cancel()
+        releaseJob?.cancel()
+        if (animatePress) {
+            press()
+        } else {
+            release()
+        }
         valueAnimationJob = animationScope.launch {
-            if (animatePress) press()
             val targetValue = value.coerceIn(valueRange)
             valueAnimation.animateTo(targetValue, valueAnimationSpec)
             if (velocity != 0f) {
