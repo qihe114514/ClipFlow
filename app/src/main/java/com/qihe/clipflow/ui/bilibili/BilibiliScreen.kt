@@ -27,6 +27,7 @@ import com.qihe.clipflow.ui.components.GlassCard
 import com.qihe.clipflow.ui.components.ParseInfoCard
 import com.qihe.clipflow.ui.parser.PlatformParseInputCard
 import com.qihe.clipflow.ui.component.liquid.ProgressiveContentBlur
+import com.qihe.clipflow.ui.component.liquid.combineProgressiveBlurStrength
 import top.yukonga.miuix.kmp.blur.Backdrop
 
 @Composable
@@ -117,7 +118,10 @@ fun BilibiliScreen(
         }
         ProgressiveContentBlur(
             backdrop = contentBackdrop,
-            strength = contentBlurStrength,
+            strength = combineProgressiveBlurStrength(
+                base = contentBlurStrength,
+                interaction = if (state.showDownloadDialog) 0.35f else 0f,
+            ),
             fallbackColor = MaterialTheme.colorScheme.surface,
         )
         state.download?.let { download ->

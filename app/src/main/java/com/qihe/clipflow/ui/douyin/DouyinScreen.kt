@@ -16,6 +16,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.qihe.clipflow.data.preferences.AppPreferences
 import com.qihe.clipflow.ui.components.TutorialOverlay
+import com.qihe.clipflow.ui.component.liquid.combineProgressiveBlurStrength
 import com.qihe.clipflow.ui.parser.PlatformParseScreenContent
 import com.qihe.clipflow.ui.theme.DouyinAccent
 import kotlinx.coroutines.delay
@@ -62,7 +63,10 @@ fun DouyinScreen(
             onDownloadBackupUrl = viewModel::downloadBackupUrl,
             onDismissDownloadDialog = viewModel::dismissDownloadDialog,
             contentBackdrop = contentBackdrop,
-            contentBlurStrength = contentBlurStrength,
+            contentBlurStrength = combineProgressiveBlurStrength(
+                base = contentBlurStrength,
+                interaction = if (showTutorial) 0.35f else 0f,
+            ),
         )
         if (showTutorial) {
             TutorialOverlay(

@@ -97,7 +97,8 @@ fun FloatingBottomBar(
     prefs: AppPreferences,
     backdrop: Backdrop?,
     primaryPagerState: PrimaryPagerState,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onPressProgress: (Float) -> Unit = {},
 ) {
     val bottomBarOrder by produceState(initialValue = listOf("home", "douyin", "xiaohongshu")) {
         prefs.bottomBarOrder.collect { value = it }
@@ -113,6 +114,7 @@ fun FloatingBottomBar(
         backdrop = backdrop,
         tabsCount = items.size,
         isBlurEnabled = backdrop != null,
+        onPressProgress = onPressProgress,
     ) {
         items.forEachIndexed { index, item ->
             FloatingBottomBarItem(

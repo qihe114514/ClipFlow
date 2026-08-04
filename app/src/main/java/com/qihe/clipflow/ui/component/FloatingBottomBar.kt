@@ -30,6 +30,7 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.staticCompositionLocalOf
@@ -190,6 +191,7 @@ fun FloatingBottomBar(
     backdrop: Backdrop?,
     tabsCount: Int,
     isBlurEnabled: Boolean = true,
+    onPressProgress: (Float) -> Unit = {},
     content: @Composable RowScope.() -> Unit
 ) {
     val isInDark = isSystemInDarkTheme()
@@ -198,6 +200,7 @@ fun FloatingBottomBar(
     val tabContentColor = MiuixTheme.colorScheme.onSurface
     val surfaceContainer = MiuixTheme.colorScheme.surfaceContainer
     val useBlur = isBlurEnabled && backdrop != null
+    val currentOnPressProgress by rememberUpdatedState(onPressProgress)
     val containerColor = if (useBlur) surfaceContainer.copy(0.4f) else surfaceContainer
 
     val tabsBackdrop = if (useBlur) rememberLayerBackdrop() else null
@@ -277,6 +280,11 @@ fun FloatingBottomBar(
     LaunchedEffect(selectedIndex) {
         snapshotFlow { selectedIndex() }
             .collectLatest { currentIndex = it }
+    }
+
+    LaunchedEffect(dampedDragAnimation) {
+        snapshotFlow { dampedDragAnimation.pressProgress }
+            .collectLatest(currentOnPressProgress)
     }
 
     LaunchedEffect(dampedDragAnimation) {

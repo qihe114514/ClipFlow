@@ -27,11 +27,12 @@ import com.qihe.clipflow.ui.components.PrivacyConsentDialog
 import com.qihe.clipflow.ui.components.DownloadPill
 import com.qihe.clipflow.ClipFlowApp
 import com.qihe.clipflow.ui.components.DownloadPillState
+import com.qihe.clipflow.ui.component.liquid.PROGRESSIVE_BLUR_BASE_STRENGTH
+import com.qihe.clipflow.ui.component.liquid.combineProgressiveBlurStrength
 import com.qihe.clipflow.ui.history.HistoryScreen
 import com.qihe.clipflow.ui.settings.SettingsScreen
 import com.qihe.clipflow.ui.about.AboutScreen
 import com.qihe.clipflow.ui.about.OpenSourceScreen
-import com.qihe.clipflow.ui.component.liquid.PROGRESSIVE_BLUR_BASE_STRENGTH
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -145,6 +146,11 @@ fun ClipFlowNavHost() {
     }
 
     val liquidBottomBarEnabled = supportsLiquidBottomBar(Build.VERSION.SDK_INT)
+    var bottomBarPressProgress by remember { mutableFloatStateOf(0f) }
+
+    LaunchedEffect(showBottomBar) {
+        if (!showBottomBar) bottomBarPressProgress = 0f
+    }
 
     MiuixTheme(controller = miuixController) {
         val surfaceColor = MiuixTheme.colorScheme.surface
@@ -156,6 +162,11 @@ fun ClipFlowNavHost() {
         } else {
             null
         }
+        val privacyBlurStrength = if (!privacyAgreed && isPrivacyCheckReady) 0.35f else 0f
+        val contentBlurStrength = combineProgressiveBlurStrength(
+            base = PROGRESSIVE_BLUR_BASE_STRENGTH,
+            interaction = bottomBarPressProgress * 0.35f + privacyBlurStrength,
+        )
 
         Box(modifier = Modifier.fillMaxSize()) {
             Box(
@@ -198,7 +209,7 @@ fun ClipFlowNavHost() {
                             currentRoute = currentRoute,
                             sourceUrl = currentSourceUrl,
                             contentBackdrop = backdrop,
-                            contentBlurStrength = PROGRESSIVE_BLUR_BASE_STRENGTH,
+                            contentBlurStrength = contentBlurStrength,
                         )
                     }
 
@@ -331,7 +342,8 @@ fun ClipFlowNavHost() {
                     prefs = prefs,
                     backdrop = backdrop,
                     primaryPagerState = primaryPagerState,
-                    modifier = Modifier.align(Alignment.BottomCenter)
+                    modifier = Modifier.align(Alignment.BottomCenter),
+                    onPressProgress = { bottomBarPressProgress = it },
                 )
             }
         }
