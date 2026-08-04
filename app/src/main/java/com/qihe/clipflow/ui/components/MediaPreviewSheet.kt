@@ -444,11 +444,12 @@ private fun VideoPreviewPage(
     ) {
         val aspectRatio = videoWidth.takeIf { it > 0 }
             ?.let { width -> videoHeight.takeIf { it > 0 }?.let { width.toFloat() / it } }
+        val shouldRotateLandscapeVideo = isLandscapeVideo && maxHeight > maxWidth
         PlayerSurface(
             player = player,
             surfaceType = SURFACE_TYPE_TEXTURE_VIEW,
             modifier = if (aspectRatio != null) {
-                if (isLandscapeVideo) {
+                if (shouldRotateLandscapeVideo) {
                     val unrotatedWidth = maxOf(maxHeight, maxWidth * aspectRatio)
                     Modifier
                         .requiredWidth(unrotatedWidth)
