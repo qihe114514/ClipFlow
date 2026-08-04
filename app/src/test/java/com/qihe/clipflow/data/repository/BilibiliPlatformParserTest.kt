@@ -65,6 +65,11 @@ class BilibiliPlatformParserTest {
         assertEquals(listOf(80, 64), parsed.bilibili?.qualities?.map { it.id })
         assertEquals(2, parsed.bilibili?.parts?.size)
         assertEquals("https://fixture/audio", parsed.items.first().companionUrl)
+        assertEquals("https://fixture/official-preview", parsed.items.first().previewUrl)
+        assertEquals(
+            mapOf("avid" to "12345", "cid" to "11", "qn" to "32", "fnval" to "0", "fnver" to "0", "fourk" to "0", "platform" to "html5"),
+            (parserApi as FixtureApi).officialParameters
+        )
         assertEquals("Fixture Account", session.session()?.account?.name)
         assertEquals(12L, session.session()?.account?.following)
         assertEquals(34L, session.session()?.account?.followers)
@@ -133,8 +138,12 @@ class BilibiliPlatformParserTest {
         assertEquals(listOf("https://primary.fixture/video", "https://backup.fixture/video"), qualities.single().streamUrls)
         assertEquals(listOf("https://primary.fixture/audio", "https://backup.fixture/audio"), qualities.single().audioUrls)
     }
-    private fun parser(session: FakeSessionStore = FakeSessionStore()): BilibiliPlatformParser =
-        BilibiliPlatformParser(FixtureApi(), session, { "https://www.bilibili.com/video/BV1xx411c7mD" }, { 1_700_000_000 })
+    private lateinit var parserApi: BilibiliApi
+
+    private fun parser(session: FakeSessionStore = FakeSessionStore()): BilibiliPlatformParser {
+        parserApi = FixtureApi()
+        return BilibiliPlatformParser(parserApi, session, { "https://www.bilibili.com/video/BV1xx411c7mD" }, { 1_700_000_000 })
+    }
 
     private class FakeSessionStore : BilibiliSessionRepository {
         private var value: BilibiliSession? = BilibiliSession("fixture_cookie=not_real")
@@ -148,6 +157,7 @@ class BilibiliPlatformParserTest {
     }
 
     private class FixtureApi(private val navigationCode: Int = 0) : BilibiliApi {
+        var officialParameters: Map<String, String>? = null
         override suspend fun navigation() = BilibiliResponse(
             navigationCode,
             data = BilibiliNavigation(
@@ -167,6 +177,7 @@ class BilibiliPlatformParserTest {
         override suspend fun videoView(bvid: String) = BilibiliResponse(
             0,
             data = BilibiliVideoView(
+                aid = 12345,
                 bvid = bvid,
                 title = "Fixture title",
                 desc = "Fixture description",
@@ -178,6 +189,9 @@ class BilibiliPlatformParserTest {
         override suspend fun signedPlayUrl(parameters: Map<String, String>) = BilibiliResponse(
             0,
             data = BilibiliPlayUrl(
+                durl = if (parameters["fnval"] == "0") {
+                    listOf(com.qihe.clipflow.data.bilibili.BilibiliDurl("https://fixture/preview"))
+                } else null,
                 accept_quality = listOf(80, 64),
                 accept_description = listOf("1080P", "720P"),
                 dash = BilibiliDash(
@@ -191,5 +205,15 @@ class BilibiliPlatformParserTest {
                 )
             )
         )
+
+        override suspend fun officialPlayUrl(parameters: Map<String, String>): BilibiliResponse<BilibiliPlayUrl> {
+            officialParameters = parameters
+            return BilibiliResponse(
+                0,
+                data = BilibiliPlayUrl(
+                    durl = listOf(com.qihe.clipflow.data.bilibili.BilibiliDurl("https://fixture/official-preview"))
+                )
+            )
+        }
     }
 }

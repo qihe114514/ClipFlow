@@ -17,6 +17,9 @@ interface BilibiliApi {
 
     @GET("x/player/wbi/playurl")
     suspend fun signedPlayUrl(@QueryMap parameters: Map<String, String>): BilibiliResponse<BilibiliPlayUrl>
+
+    @GET("x/player/playurl")
+    suspend fun officialPlayUrl(@QueryMap parameters: Map<String, String>): BilibiliResponse<BilibiliPlayUrl>
 }
 
 interface BilibiliAuthenticatedApi {

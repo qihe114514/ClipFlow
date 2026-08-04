@@ -18,5 +18,6 @@ data class BilibiliQuality(
     val streamUrl: String,
     val audioUrl: String? = null,
     val streamUrls: List<String> = listOf(streamUrl),
-    val audioUrls: List<String> = listOfNotNull(audioUrl)
+    val audioUrls: List<String> = listOfNotNull(audioUrl),
+    val previewUrl: String? = null
 )

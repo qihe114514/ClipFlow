@@ -125,9 +125,10 @@ fun MediaPreviewSheet(
     val currentItem = items.getOrNull(pagerState.currentPage)
     val currentVideoUrl = currentItem
         ?.takeIf { it.previewKind == PreviewMediaKind.VIDEO }
-        ?.url
+        ?.let { it.previewUrl ?: it.url }
+    val hasSingleFilePreview = currentItem?.previewUrl?.isNotBlank() == true
     val currentAudioUrl = currentItem
-        ?.takeIf { it.previewKind == PreviewMediaKind.VIDEO }
+        ?.takeIf { it.previewKind == PreviewMediaKind.VIDEO && !hasSingleFilePreview }
         ?.companionUrl
         ?.takeIf { it.isNotBlank() }
     val isBilibiliVideo = currentItem?.id?.startsWith("bilibili_") == true
@@ -150,7 +151,7 @@ fun MediaPreviewSheet(
                 .setDefaultRequestProperties(requestHeaders)
             val mediaSourceFactory = DefaultMediaSourceFactory(dataSourceFactory)
             ExoPlayer.Builder(context, mediaSourceFactory).build().apply {
-                val videoItem = if (isBilibiliVideo) {
+                val videoItem = if (isBilibiliVideo && currentAudioUrl != null) {
                     MediaItem.Builder()
                         .setUri(url)
                         .setMimeType(MimeTypes.VIDEO_MP4)

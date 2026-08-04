@@ -34,6 +34,7 @@ data class BilibiliRelationCounts(
 
 @Keep
 data class BilibiliVideoView(
+    val aid: Long = 0,
     val bvid: String? = null,
     val title: String? = null,
     val desc: String? = null,

@@ -83,15 +83,59 @@ class BilibiliPlatformParser(
             if (playUrl.code != 0) return@withContext failure(ParseErrorKind.REMOTE_FAILURE, "Bilibili stream request failed")
             val qualities = BilibiliStreamMapper.qualities(playUrl.data)
             if (qualities.isEmpty()) return@withContext failure(ParseErrorKind.NO_DOWNLOADABLE_CONTENT)
+            val officialPreviewUrl = video.aid.takeIf { it > 0 }?.let { aid ->
+                runCatching {
+                    api.officialPlayUrl(
+                        mapOf(
+                            "avid" to aid.toString(),
+                            "cid" to firstPart.cid.toString(),
+                            "qn" to "32",
+                            "fnval" to "0",
+                            "fnver" to "0",
+                            "fourk" to "0",
+                            "platform" to "html5"
+                        )
+                    )
+                }.getOrNull()
+                    ?.takeIf { it.code == 0 }
+                    ?.data
+                    ?.let(BilibiliStreamMapper::previewUrl)
+            }
+            val previewUrl = officialPreviewUrl
+                ?: BilibiliStreamMapper.previewUrl(playUrl.data)
+                ?: if (playUrl.data?.dash != null) {
+                    val previewParameters = BilibiliWbiSigner.sign(
+                        parameters = mapOf(
+                            "bvid" to bvid,
+                            "cid" to firstPart.cid.toString(),
+                            "qn" to qualities.first().id.toString(),
+                            "fnval" to "0",
+                            "fnver" to "0",
+                            "fourk" to "1",
+                            "platform" to "html5"
+                        ),
+                        imageUrl = imageUrl,
+                        subUrl = subUrl,
+                        timestampSeconds = nowSeconds()
+                    )
+                    runCatching { api.signedPlayUrl(previewParameters.parameters) }
+                        .getOrNull()
+                        ?.takeIf { it.code == 0 }
+                        ?.data
+                        ?.let(BilibiliStreamMapper::previewUrl)
+                } else null
+            val previewQualities = qualities.mapIndexed { index, quality ->
+                quality.copy(previewUrl = previewUrl.takeIf { index == 0 })
+            }
             val coverUrl = video.pic.orEmpty().httpsUrl()
             val authorAvatar = video.owner?.face.orEmpty().httpsUrl()
             val parts = video.pages.orEmpty().filter { it.cid > 0 }.mapIndexed { index, page ->
                 BilibiliPart(page.page.takeIf { it > 0 } ?: index + 1, page.cid, page.part.orEmpty())
             }
-            val details = BilibiliVideoDetails(bvid, parts, qualities)
+            val details = BilibiliVideoDetails(bvid, parts, previewQualities)
             Result.success(
                 ParseResult(
-                    items = qualities.map { quality ->
+                    items = previewQualities.map { quality ->
                         ContentItem(
                             id = "bilibili_${firstPart.cid}_${quality.id}",
                             type = ContentType.VIDEO,
@@ -99,7 +143,8 @@ class BilibiliPlatformParser(
                             thumbnailUrl = coverUrl,
                             mediaInfo = MediaInfo(resolution = quality.label, format = "DASH"),
                             description = firstPart.part.orEmpty(),
-                            companionUrl = quality.audioUrl
+                            companionUrl = quality.audioUrl,
+                            previewUrl = quality.previewUrl
                         )
                     },
                     title = video.title.orEmpty(),
@@ -167,6 +212,11 @@ object BilibiliUrl {
 }
 
 object BilibiliStreamMapper {
+    fun previewUrl(playUrl: BilibiliPlayUrl?): String? = playUrl?.durl.orEmpty()
+        .asSequence()
+        .mapNotNull { it.url }
+        .firstOrNull { it.isNotBlank() }
+
     fun qualities(playUrl: BilibiliPlayUrl?): List<BilibiliQuality> {
         if (playUrl == null) return emptyList()
         val descriptions = playUrl.accept_quality.orEmpty().zip(playUrl.accept_description.orEmpty()).toMap()
