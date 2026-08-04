@@ -10,6 +10,7 @@ import java.util.concurrent.TimeUnit
 object RetrofitClient {
 
     private const val BASE_URL = "https://api.bugpk.com/"
+    private const val BACKUP_BASE_URL = "https://douyin.wtf/"
 
     private val okHttpClient: OkHttpClient by lazy {
         val logging = HttpLoggingInterceptor().apply {
@@ -34,12 +35,19 @@ object RetrofitClient {
         .setLenient()
         .create()
 
-    val apiService: ApiService by lazy {
-        Retrofit.Builder()
-            .baseUrl(BASE_URL)
+    private fun retrofit(baseUrl: String): Retrofit {
+        return Retrofit.Builder()
+            .baseUrl(baseUrl)
             .client(okHttpClient)
             .addConverterFactory(GsonConverterFactory.create(gson))
             .build()
-            .create(ApiService::class.java)
+    }
+
+    val apiService: ApiService by lazy {
+        retrofit(BASE_URL).create(ApiService::class.java)
+    }
+
+    val douyinBackupApiService: DouyinBackupApiService by lazy {
+        retrofit(BACKUP_BASE_URL).create(DouyinBackupApiService::class.java)
     }
 }

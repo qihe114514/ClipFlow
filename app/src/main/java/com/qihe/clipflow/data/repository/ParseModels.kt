@@ -20,6 +20,11 @@ data class ParseResult(
     val bilibili: BilibiliVideoDetails? = null
 )
 
+enum class DouyinParseRoute {
+    PRIMARY,
+    BACKUP
+}
+
 enum class SupportedPlatform {
     DOUYIN,
     XIAOHONGSHU,

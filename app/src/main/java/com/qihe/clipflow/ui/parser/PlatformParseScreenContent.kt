@@ -31,6 +31,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.qihe.clipflow.data.api.model.ContentItem
+import com.qihe.clipflow.data.repository.DouyinParseRoute
 import com.qihe.clipflow.ui.components.DownloadOptionsCard
 import com.qihe.clipflow.ui.components.DownloadProgressDialog
 import com.qihe.clipflow.ui.components.GlassButton
@@ -51,6 +52,8 @@ fun PlatformParseScreenContent(
     onParse: () -> Unit,
     onDownload: (ContentItem) -> Unit,
     onDownloadBackupUrl: ((String, String) -> Unit)? = null,
+    parseRoute: DouyinParseRoute? = null,
+    onParseRouteChange: ((DouyinParseRoute) -> Unit)? = null,
     onDismissDownloadDialog: (background: Boolean) -> Unit,
 ) {
     Box(modifier = Modifier.fillMaxSize()) {
@@ -109,7 +112,16 @@ fun PlatformParseScreenContent(
                 }
             }
 
-                item(key = "spacer") { Spacer(Modifier.height(20.dp)) }
+            if (parseRoute != null && onParseRouteChange != null) {
+                item(key = "parse_route") {
+                    ParseRouteCard(
+                        selectedRoute = parseRoute,
+                        onRouteChange = onParseRouteChange
+                    )
+                }
+            }
+
+            item(key = "spacer") { Spacer(Modifier.height(20.dp)) }
         }
 
         if (uiState.showDownloadDialog && uiState.downloadingItemId != null) {

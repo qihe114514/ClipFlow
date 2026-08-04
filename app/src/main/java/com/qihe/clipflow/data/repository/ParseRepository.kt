@@ -9,10 +9,11 @@ class ParseRepository(
 
     suspend fun parse(
         platform: SupportedPlatform,
-        rawInput: String
+        rawInput: String,
+        route: DouyinParseRoute = DouyinParseRoute.PRIMARY
     ): Result<ParseResult> {
         val parser = parsers.getValue(platform)
-        return parser.parse(normalize(platform, rawInput))
+        return parser.parse(normalize(platform, rawInput), route)
     }
 
     fun normalize(

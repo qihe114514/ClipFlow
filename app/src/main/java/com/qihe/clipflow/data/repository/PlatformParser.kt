@@ -8,4 +8,9 @@ interface PlatformParser {
     fun normalizeInput(rawInput: String): String
 
     suspend fun parse(normalizedInput: String): Result<ParseResult>
+
+    suspend fun parse(
+        normalizedInput: String,
+        route: DouyinParseRoute
+    ): Result<ParseResult> = parse(normalizedInput)
 }

@@ -8,6 +8,7 @@ import com.qihe.clipflow.data.api.model.ContentType
 import com.qihe.clipflow.data.api.model.DouyinStatistics
 import com.qihe.clipflow.data.api.model.MediaInfo
 import com.qihe.clipflow.data.api.model.VideoBackupItem
+import com.qihe.clipflow.data.repository.DouyinParseRoute
 import com.qihe.clipflow.data.repository.SupportedPlatform
 import com.qihe.clipflow.util.DownloadState
 import kotlinx.coroutines.Job
@@ -41,6 +42,7 @@ data class ParsePageUiState(
     val shareUrl: String = "",
     val stats: DouyinStatistics? = null,
     val videoBackups: List<VideoBackupItem> = emptyList(),
+    val parseRoute: DouyinParseRoute = DouyinParseRoute.PRIMARY,
     val isBackgroundDownload: Boolean = false,
     val error: String? = null,
     val downloadStates: Map<String, DownloadState> = emptyMap(),
@@ -96,7 +98,8 @@ open class PlatformParseViewModel(
             downloadStates = _uiState.value.downloadStates,
             showDownloadDialog = _uiState.value.showDownloadDialog,
             downloadingItemId = _uiState.value.downloadingItemId,
-            isBackgroundDownload = _uiState.value.isBackgroundDownload
+            isBackgroundDownload = _uiState.value.isBackgroundDownload,
+            parseRoute = _uiState.value.parseRoute
         )
     }
 
@@ -104,7 +107,16 @@ open class PlatformParseViewModel(
         parseSupport.readClipboardText().takeIf { it.isNotEmpty() }?.let(::onUrlChange)
     }
 
-    fun parse() {
+    fun setParseRoute(route: DouyinParseRoute) {
+        val inputUrl = _uiState.value.inputUrl
+        val routeChanged = _uiState.value.parseRoute != route
+        _uiState.update { it.copy(parseRoute = route, error = null) }
+        if (routeChanged && inputUrl.isNotBlank()) {
+            parse(route)
+        }
+    }
+
+    fun parse(routeOverride: DouyinParseRoute? = null) {
         val rawInput = _uiState.value.inputUrl
         if (rawInput.isBlank()) {
             _uiState.update { it.copy(error = parseSupport.emptyInputMessage()) }
@@ -112,6 +124,7 @@ open class PlatformParseViewModel(
         }
         val sourceUrl = parseSupport.normalizeInput(rawInput)
         val requestId = ++parseRequestId
+        val route = routeOverride ?: _uiState.value.parseRoute
         parseJob?.cancel()
 
         parseJob = viewModelScope.launch {
@@ -126,7 +139,7 @@ open class PlatformParseViewModel(
                 )
             }
 
-            val result = parseSupport.parse(sourceUrl)
+            val result = parseSupport.parse(sourceUrl, route)
             if (requestId != parseRequestId) return@launch
 
             result.fold(

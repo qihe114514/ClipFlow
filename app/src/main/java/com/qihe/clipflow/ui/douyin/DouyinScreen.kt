@@ -57,6 +57,8 @@ fun DouyinScreen(
             onParse = viewModel::parse,
             onDownload = viewModel::downloadItem,
             onDownloadBackupUrl = viewModel::downloadBackupUrl,
+            parseRoute = uiState.parseRoute,
+            onParseRouteChange = viewModel::setParseRoute,
             onDismissDownloadDialog = viewModel::dismissDownloadDialog,
         )
         if (showTutorial) {

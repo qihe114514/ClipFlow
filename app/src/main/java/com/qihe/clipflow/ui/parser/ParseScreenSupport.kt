@@ -12,6 +12,7 @@ import com.qihe.clipflow.data.repository.ParseFailure
 import com.qihe.clipflow.data.repository.ParseRepository
 import com.qihe.clipflow.data.repository.ParseResult
 import com.qihe.clipflow.data.repository.PlatformRegistry
+import com.qihe.clipflow.data.repository.DouyinParseRoute
 import com.qihe.clipflow.data.repository.SupportedPlatform
 import com.qihe.clipflow.util.DownloadCoordinator
 import com.qihe.clipflow.util.DownloadSessionState
@@ -50,8 +51,11 @@ class ParseScreenSupport(
         return parseRepository.normalize(descriptor.platform, rawInput)
     }
 
-    suspend fun parse(rawInput: String): Result<ParseResult> {
-        return parseRepository.parse(descriptor.platform, rawInput)
+    suspend fun parse(
+        rawInput: String,
+        route: DouyinParseRoute = DouyinParseRoute.PRIMARY
+    ): Result<ParseResult> {
+        return parseRepository.parse(descriptor.platform, rawInput, route)
     }
 
     suspend fun saveHistory(sourceUrl: String, result: ParseResult) {
