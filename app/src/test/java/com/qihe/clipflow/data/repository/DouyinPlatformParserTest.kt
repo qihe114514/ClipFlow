@@ -108,6 +108,28 @@ class DouyinPlatformParserTest {
     }
 
     @Test
+    fun `backup route extracts url from a Douyin share text`() = runBlocking {
+        val backup = FakeBackupApi(
+            DouyinBackupResponse(
+                code = 200,
+                data = DouyinBackupData(
+                    type = "video",
+                    videoData = DouyinBackupVideoData(
+                        noWatermarkUrl = "https://backup.fixture/normal.mp4"
+                    )
+                )
+            )
+        )
+        val shareText = "1.23 D@u.SL :0pm uSL:/ 08/09 title https://v.douyin.com/v_KQfHFRvRk/ copy this link"
+
+        val result = DouyinPlatformParser(FakePrimaryApi(), backup)
+            .parse(shareText, DouyinParseRoute.BACKUP)
+
+        assertEquals("https://v.douyin.com/v_KQfHFRvRk/", backup.lastUrl)
+        assertTrue(result.isSuccess)
+    }
+
+    @Test
     fun `backup route reports remote failure`() = runBlocking {
         val result = DouyinPlatformParser(
             FakePrimaryApi(),
@@ -162,9 +184,11 @@ class DouyinPlatformParserTest {
         private val response: DouyinBackupResponse = DouyinBackupResponse(code = 500)
     ) : DouyinBackupApiService {
         var calls = 0
+        var lastUrl: String? = null
 
         override suspend fun parseVideo(url: String, minimal: Boolean): DouyinBackupResponse {
             calls++
+            lastUrl = url
             assertTrue("Route 2 must request minimal data", minimal)
             return response
         }

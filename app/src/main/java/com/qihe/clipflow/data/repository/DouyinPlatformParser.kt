@@ -184,7 +184,10 @@ class DouyinPlatformParser(
 
         return withContext(Dispatchers.IO) {
             try {
-                val response = backupApi.parseVideo(normalizedInput, minimal = true)
+                val response = backupApi.parseVideo(
+                    extractDouyinUrl(normalizedInput),
+                    minimal = true
+                )
                 val data = response.data
                 if (response.code != 200 || data == null) {
                     return@withContext Result.failure(
@@ -263,5 +266,18 @@ class DouyinPlatformParser(
                 )
             }
         }
+    }
+
+    private fun extractDouyinUrl(input: String): String {
+        return DOUYIN_URL_PATTERN.find(input)?.value
+            ?.trimEnd('.', ',', ';', ')', ']', '}')
+            ?: input
+    }
+
+    private companion object {
+        val DOUYIN_URL_PATTERN = Regex(
+            "https?://(?:v\\.douyin\\.com|www\\.douyin\\.com|douyin\\.com|www\\.iesdouyin\\.com|iesdouyin\\.com)/\\S+",
+            RegexOption.IGNORE_CASE
+        )
     }
 }
