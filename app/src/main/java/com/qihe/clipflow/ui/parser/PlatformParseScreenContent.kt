@@ -39,7 +39,8 @@ import com.qihe.clipflow.ui.components.GlassTextField
 import com.qihe.clipflow.ui.components.ParseInfoCard
 import com.qihe.clipflow.ui.component.liquid.ProgressiveContentBlur
 import com.qihe.clipflow.ui.component.liquid.combineProgressiveBlurStrength
-import top.yukonga.miuix.kmp.blur.Backdrop
+import com.qihe.clipflow.ui.component.liquid.rememberProgressiveContentBackdrop
+import top.yukonga.miuix.kmp.blur.layerBackdrop
 
 /** Shared parser-page layout. Platform screens only provide labels, color, and actions. */
 @Composable
@@ -54,15 +55,21 @@ fun PlatformParseScreenContent(
     onDownload: (ContentItem) -> Unit,
     onDownloadBackupUrl: ((String, String) -> Unit)? = null,
     onDismissDownloadDialog: (background: Boolean) -> Unit,
-    contentBackdrop: Backdrop?,
     contentBlurStrength: Float,
 ) {
+    val contentBackdrop = rememberProgressiveContentBackdrop()
+
     Box(modifier = Modifier.fillMaxSize()) {
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 100.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .then(if (contentBackdrop != null) Modifier.layerBackdrop(contentBackdrop) else Modifier)
         ) {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 100.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
             item(key = "input") {
                 PlatformParseInputCard(
                     inputUrl = uiState.inputUrl,
@@ -108,7 +115,8 @@ fun PlatformParseScreenContent(
                 }
             }
 
-            item(key = "spacer") { Spacer(Modifier.height(20.dp)) }
+                item(key = "spacer") { Spacer(Modifier.height(20.dp)) }
+            }
         }
 
         ProgressiveContentBlur(

@@ -208,7 +208,6 @@ fun ClipFlowNavHost() {
                             stateHolder = pagerStateHolder,
                             currentRoute = currentRoute,
                             sourceUrl = currentSourceUrl,
-                            contentBackdrop = backdrop,
                             contentBlurStrength = contentBlurStrength,
                         )
                     }

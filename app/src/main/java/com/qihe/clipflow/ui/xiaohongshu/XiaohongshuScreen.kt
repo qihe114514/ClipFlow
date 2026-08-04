@@ -6,14 +6,12 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
-import top.yukonga.miuix.kmp.blur.Backdrop
 import com.qihe.clipflow.ui.parser.PlatformParseScreenContent
 import com.qihe.clipflow.ui.theme.XiaohongshuAccent
 
 @Composable
 fun XiaohongshuScreen(
     sourceUrl: String? = null,
-    contentBackdrop: Backdrop? = null,
     contentBlurStrength: Float = 0f,
     viewModel: XiaohongshuViewModel = viewModel(viewModelStoreOwner = LocalContext.current as androidx.activity.ComponentActivity)
 ) {
@@ -36,7 +34,6 @@ fun XiaohongshuScreen(
         onParse = viewModel::parse,
         onDownload = viewModel::downloadItem,
         onDismissDownloadDialog = viewModel::dismissDownloadDialog,
-        contentBackdrop = contentBackdrop,
         contentBlurStrength = contentBlurStrength,
     )
 }

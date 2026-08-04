@@ -11,8 +11,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import top.yukonga.miuix.kmp.blur.Backdrop
 import top.yukonga.miuix.kmp.blur.BackdropEffectScope
+import top.yukonga.miuix.kmp.blur.LayerBackdrop
 import top.yukonga.miuix.kmp.blur.drawBackdrop
 import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
+import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import top.yukonga.miuix.kmp.blur.runtimeShaderEffect
 
 internal const val PROGRESSIVE_BLUR_BASE_STRENGTH = 0.55f
@@ -21,6 +23,15 @@ internal fun combineProgressiveBlurStrength(base: Float, interaction: Float): Fl
     (base + interaction).coerceIn(0f, 1f)
 
 internal fun supportsProgressiveContentBlur(sdkInt: Int): Boolean = sdkInt >= 33
+
+@Composable
+internal fun rememberProgressiveContentBackdrop(): LayerBackdrop? {
+    return if (supportsProgressiveContentBlur(Build.VERSION.SDK_INT)) {
+        rememberLayerBackdrop()
+    } else {
+        null
+    }
+}
 
 @Composable
 fun ProgressiveContentBlur(

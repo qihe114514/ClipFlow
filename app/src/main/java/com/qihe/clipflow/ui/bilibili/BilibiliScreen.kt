@@ -28,12 +28,12 @@ import com.qihe.clipflow.ui.components.ParseInfoCard
 import com.qihe.clipflow.ui.parser.PlatformParseInputCard
 import com.qihe.clipflow.ui.component.liquid.ProgressiveContentBlur
 import com.qihe.clipflow.ui.component.liquid.combineProgressiveBlurStrength
-import top.yukonga.miuix.kmp.blur.Backdrop
+import com.qihe.clipflow.ui.component.liquid.rememberProgressiveContentBackdrop
+import top.yukonga.miuix.kmp.blur.layerBackdrop
 
 @Composable
 fun BilibiliScreen(
     sourceUrl: String? = null,
-    contentBackdrop: Backdrop? = null,
     contentBlurStrength: Float = 0f,
     viewModel: BilibiliViewModel = viewModel(viewModelStoreOwner = LocalContext.current as androidx.activity.ComponentActivity)
 ) {
@@ -46,11 +46,17 @@ fun BilibiliScreen(
         }
     }
     Box(Modifier.fillMaxSize()) {
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(start = 20.dp, top = 20.dp, end = 20.dp, bottom = 140.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+        val contentBackdrop = rememberProgressiveContentBackdrop()
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .then(if (contentBackdrop != null) Modifier.layerBackdrop(contentBackdrop) else Modifier)
         ) {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(start = 20.dp, top = 20.dp, end = 20.dp, bottom = 140.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
         item {
             val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
             PlatformParseInputCard(
@@ -68,7 +74,7 @@ fun BilibiliScreen(
                 },
                 onParse = { viewModel.parse() }
             )
-        }
+            }
         state.error?.let { error -> item { Text(error, color = MaterialTheme.colorScheme.error) } }
         state.result?.let { result ->
             val details = result.bilibili
@@ -115,6 +121,7 @@ fun BilibiliScreen(
                 }
             }
             }
+        }
         }
         ProgressiveContentBlur(
             backdrop = contentBackdrop,

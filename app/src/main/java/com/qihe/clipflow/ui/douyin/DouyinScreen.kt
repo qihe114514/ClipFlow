@@ -21,12 +21,10 @@ import com.qihe.clipflow.ui.parser.PlatformParseScreenContent
 import com.qihe.clipflow.ui.theme.DouyinAccent
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import top.yukonga.miuix.kmp.blur.Backdrop
 
 @Composable
 fun DouyinScreen(
     sourceUrl: String? = null,
-    contentBackdrop: Backdrop? = null,
     contentBlurStrength: Float = 0f,
     viewModel: DouyinViewModel = viewModel(viewModelStoreOwner = LocalContext.current as androidx.activity.ComponentActivity)
 ) {
@@ -62,7 +60,6 @@ fun DouyinScreen(
             onDownload = viewModel::downloadItem,
             onDownloadBackupUrl = viewModel::downloadBackupUrl,
             onDismissDownloadDialog = viewModel::dismissDownloadDialog,
-            contentBackdrop = contentBackdrop,
             contentBlurStrength = combineProgressiveBlurStrength(
                 base = contentBlurStrength,
                 interaction = if (showTutorial) 0.35f else 0f,

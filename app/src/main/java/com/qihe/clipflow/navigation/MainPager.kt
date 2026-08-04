@@ -11,7 +11,6 @@ import com.qihe.clipflow.ui.bilibili.BilibiliScreen
 import com.qihe.clipflow.ui.douyin.DouyinScreen
 import com.qihe.clipflow.ui.home.HomeScreen
 import com.qihe.clipflow.ui.xiaohongshu.XiaohongshuScreen
-import top.yukonga.miuix.kmp.blur.Backdrop
 
 @Composable
 fun MainPager(
@@ -21,7 +20,6 @@ fun MainPager(
     stateHolder: SaveableStateHolder,
     currentRoute: String?,
     sourceUrl: String?,
-    contentBackdrop: Backdrop?,
     contentBlurStrength: Float,
 ) {
     HorizontalPager(
@@ -36,17 +34,14 @@ fun MainPager(
                 Screen.Home.route -> HomeScreen(navController)
                 Screen.Douyin.route -> DouyinScreen(
                     sourceUrl = sourceUrl.takeIf { currentRoute == route },
-                    contentBackdrop = contentBackdrop,
                     contentBlurStrength = contentBlurStrength,
                 )
                 Screen.Xiaohongshu.route -> XiaohongshuScreen(
                     sourceUrl = sourceUrl.takeIf { currentRoute == route },
-                    contentBackdrop = contentBackdrop,
                     contentBlurStrength = contentBlurStrength,
                 )
                 Screen.Bilibili.route -> BilibiliScreen(
                     sourceUrl = sourceUrl.takeIf { currentRoute == route },
-                    contentBackdrop = contentBackdrop,
                     contentBlurStrength = contentBlurStrength,
                 )
             }
