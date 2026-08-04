@@ -26,10 +26,14 @@ import com.qihe.clipflow.ui.components.DownloadProgressDialog
 import com.qihe.clipflow.ui.components.GlassCard
 import com.qihe.clipflow.ui.components.ParseInfoCard
 import com.qihe.clipflow.ui.parser.PlatformParseInputCard
+import com.qihe.clipflow.ui.component.liquid.ProgressiveContentBlur
+import top.yukonga.miuix.kmp.blur.Backdrop
 
 @Composable
 fun BilibiliScreen(
     sourceUrl: String? = null,
+    contentBackdrop: Backdrop? = null,
+    contentBlurStrength: Float = 0f,
     viewModel: BilibiliViewModel = viewModel(viewModelStoreOwner = LocalContext.current as androidx.activity.ComponentActivity)
 ) {
     val state by viewModel.state.collectAsState()
@@ -109,8 +113,13 @@ fun BilibiliScreen(
                     }
                 }
             }
+            }
         }
-    }
+        ProgressiveContentBlur(
+            backdrop = contentBackdrop,
+            strength = contentBlurStrength,
+            fallbackColor = MaterialTheme.colorScheme.surface,
+        )
         state.download?.let { download ->
             if (state.showDownloadDialog && (download.isDownloading || download.isComplete || download.error != null)) {
                 DownloadProgressDialog(

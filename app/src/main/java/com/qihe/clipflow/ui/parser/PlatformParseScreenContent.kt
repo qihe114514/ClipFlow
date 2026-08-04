@@ -37,6 +37,8 @@ import com.qihe.clipflow.ui.components.GlassButton
 import com.qihe.clipflow.ui.components.GlassCard
 import com.qihe.clipflow.ui.components.GlassTextField
 import com.qihe.clipflow.ui.components.ParseInfoCard
+import com.qihe.clipflow.ui.component.liquid.ProgressiveContentBlur
+import top.yukonga.miuix.kmp.blur.Backdrop
 
 /** Shared parser-page layout. Platform screens only provide labels, color, and actions. */
 @Composable
@@ -50,7 +52,9 @@ fun PlatformParseScreenContent(
     onParse: () -> Unit,
     onDownload: (ContentItem) -> Unit,
     onDownloadBackupUrl: ((String, String) -> Unit)? = null,
-    onDismissDownloadDialog: (background: Boolean) -> Unit
+    onDismissDownloadDialog: (background: Boolean) -> Unit,
+    contentBackdrop: Backdrop?,
+    contentBlurStrength: Float,
 ) {
     Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
@@ -105,6 +109,12 @@ fun PlatformParseScreenContent(
 
             item(key = "spacer") { Spacer(Modifier.height(20.dp)) }
         }
+
+        ProgressiveContentBlur(
+            backdrop = contentBackdrop,
+            strength = contentBlurStrength,
+            fallbackColor = MaterialTheme.colorScheme.surface,
+        )
 
         if (uiState.showDownloadDialog && uiState.downloadingItemId != null) {
             DownloadProgressDialog(

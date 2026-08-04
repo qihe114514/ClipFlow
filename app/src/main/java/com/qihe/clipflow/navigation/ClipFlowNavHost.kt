@@ -31,6 +31,7 @@ import com.qihe.clipflow.ui.history.HistoryScreen
 import com.qihe.clipflow.ui.settings.SettingsScreen
 import com.qihe.clipflow.ui.about.AboutScreen
 import com.qihe.clipflow.ui.about.OpenSourceScreen
+import com.qihe.clipflow.ui.component.liquid.PROGRESSIVE_BLUR_BASE_STRENGTH
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -196,6 +197,8 @@ fun ClipFlowNavHost() {
                             stateHolder = pagerStateHolder,
                             currentRoute = currentRoute,
                             sourceUrl = currentSourceUrl,
+                            contentBackdrop = backdrop,
+                            contentBlurStrength = PROGRESSIVE_BLUR_BASE_STRENGTH,
                         )
                     }
 
