@@ -22,13 +22,19 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.kyant.backdrop.backdrops.layerBackdrop as contentLayerBackdrop
+import com.kyant.backdrop.backdrops.rememberLayerBackdrop as rememberContentLayerBackdrop
 import com.qihe.clipflow.data.preferences.AppPreferences
 import com.qihe.clipflow.ui.components.PrivacyConsentDialog
 import com.qihe.clipflow.ui.components.DownloadPill
 import com.qihe.clipflow.ClipFlowApp
 import com.qihe.clipflow.ui.components.DownloadPillState
-import com.qihe.clipflow.ui.component.liquid.PROGRESSIVE_BLUR_BASE_STRENGTH
-import com.qihe.clipflow.ui.component.liquid.combineProgressiveBlurStrength
+import com.qihe.clipflow.ui.component.liquid.ProgressiveTopBarBlur
+import com.qihe.clipflow.ui.component.liquid.ProgressiveBottomBlur
+import com.qihe.clipflow.ui.component.liquid.BOTTOM_BLUR_HEIGHT_DP
+import com.qihe.clipflow.ui.component.liquid.DETAIL_BOTTOM_BLUR_HEIGHT_DP
+import com.qihe.clipflow.ui.component.liquid.TOP_BAR_BLUR_HEIGHT_DP
+import com.qihe.clipflow.ui.component.liquid.PROGRESSIVE_TOPBAR_CONTENT_START_DP
 import com.qihe.clipflow.ui.history.HistoryScreen
 import com.qihe.clipflow.ui.settings.SettingsScreen
 import com.qihe.clipflow.ui.about.AboutScreen
@@ -98,6 +104,8 @@ fun ClipFlowNavHost() {
     val primaryRoutes = remember(primaryItems) { primaryItems.map { it.route } }
     val showBottomBar = currentRoute in primaryRoutes
     val showTopBar = currentRoute != null
+    val showTopBarBlur = showTopBar && currentRoute != Screen.History.route
+    val showDetailBottomBlur = currentRoute in setOf(Screen.History.route, Screen.Settings.route)
     val pagerState = rememberPagerState(
         initialPage = primaryPageIndex(currentRoute ?: defaultPage, primaryItems),
         pageCount = { primaryItems.size },
@@ -146,54 +154,24 @@ fun ClipFlowNavHost() {
     }
 
     val liquidBottomBarEnabled = supportsLiquidBottomBar(Build.VERSION.SDK_INT)
-    var bottomBarPressProgress by remember { mutableFloatStateOf(0f) }
-
-    LaunchedEffect(showBottomBar) {
-        if (!showBottomBar) bottomBarPressProgress = 0f
-    }
-
     MiuixTheme(controller = miuixController) {
-        val surfaceColor = MiuixTheme.colorScheme.surface
-        val backdrop = if (liquidBottomBarEnabled) {
-            rememberLayerBackdrop {
-                drawRect(surfaceColor.copy(alpha = 0.18f))
-                drawContent()
-            }
-        } else {
-            null
-        }
-        val privacyBlurStrength = if (!privacyAgreed && isPrivacyCheckReady) 0.35f else 0f
-        val contentBlurStrength = combineProgressiveBlurStrength(
-            base = PROGRESSIVE_BLUR_BASE_STRENGTH,
-            interaction = bottomBarPressProgress * 0.35f + privacyBlurStrength,
-        )
-
+        val bottomBarBackdrop = if (liquidBottomBarEnabled) {
+            rememberLayerBackdrop { drawContent() }
+        } else null
+        val sceneBackdrop = rememberContentLayerBackdrop { drawContent() }
         Box(modifier = Modifier.fillMaxSize()) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .then(
-                        if (showBottomBar && backdrop != null) {
-                            Modifier.layerBackdrop(backdrop)
-                        } else {
-                            Modifier
-                        }
-                    )
+                    .contentLayerBackdrop(sceneBackdrop)
             ) {
                 BackgroundWallpaperLayer {
                     Box(modifier = Modifier.fillMaxSize()) {
-            Scaffold(
-                modifier = Modifier.fillMaxSize(),
-                containerColor = Color.Transparent,
-                contentWindowInsets = WindowInsets(0, 0, 0, 0),
-                topBar = {
-                    if (showTopBar) {
-                        ClipFlowTopBar(
-                            currentRoute = currentRoute,
-                            navController = navController
-                        )
-                    }
-                }
+                Scaffold(
+                    modifier = Modifier.fillMaxSize(),
+                    containerColor = Color.Transparent,
+                    contentWindowInsets = WindowInsets(0, 0, 0, 0),
+                    topBar = {}
             ) { innerPadding ->
                 Box(
                     modifier = Modifier
@@ -208,7 +186,6 @@ fun ClipFlowNavHost() {
                             stateHolder = pagerStateHolder,
                             currentRoute = currentRoute,
                             sourceUrl = currentSourceUrl,
-                            contentBlurStrength = contentBlurStrength,
                         )
                     }
 
@@ -331,7 +308,59 @@ fun ClipFlowNavHost() {
             }
         }
 
+        if (showTopBarBlur) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(TOP_BAR_BLUR_HEIGHT_DP.dp)
+                    .align(Alignment.TopCenter)
+            ) {
+                ProgressiveTopBarBlur(
+                    backdrop = sceneBackdrop,
+                    modifier = Modifier.matchParentSize(),
+                )
+            }
+        }
+
+        if (showTopBar) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(PROGRESSIVE_TOPBAR_CONTENT_START_DP.dp)
+                    .align(Alignment.TopCenter)
+            ) {
+                ClipFlowTopBar(
+                    currentRoute = currentRoute,
+                    navController = navController,
+                    modifier = Modifier.align(Alignment.TopCenter),
+                )
+            }
+        }
+
         if (showBottomBar) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(BOTTOM_BLUR_HEIGHT_DP.dp)
+                    .align(Alignment.BottomCenter)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .then(
+                            if (bottomBarBackdrop != null) {
+                                Modifier.layerBackdrop(bottomBarBackdrop)
+                            } else {
+                                Modifier
+                            }
+                        )
+                ) {
+                    ProgressiveBottomBlur(
+                        backdrop = sceneBackdrop,
+                        modifier = Modifier.matchParentSize(),
+                    )
+                }
+            }
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -339,10 +368,23 @@ fun ClipFlowNavHost() {
             ) {
                 FloatingBottomBar(
                     prefs = prefs,
-                    backdrop = backdrop,
+                    backdrop = bottomBarBackdrop,
                     primaryPagerState = primaryPagerState,
                     modifier = Modifier.align(Alignment.BottomCenter),
-                    onPressProgress = { bottomBarPressProgress = it },
+                )
+            }
+        }
+
+        if (showDetailBottomBlur) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(DETAIL_BOTTOM_BLUR_HEIGHT_DP.dp)
+                    .align(Alignment.BottomCenter)
+            ) {
+                ProgressiveBottomBlur(
+                    backdrop = sceneBackdrop,
+                    modifier = Modifier.matchParentSize(),
                 )
             }
         }

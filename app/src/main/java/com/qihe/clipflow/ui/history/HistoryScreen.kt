@@ -35,6 +35,7 @@ import com.qihe.clipflow.navigation.Screen
 import com.qihe.clipflow.ui.components.GlassCard
 import com.qihe.clipflow.ui.components.GlassTextField
 import com.qihe.clipflow.ui.components.TypeBadge
+import com.qihe.clipflow.ui.component.liquid.PROGRESSIVE_TOPBAR_CONTENT_START_DP
 import com.qihe.clipflow.ui.theme.DouyinAccent
 import com.qihe.clipflow.ui.theme.XiaohongshuAccent
 import java.text.SimpleDateFormat
@@ -77,8 +78,12 @@ fun HistoryScreen(
         }
     }
 
-    Column(modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp)) {
-        Spacer(Modifier.height(8.dp))
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 20.dp)
+            .padding(top = PROGRESSIVE_TOPBAR_CONTENT_START_DP.dp)
+    ) {
 
         // ========== 搜索 + 操作栏 ==========
         Row(

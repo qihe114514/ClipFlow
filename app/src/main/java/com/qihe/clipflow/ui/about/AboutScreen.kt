@@ -26,6 +26,7 @@ import androidx.navigation.NavHostController
 import com.qihe.clipflow.BuildConfig
 import com.qihe.clipflow.data.preferences.AppPreferences
 import com.qihe.clipflow.navigation.Screen
+import com.qihe.clipflow.ui.component.liquid.PROGRESSIVE_TOPBAR_CONTENT_START_DP
 import com.qihe.clipflow.ui.components.GlassCard
 import com.qihe.clipflow.ui.components.PrivacyConsentDialog
 import com.qihe.clipflow.util.UpdateManager
@@ -51,11 +52,10 @@ fun AboutScreen(navController: NavHostController) {
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 20.dp)
+            .padding(top = PROGRESSIVE_TOPBAR_CONTENT_START_DP.dp)
             .padding(bottom = 100.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Spacer(Modifier.height(36.dp))
-
         // 应用图标
         Icon(
             imageVector = Icons.Filled.WaterDrop,
@@ -175,7 +175,7 @@ fun AboutScreen(navController: NavHostController) {
                 ExternalLinkRow(
                     icon = Icons.Filled.Code,
                     label = "GitHub 开源仓库",
-                    url = "https://github.com/qihe114514/qihe-douyin",
+                    url = "https://github.com/qihe114514/ClipFlow",
                     context = context
                 )
             }

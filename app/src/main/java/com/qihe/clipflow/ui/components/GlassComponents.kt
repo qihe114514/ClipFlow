@@ -13,12 +13,17 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+
+internal val LocalWallpaperEnabled = staticCompositionLocalOf { true }
 
 /**
  * 玻璃拟态卡片 — 半透明背景透过全局模糊壁纸，形成毛玻璃
@@ -32,11 +37,15 @@ fun GlassCard(
     content: @Composable ColumnScope.() -> Unit
 ) {
     val isDark = isSystemInDarkTheme()
-    val surfaceColor = if (isDark)
-        Color.Black.copy(alpha = 0.35f)
-    else
-        Color.White.copy(alpha = 0.25f)
+    val hasWallpaper = LocalWallpaperEnabled.current
+    val surfaceColor = when {
+        !hasWallpaper && isDark -> Color.Black.copy(alpha = 0.48f)
+        !hasWallpaper -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.52f)
+        isDark -> Color.Black.copy(alpha = 0.35f)
+        else -> Color.White.copy(alpha = 0.32f)
+    }
     val borderColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.15f)
+    val noWallpaperBorderColor = Color.Gray.copy(alpha = 0.5f)
 
     Card(
         modifier = modifier
@@ -44,11 +53,35 @@ fun GlassCard(
             .then(
                 if (onClick != null) Modifier.clickable(onClick = onClick)
                 else Modifier
+            )
+            .then(
+                if (!hasWallpaper) {
+                    Modifier.drawWithContent {
+                        drawContent()
+                        drawRoundRect(
+                            color = noWallpaperBorderColor,
+                            cornerRadius = CornerRadius(cornerRadius.toPx()),
+                            style = Stroke(
+                                width = 1.dp.toPx(),
+                                pathEffect = PathEffect.dashPathEffect(
+                                    intervals = floatArrayOf(8.dp.toPx(), 5.dp.toPx()),
+                                    phase = 0f,
+                                ),
+                            ),
+                        )
+                    }
+                } else {
+                    Modifier
+                }
             ),
         shape = RoundedCornerShape(cornerRadius),
         colors = CardDefaults.cardColors(containerColor = surfaceColor),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        border = androidx.compose.foundation.BorderStroke(borderWidth, borderColor)
+        border = if (hasWallpaper) {
+            androidx.compose.foundation.BorderStroke(borderWidth, borderColor)
+        } else {
+            null
+        },
     ) {
         Column(
             modifier = Modifier.padding(20.dp),

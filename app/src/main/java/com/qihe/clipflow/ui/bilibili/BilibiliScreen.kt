@@ -26,15 +26,11 @@ import com.qihe.clipflow.ui.components.DownloadProgressDialog
 import com.qihe.clipflow.ui.components.GlassCard
 import com.qihe.clipflow.ui.components.ParseInfoCard
 import com.qihe.clipflow.ui.parser.PlatformParseInputCard
-import com.qihe.clipflow.ui.component.liquid.ProgressiveContentBlur
-import com.qihe.clipflow.ui.component.liquid.combineProgressiveBlurStrength
-import com.qihe.clipflow.ui.component.liquid.rememberProgressiveContentBackdrop
-import top.yukonga.miuix.kmp.blur.layerBackdrop
+import com.qihe.clipflow.ui.component.liquid.PROGRESSIVE_TOPBAR_CONTENT_START_DP
 
 @Composable
 fun BilibiliScreen(
     sourceUrl: String? = null,
-    contentBlurStrength: Float = 0f,
     viewModel: BilibiliViewModel = viewModel(viewModelStoreOwner = LocalContext.current as androidx.activity.ComponentActivity)
 ) {
     val state by viewModel.state.collectAsState()
@@ -46,17 +42,16 @@ fun BilibiliScreen(
         }
     }
     Box(Modifier.fillMaxSize()) {
-        val contentBackdrop = rememberProgressiveContentBackdrop()
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .then(if (contentBackdrop != null) Modifier.layerBackdrop(contentBackdrop) else Modifier)
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(
+                start = 20.dp,
+                top = PROGRESSIVE_TOPBAR_CONTENT_START_DP.dp + 10.dp,
+                end = 20.dp,
+                bottom = 140.dp,
+            ),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(start = 20.dp, top = 20.dp, end = 20.dp, bottom = 140.dp),
-                verticalArrangement = Arrangement.spacedBy(14.dp)
-            ) {
         item {
             val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
             PlatformParseInputCard(
@@ -122,15 +117,6 @@ fun BilibiliScreen(
             }
             }
         }
-        }
-        ProgressiveContentBlur(
-            backdrop = contentBackdrop,
-            strength = combineProgressiveBlurStrength(
-                base = contentBlurStrength,
-                interaction = if (state.showDownloadDialog) 0.35f else 0f,
-            ),
-            fallbackColor = MaterialTheme.colorScheme.surface,
-        )
         state.download?.let { download ->
             if (state.showDownloadDialog && (download.isDownloading || download.isComplete || download.error != null)) {
                 DownloadProgressDialog(

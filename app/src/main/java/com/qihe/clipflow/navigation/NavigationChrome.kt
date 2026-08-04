@@ -37,7 +37,11 @@ import top.yukonga.miuix.kmp.blur.Backdrop
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ClipFlowTopBar(currentRoute: String?, navController: NavHostController) {
+fun ClipFlowTopBar(
+    currentRoute: String?,
+    navController: NavHostController,
+    modifier: Modifier = Modifier,
+) {
     val isDetailPage = currentRoute in setOf(
         Screen.History.route,
         Screen.Settings.route,
@@ -82,7 +86,9 @@ fun ClipFlowTopBar(currentRoute: String?, navController: NavHostController) {
             }
         },
         colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = Color.Transparent, scrolledContainerColor = Color.Transparent),
-        modifier = Modifier.statusBarsPadding().windowInsetsPadding(androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0))
+        modifier = modifier
+            .statusBarsPadding()
+            .windowInsetsPadding(androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0))
     )
 }
 

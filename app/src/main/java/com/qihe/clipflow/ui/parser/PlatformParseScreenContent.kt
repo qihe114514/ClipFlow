@@ -37,10 +37,7 @@ import com.qihe.clipflow.ui.components.GlassButton
 import com.qihe.clipflow.ui.components.GlassCard
 import com.qihe.clipflow.ui.components.GlassTextField
 import com.qihe.clipflow.ui.components.ParseInfoCard
-import com.qihe.clipflow.ui.component.liquid.ProgressiveContentBlur
-import com.qihe.clipflow.ui.component.liquid.combineProgressiveBlurStrength
-import com.qihe.clipflow.ui.component.liquid.rememberProgressiveContentBackdrop
-import top.yukonga.miuix.kmp.blur.layerBackdrop
+import com.qihe.clipflow.ui.component.liquid.PROGRESSIVE_TOPBAR_CONTENT_START_DP
 
 /** Shared parser-page layout. Platform screens only provide labels, color, and actions. */
 @Composable
@@ -55,21 +52,18 @@ fun PlatformParseScreenContent(
     onDownload: (ContentItem) -> Unit,
     onDownloadBackupUrl: ((String, String) -> Unit)? = null,
     onDismissDownloadDialog: (background: Boolean) -> Unit,
-    contentBlurStrength: Float,
 ) {
-    val contentBackdrop = rememberProgressiveContentBackdrop()
-
     Box(modifier = Modifier.fillMaxSize()) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .then(if (contentBackdrop != null) Modifier.layerBackdrop(contentBackdrop) else Modifier)
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(
+                start = 20.dp,
+                end = 20.dp,
+                top = PROGRESSIVE_TOPBAR_CONTENT_START_DP.dp + 10.dp,
+                bottom = 100.dp,
+            ),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 100.dp),
-                verticalArrangement = Arrangement.spacedBy(14.dp)
-            ) {
             item(key = "input") {
                 PlatformParseInputCard(
                     inputUrl = uiState.inputUrl,
@@ -116,17 +110,7 @@ fun PlatformParseScreenContent(
             }
 
                 item(key = "spacer") { Spacer(Modifier.height(20.dp)) }
-            }
         }
-
-        ProgressiveContentBlur(
-            backdrop = contentBackdrop,
-            strength = combineProgressiveBlurStrength(
-                base = contentBlurStrength,
-                interaction = if (uiState.showDownloadDialog) 0.35f else 0f,
-            ),
-            fallbackColor = MaterialTheme.colorScheme.surface,
-        )
 
         if (uiState.showDownloadDialog && uiState.downloadingItemId != null) {
             DownloadProgressDialog(

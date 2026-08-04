@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.qihe.clipflow.navigation.Screen
 import com.qihe.clipflow.ui.components.GlassCard
+import com.qihe.clipflow.ui.component.liquid.PROGRESSIVE_TOPBAR_CONTENT_START_DP
 import com.qihe.clipflow.ui.theme.DouyinAccent
 import com.qihe.clipflow.ui.theme.XiaohongshuAccent
 
@@ -40,11 +41,10 @@ fun HomeScreen(navController: NavHostController) {
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 20.dp)
+            .padding(top = PROGRESSIVE_TOPBAR_CONTENT_START_DP.dp)
             .padding(bottom = 100.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Spacer(Modifier.height(32.dp))
-
         // ========== 品牌区 ==========
         Icon(
             imageVector = Icons.Filled.WaterDrop,

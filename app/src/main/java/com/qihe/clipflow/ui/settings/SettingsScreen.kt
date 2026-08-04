@@ -27,6 +27,7 @@ import androidx.navigation.NavHostController
 import com.qihe.clipflow.data.preferences.AppPreferences
 import com.qihe.clipflow.navigation.Screen
 import com.qihe.clipflow.ui.components.GlassCard
+import com.qihe.clipflow.ui.component.liquid.PROGRESSIVE_TOPBAR_CONTENT_START_DP
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -128,11 +129,13 @@ fun SettingsScreen(
     }
 
     Column(
-        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp).padding(bottom = 100.dp),
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 20.dp)
+            .padding(top = PROGRESSIVE_TOPBAR_CONTENT_START_DP.dp, bottom = 100.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Spacer(Modifier.height(8.dp))
-
         // ========== 保存路径 ==========
         SectionHeader(title = "保存路径")
         GlassCard(modifier = Modifier.fillMaxWidth()) {

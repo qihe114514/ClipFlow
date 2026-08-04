@@ -12,7 +12,6 @@ import com.qihe.clipflow.ui.theme.XiaohongshuAccent
 @Composable
 fun XiaohongshuScreen(
     sourceUrl: String? = null,
-    contentBlurStrength: Float = 0f,
     viewModel: XiaohongshuViewModel = viewModel(viewModelStoreOwner = LocalContext.current as androidx.activity.ComponentActivity)
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -34,6 +33,5 @@ fun XiaohongshuScreen(
         onParse = viewModel::parse,
         onDownload = viewModel::downloadItem,
         onDismissDownloadDialog = viewModel::dismissDownloadDialog,
-        contentBlurStrength = contentBlurStrength,
     )
 }

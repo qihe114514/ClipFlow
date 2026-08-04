@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
@@ -17,6 +18,7 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.qihe.clipflow.R
 import com.qihe.clipflow.data.preferences.AppPreferences
+import com.qihe.clipflow.ui.components.LocalWallpaperEnabled
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
@@ -86,10 +88,19 @@ fun BackgroundWallpaperLayer(content: @Composable () -> Unit) {
                     .fillMaxSize()
                     .background(baseColor.copy(alpha = overlayAlpha))
             )
+        } else {
+            // Backdrop effects need an opaque source; otherwise the unblurred content shows through.
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.background)
+            )
         }
 
-        Box(modifier = Modifier.fillMaxSize()) {
-            content()
+        CompositionLocalProvider(LocalWallpaperEnabled provides hasWallpaper) {
+            Box(modifier = Modifier.fillMaxSize()) {
+                content()
+            }
         }
     }
 }

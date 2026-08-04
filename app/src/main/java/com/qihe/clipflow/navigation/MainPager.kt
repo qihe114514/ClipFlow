@@ -20,7 +20,6 @@ fun MainPager(
     stateHolder: SaveableStateHolder,
     currentRoute: String?,
     sourceUrl: String?,
-    contentBlurStrength: Float,
 ) {
     HorizontalPager(
         state = pagerState,
@@ -34,15 +33,12 @@ fun MainPager(
                 Screen.Home.route -> HomeScreen(navController)
                 Screen.Douyin.route -> DouyinScreen(
                     sourceUrl = sourceUrl.takeIf { currentRoute == route },
-                    contentBlurStrength = contentBlurStrength,
                 )
                 Screen.Xiaohongshu.route -> XiaohongshuScreen(
                     sourceUrl = sourceUrl.takeIf { currentRoute == route },
-                    contentBlurStrength = contentBlurStrength,
                 )
                 Screen.Bilibili.route -> BilibiliScreen(
                     sourceUrl = sourceUrl.takeIf { currentRoute == route },
-                    contentBlurStrength = contentBlurStrength,
                 )
             }
         }

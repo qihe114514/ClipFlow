@@ -15,8 +15,8 @@ android {
         applicationId = "com.qihe.clipflow"
         minSdk = 29
         targetSdk = 37
-        versionCode = 47
-        versionName = "3.2"
+        versionCode = 61
+        versionName = "3.3"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -125,6 +125,9 @@ dependencies {
     // Template liquid-glass rendering
     implementation("top.yukonga.miuix.kmp:miuix-ui-android:0.9.2")
     implementation("top.yukonga.miuix.kmp:miuix-blur-android:0.9.2")
+
+    // Progressive backdrop blur
+    implementation("io.github.kyant0:backdrop:2.0.0")
 
     // DataStore
     implementation("androidx.datastore:datastore-preferences:1.1.1")
