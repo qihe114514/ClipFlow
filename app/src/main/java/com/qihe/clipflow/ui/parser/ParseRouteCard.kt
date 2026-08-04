@@ -41,7 +41,7 @@ fun ParseRouteCard(
                             Text(
                                 text = when (route) {
                                     DouyinParseRoute.PRIMARY -> "\u7ebf\u8def1"
-                                    DouyinParseRoute.BACKUP -> "\u7ebf\u8def2"
+                                    DouyinParseRoute.BACKUP -> "\u7ebf\u8def2\uff08\u4f4e\u6e05\uff09"
                                 }
                             )
                         }

@@ -16,7 +16,7 @@
 
 [下载最新版 APK](https://github.com/qihe114514/ClipFlow/releases/latest) · [查看所有版本](https://github.com/qihe114514/ClipFlow/releases)
 
-当前版本：**v3.3**（versionCode **61**）· 最低支持：**Android 10**
+当前版本：**v3.4**（versionCode **62**）· 最低支持：**Android 10**
 
 ## 主要功能
 
@@ -25,6 +25,8 @@
 优先提供抖音返回的原画视频。原视频支持 4K 时，可以保留更高的清晰度和码率；相比抖音电脑端的 4K 播放版本，下载的原画文件通常更清晰。
 
 实际清晰度取决于原视频和平台返回的资源。解析结果中标有“原画”的选项，就是优先推荐的下载选项。
+
+抖音解析支持默认线路1和备用线路2（低清），可在解析卡片底部切换线路。
 
 ### 其他功能
 | 类别 | 技术 |
@@ -82,7 +84,7 @@
 ## 开源信息
 
 - GitHub：[qihe114514/ClipFlow](https://github.com/qihe114514/ClipFlow)
-- 许可证：GPLv3，详见 [LICENSE](LICENSE)
+- 主许可证：GNU General Public License v3.0（GPLv3），完整协议见 [LICENSE](LICENSE)。
 - 依赖：Jetpack Compose、AndroidX、Navigation Compose、Room、DataStore、Media3、Retrofit、OkHttp、Gson、Coil、Miuix、Accompanist 和友盟 SDK 等，第三方组件按各自许可证提供。
 
 B 站解析使用用户主动登录后获得的本地加密会话，只请求该账号有权访问的资源，不绕过付费、地区或会员限制。请只下载自己有权保存和使用的内容，并遵守相关平台的服务条款和版权规定。关于页的“开源与须知”中提供了许可证、第三方库、数据与权限、平台范围和免责声明等完整说明。
