@@ -27,7 +27,6 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredHeight
 import androidx.compose.foundation.layout.requiredWidth
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
@@ -257,14 +256,7 @@ fun MediaPreviewSheet(
         containerColor = Color.Black,
         contentColor = Color.White,
         tonalElevation = 0.dp,
-        dragHandle = {
-            Box(
-                Modifier
-                    .padding(vertical = 10.dp)
-                    .size(width = 36.dp, height = 4.dp)
-                    .background(Color.White.copy(alpha = 0.35f), MaterialTheme.shapes.small)
-            )
-        }
+        dragHandle = null
     ) {
         PreviewDialogWindowEffect(activity)
         Column(
@@ -450,7 +442,7 @@ private fun VideoPreviewPage(
             surfaceType = SURFACE_TYPE_TEXTURE_VIEW,
             modifier = if (aspectRatio != null) {
                 if (shouldRotateLandscapeVideo) {
-                    val unrotatedWidth = maxOf(maxHeight, maxWidth * aspectRatio)
+                    val unrotatedWidth = minOf(maxHeight, maxWidth * aspectRatio)
                     Modifier
                         .requiredWidth(unrotatedWidth)
                         .requiredHeight(unrotatedWidth / aspectRatio)
