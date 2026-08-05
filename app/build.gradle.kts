@@ -122,12 +122,9 @@ dependencies {
     implementation("androidx.room:room-ktx:2.8.4")
     kapt("androidx.room:room-compiler:2.8.4")
 
-    // Template liquid-glass rendering
-    implementation("top.yukonga.miuix.kmp:miuix-ui-android:0.9.2")
-    implementation("top.yukonga.miuix.kmp:miuix-blur-android:0.9.2")
-
     // Progressive backdrop blur
     implementation("io.github.kyant0:backdrop:2.0.0")
+    implementation("io.github.kyant0:shapes:1.2.0")
 
     // DataStore
     implementation("androidx.datastore:datastore-preferences:1.1.1")

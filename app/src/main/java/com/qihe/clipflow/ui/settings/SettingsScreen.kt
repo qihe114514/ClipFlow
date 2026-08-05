@@ -41,7 +41,7 @@ data class SettingsUiState(
     val wallpaperOpacity: Float = 75f,
     val wallpaperEnabled: Boolean = true,
     val defaultPage: String = "home",
-    val bottomBarOrder: List<String> = listOf("home", "douyin", "xiaohongshu")
+    val bottomBarOrder: List<String> = listOf("home", "douyin", "xiaohongshu", "bilibili")
 )
 
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {

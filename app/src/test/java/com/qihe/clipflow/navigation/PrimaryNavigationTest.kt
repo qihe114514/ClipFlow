@@ -27,11 +27,10 @@ class PrimaryNavigationTest {
     }
 
     @Test
-    fun liquidBottomBarRequiresApi33() {
-        assertEquals(false, supportsLiquidBottomBar(29))
-        assertEquals(false, supportsLiquidBottomBar(30))
-        assertEquals(false, supportsLiquidBottomBar(32))
-        assertEquals(true, supportsLiquidBottomBar(33))
-        assertEquals(true, supportsLiquidBottomBar(37))
+    fun persistedThreeTabOrderStillProducesAllFourTabs() {
+        assertEquals(
+            listOf("home", "douyin", "xiaohongshu", "bilibili"),
+            orderedBottomNavItems(listOf("home", "douyin", "xiaohongshu")).map { it.route },
+        )
     }
 }

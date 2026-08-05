@@ -1,9 +1,7 @@
 package com.qihe.clipflow.navigation
 
-import android.os.Build
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.*
@@ -24,6 +22,8 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.kyant.backdrop.backdrops.layerBackdrop as contentLayerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop as rememberContentLayerBackdrop
+import com.kyant.backdrop.backdrops.layerBackdrop
+import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.qihe.clipflow.data.preferences.AppPreferences
 import com.qihe.clipflow.ui.components.PrivacyConsentDialog
 import com.qihe.clipflow.ui.components.DownloadPill
@@ -44,13 +44,6 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
-import top.yukonga.miuix.kmp.blur.layerBackdrop
-import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
-import top.yukonga.miuix.kmp.theme.ColorSchemeMode
-import top.yukonga.miuix.kmp.theme.MiuixTheme
-import top.yukonga.miuix.kmp.theme.ThemeColorSpec
-import top.yukonga.miuix.kmp.theme.ThemeController
-import top.yukonga.miuix.kmp.theme.ThemePaletteStyle
 
 @Composable
 fun ClipFlowNavHost() {
@@ -94,7 +87,7 @@ fun ClipFlowNavHost() {
         value = prefs.defaultPage.first()
     }
 
-    val bottomBarOrder by produceState(initialValue = listOf("home", "douyin", "xiaohongshu")) {
+    val bottomBarOrder by produceState(initialValue = listOf("home", "douyin", "xiaohongshu", "bilibili")) {
         prefs.bottomBarOrder.collect { value = it }
     }
 
@@ -143,22 +136,8 @@ fun ClipFlowNavHost() {
             }
     }
 
-    val isDark = isSystemInDarkTheme()
-    val miuixController = remember(isDark) {
-        ThemeController(
-            ColorSchemeMode.System,
-            isDark = isDark,
-            paletteStyle = ThemePaletteStyle.TonalSpot,
-            colorSpec = ThemeColorSpec.Spec2021,
-        )
-    }
-
-    val liquidBottomBarEnabled = supportsLiquidBottomBar(Build.VERSION.SDK_INT)
-    MiuixTheme(controller = miuixController) {
-        val bottomBarBackdrop = if (liquidBottomBarEnabled) {
-            rememberLayerBackdrop { drawContent() }
-        } else null
-        val sceneBackdrop = rememberContentLayerBackdrop { drawContent() }
+    val bottomBarBackdrop = rememberLayerBackdrop { drawContent() }
+    val sceneBackdrop = rememberContentLayerBackdrop { drawContent() }
         Box(modifier = Modifier.fillMaxSize()) {
             Box(
                 modifier = Modifier
@@ -348,11 +327,7 @@ fun ClipFlowNavHost() {
                     modifier = Modifier
                         .matchParentSize()
                         .then(
-                            if (bottomBarBackdrop != null) {
-                                Modifier.layerBackdrop(bottomBarBackdrop)
-                            } else {
-                                Modifier
-                            }
+                            Modifier.layerBackdrop(bottomBarBackdrop)
                         )
                 ) {
                     ProgressiveBottomBlur(
@@ -389,5 +364,4 @@ fun ClipFlowNavHost() {
             }
         }
     }
-}
 }

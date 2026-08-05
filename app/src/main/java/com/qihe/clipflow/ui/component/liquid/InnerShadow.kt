@@ -1,5 +1,5 @@
 // Adapted from Kyant0/AndroidLiquidGlass — https://github.com/Kyant0/AndroidLiquidGlass (Apache 2.0).
-// Mirrored from compose-miuix-ui example.
+// Adapted from AndroidLiquidGlass example.
 
 package com.qihe.clipflow.ui.component.liquid
 

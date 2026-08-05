@@ -85,6 +85,6 @@
 
 - GitHub：[qihe114514/ClipFlow](https://github.com/qihe114514/ClipFlow)
 - 主许可证：GNU General Public License v3.0（GPLv3），完整协议见 [LICENSE](LICENSE)。
-- 依赖：Jetpack Compose、AndroidX、Navigation Compose、Room、DataStore、Media3、Retrofit、OkHttp、Gson、Coil、Miuix、Accompanist 和友盟 SDK 等，第三方组件按各自许可证提供。
+- 依赖：Jetpack Compose、AndroidX、Navigation Compose、Room、DataStore、Media3、Retrofit、OkHttp、Gson、Coil、Kyant Backdrop、Accompanist 和友盟 SDK 等，第三方组件按各自许可证提供。
 
 B 站解析使用用户主动登录后获得的本地加密会话，只请求该账号有权访问的资源，不绕过付费、地区或会员限制。请只下载自己有权保存和使用的内容，并遵守相关平台的服务条款和版权规定。关于页的“开源与须知”中提供了许可证、第三方库、数据与权限、平台范围和免责声明等完整说明。

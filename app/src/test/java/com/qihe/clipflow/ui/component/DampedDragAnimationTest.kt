@@ -1,4 +1,4 @@
-package com.qihe.clipflow.ui.component.miuix.animation
+package com.qihe.clipflow.ui.component
 
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.IntSize
@@ -28,10 +28,10 @@ class DampedDragAnimationTest {
 
         animation.press()
         assertTrue(animation.isPressed)
+        scope.coroutineContext.cancel()
 
         animation.animateToValue(1f, animatePress = false)
 
         assertFalse(animation.isPressed)
-        scope.coroutineContext.cancel()
     }
 }

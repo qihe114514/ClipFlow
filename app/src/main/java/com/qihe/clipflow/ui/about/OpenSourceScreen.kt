@@ -50,7 +50,7 @@ fun OpenSourceScreen() {
         OpenSourceSection(
             icon = Icons.Filled.LibraryBooks,
             title = "第三方库",
-            body = "本应用使用 Jetpack Compose、Material 3、AndroidX、Navigation Compose、Room、DataStore、Media3、Retrofit、OkHttp、Gson、Coil、Miuix、Accompanist 和友盟 SDK 等开源或第三方组件。各组件按照其项目声明的许可证和使用条款提供，具体版权归原作者所有。"
+            body = "本应用使用 Jetpack Compose、Material 3、AndroidX、Navigation Compose、Room、DataStore、Media3、Retrofit、OkHttp、Gson、Coil、Accompanist 和友盟 SDK 等开源或第三方组件。各组件按照其项目声明的许可证和使用条款提供，具体版权归原作者所有。"
         )
         OpenSourceSection(
             icon = Icons.Filled.AccountCircle,

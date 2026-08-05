@@ -2,7 +2,6 @@ package com.qihe.clipflow.navigation
 
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
-import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -23,17 +22,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.qihe.clipflow.data.preferences.AppPreferences
 import com.qihe.clipflow.ui.bilibili.BilibiliAccountAction
-import com.qihe.clipflow.ui.component.FloatingBottomBar as LiquidFloatingBottomBar
-import com.qihe.clipflow.ui.component.FloatingBottomBarItem
-import top.yukonga.miuix.kmp.basic.Icon as MiuixIcon
-import top.yukonga.miuix.kmp.basic.Text as MiuixText
-import top.yukonga.miuix.kmp.blur.Backdrop
+import com.qihe.clipflow.ui.component.LiquidBottomTab
+import com.qihe.clipflow.ui.component.LiquidBottomTabs
+import com.kyant.backdrop.Backdrop
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -92,52 +88,37 @@ fun ClipFlowTopBar(
     )
 }
 
-private const val LIQUID_BOTTOM_BAR_MIN_SDK = 33
-
-internal fun supportsLiquidBottomBar(sdkInt: Int): Boolean {
-    return sdkInt >= LIQUID_BOTTOM_BAR_MIN_SDK
-}
-
 @Composable
 fun FloatingBottomBar(
     prefs: AppPreferences,
-    backdrop: Backdrop?,
+    backdrop: Backdrop,
     primaryPagerState: PrimaryPagerState,
     modifier: Modifier = Modifier,
-    onPressProgress: (Float) -> Unit = {},
 ) {
-    val bottomBarOrder by produceState(initialValue = listOf("home", "douyin", "xiaohongshu")) {
+    val bottomBarOrder by produceState(initialValue = listOf("home", "douyin", "xiaohongshu", "bilibili")) {
         prefs.bottomBarOrder.collect { value = it }
     }
     val items = orderedBottomNavItems(bottomBarOrder)
     if (items.isEmpty()) return
 
-    LiquidFloatingBottomBar(
+    LiquidBottomTabs(
         modifier = modifier
             .padding(bottom = 12.dp + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()),
-        selectedIndex = { primaryPagerState.selectedPage },
-        onSelected = primaryPagerState::animateToPage,
+        selectedTabIndex = { primaryPagerState.selectedPage },
+        onTabSelected = primaryPagerState::animateToPage,
         backdrop = backdrop,
         tabsCount = items.size,
-        isBlurEnabled = backdrop != null,
-        onPressProgress = onPressProgress,
     ) {
         items.forEachIndexed { index, item ->
-            FloatingBottomBarItem(
+            LiquidBottomTab(
                 onClick = { primaryPagerState.animateToPage(index) },
-                modifier = Modifier.defaultMinSize(minWidth = 76.dp),
             ) {
-                MiuixIcon(
-                    imageVector = item.selectedIcon,
-                    contentDescription = item.label,
-                )
-                MiuixText(
+                Icon(item.selectedIcon, contentDescription = item.label)
+                Text(
                     text = item.label,
                     fontSize = 11.sp,
                     lineHeight = 14.sp,
                     maxLines = 1,
-                    softWrap = false,
-                    overflow = TextOverflow.Visible,
                 )
             }
         }

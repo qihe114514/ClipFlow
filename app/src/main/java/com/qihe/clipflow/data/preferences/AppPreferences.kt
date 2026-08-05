@@ -68,10 +68,10 @@ class AppPreferences(private val context: Context) {
             try {
                 json.trim('[', ']').split(",").map { it.trim('"', ' ') }
             } catch (_: Exception) {
-                listOf("home", "douyin", "xiaohongshu")
+                listOf("home", "douyin", "xiaohongshu", "bilibili")
             }
         } else {
-            listOf("home", "douyin", "xiaohongshu")
+            listOf("home", "douyin", "xiaohongshu", "bilibili")
         }
     }
 
