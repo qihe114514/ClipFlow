@@ -80,6 +80,15 @@ val bottomNavItems = listOf(
     )
 )
 
+val secondaryRoutes = setOf(
+    Screen.History.route,
+    Screen.Settings.route,
+    Screen.About.route,
+    Screen.OpenSource.route,
+)
+
+fun isSecondaryRoute(route: String?): Boolean = route in secondaryRoutes
+
 fun orderedBottomNavItems(
     order: List<String>,
     registeredItems: List<BottomNavItem> = bottomNavItems,

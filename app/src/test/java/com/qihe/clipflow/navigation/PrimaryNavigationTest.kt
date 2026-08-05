@@ -1,6 +1,8 @@
 package com.qihe.clipflow.navigation
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class PrimaryNavigationTest {
@@ -39,5 +41,16 @@ class PrimaryNavigationTest {
             listOf("home", "douyin", "xiaohongshu", "bilibili"),
             orderedBottomNavItems(listOf("home", "douyin", "xiaohongshu")).map { it.route },
         )
+    }
+
+    @Test
+    fun secondaryRoutePredicateCoversOnlyDetailPages() {
+        assertTrue(isSecondaryRoute(Screen.History.route))
+        assertTrue(isSecondaryRoute(Screen.Settings.route))
+        assertTrue(isSecondaryRoute(Screen.About.route))
+        assertTrue(isSecondaryRoute(Screen.OpenSource.route))
+        assertFalse(isSecondaryRoute(Screen.Home.route))
+        assertFalse(isSecondaryRoute(Screen.Douyin.route))
+        assertFalse(isSecondaryRoute(Screen.Bilibili.route))
     }
 }
