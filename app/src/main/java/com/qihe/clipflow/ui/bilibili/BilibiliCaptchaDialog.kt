@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.remember
@@ -23,6 +22,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.qihe.clipflow.data.bilibili.BilibiliCaptchaChallenge
 import com.qihe.clipflow.data.bilibili.BilibiliCaptchaResult
+import com.qihe.clipflow.ui.component.LiquidButton
 import org.json.JSONObject
 
 @Composable
@@ -71,7 +71,7 @@ fun BilibiliCaptchaDialog(
                     update = {},
                     modifier = Modifier.fillMaxWidth().height(340.dp)
                 )
-                TextButton(onClick = onDismiss) { Text("Cancel") }
+                LiquidButton(onClick = onDismiss) { Text("Cancel") }
             }
         }
     }

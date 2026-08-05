@@ -28,6 +28,7 @@ import com.qihe.clipflow.data.preferences.AppPreferences
 import com.qihe.clipflow.navigation.Screen
 import com.qihe.clipflow.ui.component.liquid.PROGRESSIVE_TOPBAR_CONTENT_START_DP
 import com.qihe.clipflow.ui.components.GlassCard
+import com.qihe.clipflow.ui.component.LiquidButton
 import com.qihe.clipflow.ui.components.PrivacyConsentDialog
 import com.qihe.clipflow.util.UpdateManager
 import kotlinx.coroutines.launch
@@ -310,7 +311,7 @@ fun AboutScreen(navController: NavHostController) {
                         color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.15f)
                     )
                     if (downloadedApk != null) {
-                        Button(
+                        LiquidButton(
                             onClick = {
                                 downloadedApk?.let { file ->
                                     if (context.packageManager.canRequestPackageInstalls()) {
@@ -325,9 +326,6 @@ fun AboutScreen(navController: NavHostController) {
                                 }
                             },
                             modifier = Modifier.fillMaxWidth(),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.tertiary
-                            )
                         ) {
                             Text("安装更新")
                         }
@@ -344,7 +342,7 @@ fun AboutScreen(navController: NavHostController) {
                             )
                         }
                     } else {
-                        Button(
+                        LiquidButton(
                             onClick = {
                                 downloadManager.reset()
                                 scope.launch {
@@ -448,9 +446,10 @@ fun AboutScreen(navController: NavHostController) {
                         fontWeight = FontWeight.Medium,
                         modifier = Modifier.weight(1f)
                     )
-                    FilledTonalIconButton(
+                    LiquidButton(
                         onClick = { showPrivacy = true },
-                        modifier = Modifier.size(36.dp)
+                        modifier = Modifier.size(36.dp),
+                        contentPadding = PaddingValues(0.dp),
                     ) {
                         Icon(
                             imageVector = Icons.Filled.OpenInNew,
@@ -486,14 +485,15 @@ fun AboutScreen(navController: NavHostController) {
                         color = MaterialTheme.colorScheme.error,
                         modifier = Modifier.weight(1f)
                     )
-                    FilledTonalIconButton(
+                    LiquidButton(
                         onClick = {
                             scope.launch {
                                 prefs.setPrivacyAgreed(false)
                             }
                             (context as? android.app.Activity)?.finishAffinity()
                         },
-                        modifier = Modifier.size(36.dp)
+                        modifier = Modifier.size(36.dp),
+                        contentPadding = PaddingValues(0.dp),
                     ) {
                         Icon(
                             imageVector = Icons.Filled.Close,

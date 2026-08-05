@@ -22,6 +22,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.qihe.clipflow.ui.component.LiquidButton
 
 internal val LocalWallpaperEnabled = staticCompositionLocalOf { true }
 
@@ -150,21 +151,13 @@ fun GlassButton(
     enabled: Boolean = true,
     containerColor: Color = MaterialTheme.colorScheme.primary
 ) {
-    Button(
+    LiquidButton(
         onClick = onClick,
         enabled = enabled,
-        modifier = modifier.height(52.dp),
-        shape = RoundedCornerShape(16.dp),
-        colors = ButtonDefaults.buttonColors(
-            containerColor = containerColor.copy(alpha = if (enabled) 0.85f else 0.4f),
-            disabledContainerColor = containerColor.copy(alpha = 0.3f)
-        ),
-        elevation = ButtonDefaults.buttonElevation(
-            defaultElevation = 0.dp,
-            pressedElevation = 0.dp
-        )
+        modifier = modifier,
+        tint = containerColor,
     ) {
-        Text(text = text, style = MaterialTheme.typography.titleMedium)
+        Text(text = text, style = MaterialTheme.typography.titleMedium, color = Color.White)
     }
 }
 

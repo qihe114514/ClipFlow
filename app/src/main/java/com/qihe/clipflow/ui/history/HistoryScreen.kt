@@ -26,15 +26,19 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.qihe.clipflow.data.local.HistoryEntity
 import com.qihe.clipflow.navigation.Screen
+import com.qihe.clipflow.navigation.historyDestinationRoute
+import com.qihe.clipflow.navigation.navigateToPrimary
 import com.qihe.clipflow.ui.components.GlassCard
 import com.qihe.clipflow.ui.components.GlassTextField
 import com.qihe.clipflow.ui.components.TypeBadge
+import com.qihe.clipflow.ui.component.LiquidButton
 import com.qihe.clipflow.ui.component.liquid.PROGRESSIVE_TOPBAR_CONTENT_START_DP
 import com.qihe.clipflow.ui.theme.DouyinAccent
 import com.qihe.clipflow.ui.theme.XiaohongshuAccent
@@ -99,23 +103,19 @@ fun HistoryScreen(
             )
 
             // 导入按钮
-            FilledTonalIconButton(
+            LiquidButton(
                 onClick = { importLauncher.launch(arrayOf("application/json")) },
-                modifier = Modifier.size(44.dp)
+                modifier = Modifier.size(44.dp),
+                contentPadding = PaddingValues(0.dp),
             ) {
                 Icon(Icons.Outlined.FileUpload, contentDescription = "导入", Modifier.size(20.dp))
             }
 
             // 选择模式切换
-            FilledTonalIconButton(
+            LiquidButton(
                 onClick = { viewModel.toggleSelectionMode() },
                 modifier = Modifier.size(44.dp),
-                colors = IconButtonDefaults.filledTonalIconButtonColors(
-                    containerColor = if (uiState.isSelectionMode)
-                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
-                    else
-                        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-                )
+                contentPadding = PaddingValues(0.dp),
             ) {
                 Icon(
                     imageVector = if (uiState.isSelectionMode) Icons.Filled.Close else Icons.Outlined.Checklist,
@@ -144,11 +144,11 @@ fun HistoryScreen(
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     if (uiState.selectedIds.size == uiState.items.size && uiState.items.isNotEmpty()) {
-                        IconButton(onClick = { viewModel.clearSelection() }, modifier = Modifier.size(28.dp)) {
+                        LiquidButton(onClick = { viewModel.clearSelection() }, modifier = Modifier.size(28.dp), contentPadding = PaddingValues(0.dp)) {
                             Icon(Icons.Filled.SelectAll, "取消全选", Modifier.size(18.dp))
                         }
                     } else {
-                        IconButton(onClick = { viewModel.selectAll() }, modifier = Modifier.size(28.dp)) {
+                        LiquidButton(onClick = { viewModel.selectAll() }, modifier = Modifier.size(28.dp), contentPadding = PaddingValues(0.dp)) {
                             Icon(Icons.Outlined.SelectAll, "全选", Modifier.size(18.dp))
                         }
                     }
@@ -160,9 +160,10 @@ fun HistoryScreen(
                     )
                 }
 
-                IconButton(
+                LiquidButton(
                     onClick = { viewModel.requestDelete() },
-                    modifier = Modifier.size(32.dp)
+                    modifier = Modifier.size(32.dp),
+                    contentPadding = PaddingValues(0.dp),
                 ) {
                     Icon(Icons.Filled.Delete, "删除", tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(20.dp))
                 }
@@ -173,7 +174,7 @@ fun HistoryScreen(
 
         // ========== 导出按钮（选择模式下） ==========
         if (uiState.isSelectionMode && uiState.selectedIds.isNotEmpty()) {
-            TextButton(
+            LiquidButton(
                 onClick = { exportLauncher.launch("clipflow_history.json") },
                 modifier = Modifier.fillMaxWidth()
             ) {
@@ -226,16 +227,9 @@ fun HistoryScreen(
                                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                     viewModel.toggleItemSelection(item.id)
                                 } else {
-                                    val route = when (item.platform) {
-                                        "douyin" -> Screen.Douyin.withSourceUrl(item.url)
-                                        "xiaohongshu" -> Screen.Xiaohongshu.withSourceUrl(item.url)
-                                        "bilibili" -> Screen.Bilibili.withSourceUrl(item.url)
-                                        else -> Screen.Home.route
-                                    }
-                                    navController.navigate(route) {
-                                        popUpTo(Screen.Home.route) { inclusive = false }
-                                        launchSingleTop = true
-                                    }
+                                    navController.navigateToPrimary(
+                                        historyDestinationRoute(item.platform, item.url)
+                                    )
                                 }
                             },
                             onLongPress = {
@@ -257,20 +251,26 @@ fun HistoryScreen(
 
     // ========== 删除确认弹窗 ==========
     if (uiState.showDeleteConfirm) {
-        AlertDialog(
-            onDismissRequest = { viewModel.cancelDelete() },
-            icon = { Icon(Icons.Filled.Warning, contentDescription = null) },
-            title = { Text("确认删除") },
-            text = { Text("确定要删除选中的 ${uiState.selectedIds.size} 条记录吗？此操作不可撤销。") },
-            confirmButton = {
-                TextButton(onClick = { viewModel.confirmDelete() }) {
-                    Text("删除", color = MaterialTheme.colorScheme.error)
+        Dialog(onDismissRequest = { viewModel.cancelDelete() }) {
+            Card(shape = MaterialTheme.shapes.extraLarge) {
+                Column(modifier = Modifier.padding(24.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Filled.Warning, contentDescription = null)
+                        Spacer(Modifier.width(12.dp))
+                        Text("确认删除", style = MaterialTheme.typography.titleLarge)
+                    }
+                    Spacer(Modifier.height(16.dp))
+                    Text("确定要删除选中的 ${uiState.selectedIds.size} 条记录吗？此操作不可撤销。")
+                    Spacer(Modifier.height(20.dp))
+                    Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {
+                        LiquidButton(onClick = { viewModel.cancelDelete() }) { Text("取消") }
+                        LiquidButton(onClick = { viewModel.confirmDelete() }) {
+                            Text("删除", color = MaterialTheme.colorScheme.error)
+                        }
+                    }
                 }
-            },
-            dismissButton = {
-                TextButton(onClick = { viewModel.cancelDelete() }) { Text("取消") }
             }
-        )
+        }
     }
 }
 

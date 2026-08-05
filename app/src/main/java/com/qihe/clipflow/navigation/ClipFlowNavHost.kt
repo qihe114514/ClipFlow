@@ -29,6 +29,7 @@ import com.qihe.clipflow.ui.components.PrivacyConsentDialog
 import com.qihe.clipflow.ui.components.DownloadPill
 import com.qihe.clipflow.ClipFlowApp
 import com.qihe.clipflow.ui.components.DownloadPillState
+import com.qihe.clipflow.ui.component.LocalLiquidBackdrop
 import com.qihe.clipflow.ui.component.liquid.ProgressiveTopBarBlur
 import com.qihe.clipflow.ui.component.liquid.ProgressiveBottomBlur
 import com.qihe.clipflow.ui.component.liquid.BOTTOM_BLUR_HEIGHT_DP
@@ -308,11 +309,13 @@ fun ClipFlowNavHost() {
                     .height(PROGRESSIVE_TOPBAR_CONTENT_START_DP.dp)
                     .align(Alignment.TopCenter)
             ) {
-                ClipFlowTopBar(
-                    currentRoute = currentRoute,
-                    navController = navController,
-                    modifier = Modifier.align(Alignment.TopCenter),
-                )
+                CompositionLocalProvider(LocalLiquidBackdrop provides sceneBackdrop) {
+                    ClipFlowTopBar(
+                        currentRoute = currentRoute,
+                        navController = navController,
+                        modifier = Modifier.align(Alignment.TopCenter),
+                    )
+                }
             }
         }
 

@@ -18,7 +18,10 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.qihe.clipflow.R
 import com.qihe.clipflow.data.preferences.AppPreferences
+import com.qihe.clipflow.ui.component.LocalLiquidBackdrop
 import com.qihe.clipflow.ui.components.LocalWallpaperEnabled
+import com.kyant.backdrop.backdrops.layerBackdrop
+import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
@@ -47,57 +50,67 @@ fun BackgroundWallpaperLayer(content: @Composable () -> Unit) {
     val hasWallpaper = showWallpaper
     // opacityAmount: 10=almost transparent, 100=fully opaque wall → overlay alpha inverted
     val overlayAlpha = (1f - opacityAmount.coerceIn(10f, 100f) / 100f)
+    val wallpaperBackdrop = rememberLayerBackdrop()
 
     Box(modifier = Modifier.fillMaxSize()) {
-        if (hasWallpaper) {
-            val useCustom = wallpaperUri.isNotEmpty()
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .then(Modifier.blur(25.dp))
-                    .clipToBounds()
-            ) {
-                if (useCustom) {
-                    AsyncImage(
-                        model = ImageRequest.Builder(context)
-                            .data(Uri.parse(wallpaperUri))
-                            .crossfade(true)
-                            .build(),
-                        contentDescription = null,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
-                } else {
-                    // 内置默认壁纸
-                    AsyncImage(
-                        model = ImageRequest.Builder(context)
-                            .data(R.drawable.default_wallpaper)
-                            .crossfade(true)
-                            .build(),
-                        contentDescription = null,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .layerBackdrop(wallpaperBackdrop)
+        ) {
+            if (hasWallpaper) {
+                val useCustom = wallpaperUri.isNotEmpty()
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .then(Modifier.blur(25.dp))
+                        .clipToBounds()
+                ) {
+                    if (useCustom) {
+                        AsyncImage(
+                            model = ImageRequest.Builder(context)
+                                .data(Uri.parse(wallpaperUri))
+                                .crossfade(true)
+                                .build(),
+                            contentDescription = null,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        // 内置默认壁纸
+                        AsyncImage(
+                            model = ImageRequest.Builder(context)
+                                .data(R.drawable.default_wallpaper)
+                                .crossfade(true)
+                                .build(),
+                            contentDescription = null,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
                 }
-            }
 
-            // 遮罩：深色模式偏暗，浅色模式偏白；透明度由用户控制
-            val baseColor = if (isDark) Color.Black else Color.White
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(baseColor.copy(alpha = overlayAlpha))
-            )
-        } else {
-            // Backdrop effects need an opaque source; otherwise the unblurred content shows through.
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.background)
-            )
+                // 遮罩：深色模式偏暗，浅色模式偏白；透明度由用户控制
+                val baseColor = if (isDark) Color.Black else Color.White
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(baseColor.copy(alpha = overlayAlpha))
+                )
+            } else {
+                // Backdrop effects need an opaque source; otherwise the unblurred content shows through.
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(MaterialTheme.colorScheme.background)
+                )
+            }
         }
 
-        CompositionLocalProvider(LocalWallpaperEnabled provides hasWallpaper) {
+        CompositionLocalProvider(
+            LocalWallpaperEnabled provides hasWallpaper,
+            LocalLiquidBackdrop provides wallpaperBackdrop,
+        ) {
             Box(modifier = Modifier.fillMaxSize()) {
                 content()
             }

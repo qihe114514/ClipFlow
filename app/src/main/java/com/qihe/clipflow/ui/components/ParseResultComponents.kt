@@ -18,7 +18,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -33,6 +32,7 @@ import com.qihe.clipflow.data.api.model.ContentItem
 import com.qihe.clipflow.data.api.model.ContentType
 import com.qihe.clipflow.data.api.model.VideoBackupItem
 import com.qihe.clipflow.util.DownloadState
+import com.qihe.clipflow.ui.component.LiquidButton
 
 @Composable
 fun DownloadOptionsCard(
@@ -90,7 +90,7 @@ private fun DownloadOptionRow(item: ContentItem, state: DownloadState?, onDownlo
         if (state?.isDownloading == true) {
             CircularProgressIndicator(progress = { state.progress }, modifier = Modifier.size(32.dp), strokeWidth = 3.dp)
         } else {
-            TextButton(onClick = onDownload) { Text("下载", fontWeight = FontWeight.SemiBold) }
+            LiquidButton(onClick = onDownload) { Text("下载", fontWeight = FontWeight.SemiBold) }
         }
     }
 }
@@ -102,7 +102,7 @@ private fun BackupDownloadOptions(
 ) {
     var expanded by remember { mutableStateOf(false) }
     DashedDivider(modifier = Modifier.padding(vertical = 4.dp))
-    TextButton(onClick = { expanded = !expanded }, modifier = Modifier.fillMaxWidth()) {
+    LiquidButton(onClick = { expanded = !expanded }, modifier = Modifier.fillMaxWidth()) {
         Icon(if (expanded) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown, null, modifier = Modifier.size(18.dp))
         Spacer(Modifier.size(4.dp))
         Text("备用画质 (${videoBackups.size})", style = MaterialTheme.typography.labelMedium)
@@ -121,7 +121,7 @@ private fun BackupDownloadOptions(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(parts.joinToString(" · "), style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
-                    TextButton(onClick = { backup.url?.let { onDownloadBackupUrl?.invoke(it, parts.firstOrNull() ?: "备用") } }) {
+                    LiquidButton(onClick = { backup.url?.let { onDownloadBackupUrl?.invoke(it, parts.firstOrNull() ?: "备用") } }) {
                         Text("下载", fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
                     }
                 }

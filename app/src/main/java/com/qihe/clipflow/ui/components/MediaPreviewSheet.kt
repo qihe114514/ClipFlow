@@ -27,33 +27,31 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredHeight
 import androidx.compose.foundation.layout.requiredWidth
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Replay
 import androidx.compose.material.icons.filled.VolumeOff
 import androidx.compose.material.icons.filled.VolumeUp
-import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
@@ -90,6 +88,12 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.qihe.clipflow.data.api.model.ContentItem
 import com.qihe.clipflow.data.bilibili.BilibiliSessionStore
+import com.qihe.clipflow.ui.component.LiquidButton
+import com.qihe.clipflow.ui.component.LocalLiquidBackdrop
+import com.qihe.clipflow.ui.component.LiquidSlider
+import com.kyant.backdrop.Backdrop
+import com.kyant.backdrop.backdrops.layerBackdrop
+import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import java.util.Locale
@@ -121,6 +125,7 @@ fun MediaPreviewSheet(
     var playerError by remember { mutableStateOf<PlaybackException?>(null) }
     var isScrubbing by remember { mutableStateOf(false) }
     var scrubPosition by remember { mutableFloatStateOf(0f) }
+    val previewBackdrop = rememberLayerBackdrop()
 
     val currentItem = items.getOrNull(pagerState.currentPage)
     val currentVideoUrl = currentItem
@@ -269,129 +274,127 @@ fun MediaPreviewSheet(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
-                    .background(Color.Black)
             ) {
-                HorizontalPager(
-                    state = pagerState,
-                    modifier = Modifier.fillMaxSize()
-                ) { page ->
-                    val item = items[page]
-                    when (item.previewKind) {
-                        PreviewMediaKind.VIDEO -> {
-                            VideoPreviewPage(
-                                player = if (page == pagerState.currentPage) player else null,
-                                videoWidth = videoWidth,
-                                videoHeight = videoHeight,
-                                isLandscapeVideo = isLandscapeVideo,
-                                onToggleControls = { controlsVisible = !controlsVisible },
-                                onLongPress = {
-                                    player?.setPlaybackSpeed(2f)
-                                    showLongPressSpeed = player != null
-                                },
-                                onLongPressRelease = {
-                                    player?.setPlaybackSpeed(selectedSpeed)
-                                    showLongPressSpeed = false
-                                }
-                            )
-                        }
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .layerBackdrop(previewBackdrop)
+                ) {
+                    HorizontalPager(
+                        state = pagerState,
+                        modifier = Modifier.fillMaxSize()
+                    ) { page ->
+                        val item = items[page]
+                        when (item.previewKind) {
+                            PreviewMediaKind.VIDEO -> {
+                                VideoPreviewPage(
+                                    player = if (page == pagerState.currentPage) player else null,
+                                    videoWidth = videoWidth,
+                                    videoHeight = videoHeight,
+                                    isLandscapeVideo = isLandscapeVideo,
+                                    onToggleControls = { controlsVisible = !controlsVisible },
+                                    onLongPress = {
+                                        player?.setPlaybackSpeed(2f)
+                                        showLongPressSpeed = player != null
+                                    },
+                                    onLongPressRelease = {
+                                        player?.setPlaybackSpeed(selectedSpeed)
+                                        showLongPressSpeed = false
+                                    }
+                                )
+                            }
 
-                        PreviewMediaKind.IMAGE -> {
-                            ImagePreviewPage(
-                                url = item.url,
-                                failed = page in failedImagePages,
-                                onRetry = { failedImagePages = failedImagePages - page },
-                                onError = { failedImagePages = failedImagePages + page }
-                            )
-                        }
+                            PreviewMediaKind.IMAGE -> {
+                                ImagePreviewPage(
+                                    url = item.url,
+                                    failed = page in failedImagePages,
+                                    onRetry = { failedImagePages = failedImagePages - page },
+                                    onError = { failedImagePages = failedImagePages + page }
+                                )
+                            }
 
-                        null -> Unit
+                            null -> Unit
+                        }
                     }
                 }
 
-                IconButton(
-                    onClick = onDismiss,
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .statusBarsPadding()
-                        .padding(horizontal = 8.dp)
-                ) {
-                    Icon(Icons.Filled.Close, contentDescription = "关闭")
-                }
+                CompositionLocalProvider(LocalLiquidBackdrop provides previewBackdrop) {
+                    if (items.size > 1) {
+                        Text(
+                            text = "${pagerState.currentPage + 1} / ${items.size}",
+                            modifier = Modifier
+                                .align(Alignment.TopCenter)
+                                .statusBarsPadding()
+                                .padding(top = 12.dp),
+                            style = MaterialTheme.typography.labelMedium
+                        )
+                    }
 
-                if (items.size > 1) {
-                    Text(
-                        text = "${pagerState.currentPage + 1} / ${items.size}",
-                        modifier = Modifier
-                            .align(Alignment.TopCenter)
-                            .statusBarsPadding()
-                            .padding(top = 12.dp),
-                        style = MaterialTheme.typography.labelMedium
-                    )
-                }
-
-                if (currentItem?.previewKind == PreviewMediaKind.VIDEO && player != null) {
-                    VideoControls(
-                        modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .navigationBarsPadding(),
-                        player = player,
-                        controlsVisible = controlsVisible,
-                        isPlaying = isPlaying,
-                        duration = duration,
-                        position = position,
-                        isScrubbing = isScrubbing,
-                        scrubPosition = scrubPosition,
-                        isMuted = isMuted,
-                        selectedSpeed = selectedSpeed,
-                        playerError = playerError,
-                        onPlayPause = {
-                            if (player.isPlaying) player.pause() else player.play()
-                            isPlaying = player.isPlaying
-                            controlsVisible = true
-                        },
-                        onSeekChange = {
-                            isScrubbing = true
-                            scrubPosition = it
-                            player.seekTo(it.toLong())
-                        },
-                        onSeekFinished = {
-                            isScrubbing = false
-                            player.seekTo(scrubPosition.toLong())
-                        },
-                        onToggleMute = {
-                            if (player.volume == 0f) {
-                                player.volume = savedVolume.coerceIn(0f, 1f)
-                                isMuted = false
-                            } else {
-                                savedVolume = player.volume
-                                player.volume = 0f
-                                isMuted = true
+                    if (currentItem?.previewKind == PreviewMediaKind.VIDEO && player != null) {
+                        VideoControls(
+                            modifier = Modifier
+                                .align(Alignment.BottomCenter)
+                                .navigationBarsPadding(),
+                            player = player,
+                            backdrop = previewBackdrop,
+                            controlsVisible = controlsVisible,
+                            isPlaying = isPlaying,
+                            duration = duration,
+                            position = position,
+                            isScrubbing = isScrubbing,
+                            scrubPosition = scrubPosition,
+                            isMuted = isMuted,
+                            selectedSpeed = selectedSpeed,
+                            playerError = playerError,
+                            onPlayPause = {
+                                if (player.isPlaying) player.pause() else player.play()
+                                isPlaying = player.isPlaying
+                                controlsVisible = true
+                            },
+                            onSeekChange = {
+                                isScrubbing = true
+                                scrubPosition = it
+                                player.seekTo(it.toLong())
+                            },
+                            onSeekFinished = {
+                                isScrubbing = false
+                                player.seekTo(scrubPosition.toLong())
+                            },
+                            onToggleMute = {
+                                if (player.volume == 0f) {
+                                    player.volume = savedVolume.coerceIn(0f, 1f)
+                                    isMuted = false
+                                } else {
+                                    savedVolume = player.volume
+                                    player.volume = 0f
+                                    isMuted = true
+                                }
+                                controlsVisible = true
+                            },
+                            onSpeedSelected = {
+                                selectedSpeed = it
+                                player.setPlaybackSpeed(it)
+                                controlsVisible = true
+                            },
+                            onRetry = {
+                                playerError = null
+                                player.prepare()
+                                player.playWhenReady = true
                             }
-                            controlsVisible = true
-                        },
-                        onSpeedSelected = {
-                            selectedSpeed = it
-                            player.setPlaybackSpeed(it)
-                            controlsVisible = true
-                        },
-                        onRetry = {
-                            playerError = null
-                            player.prepare()
-                            player.playWhenReady = true
-                        }
-                    )
-                }
+                        )
+                    }
 
-                if (showLongPressSpeed) {
-                    Text(
-                        text = "2x",
-                        style = MaterialTheme.typography.headlineMedium,
-                        color = Color.White,
-                        modifier = Modifier
-                            .align(Alignment.Center)
-                            .background(Color.Black.copy(alpha = 0.55f), MaterialTheme.shapes.medium)
-                            .padding(horizontal = 20.dp, vertical = 10.dp)
-                    )
+                    if (showLongPressSpeed) {
+                        Text(
+                            text = "2x",
+                            style = MaterialTheme.typography.headlineMedium,
+                            color = Color.White,
+                            modifier = Modifier
+                                .align(Alignment.Center)
+                                .background(Color.Black.copy(alpha = 0.55f), MaterialTheme.shapes.medium)
+                                .padding(horizontal = 20.dp, vertical = 10.dp)
+                        )
+                    }
                 }
             }
         }
@@ -484,7 +487,7 @@ private fun ImagePreviewPage(
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text("图片加载失败", color = Color.White)
                 Spacer(Modifier.height(12.dp))
-                Button(onClick = onRetry) {
+                LiquidButton(onClick = onRetry) {
                     Icon(Icons.Filled.Replay, contentDescription = null)
                     Spacer(Modifier.width(6.dp))
                     Text("重试")
@@ -510,6 +513,7 @@ private fun ImagePreviewPage(
 private fun VideoControls(
     modifier: Modifier,
     player: ExoPlayer,
+    backdrop: Backdrop,
     controlsVisible: Boolean,
     isPlaying: Boolean,
     duration: Long,
@@ -546,17 +550,22 @@ private fun VideoControls(
                 ) {
                     Text("播放失败", color = Color.White)
                     Spacer(Modifier.width(8.dp))
-                    TextButton(onClick = onRetry) { Text("重试", color = Color.White) }
+                    LiquidButton(onClick = onRetry) { Text("重试", color = Color.White) }
                 }
             }
 
             val sliderMax = duration.toFloat().coerceAtLeast(1f)
             val sliderValue = if (isScrubbing) scrubPosition else position.toFloat()
-            Slider(
-                value = sliderValue.coerceIn(0f, sliderMax),
+            LiquidSlider(
+                value = {
+                    (if (isScrubbing) scrubPosition else position.toFloat())
+                        .coerceIn(0f, sliderMax)
+                },
                 onValueChange = onSeekChange,
                 onValueChangeFinished = onSeekFinished,
                 valueRange = 0f..sliderMax,
+                visibilityThreshold = 0.001f,
+                backdrop = backdrop,
                 modifier = Modifier.fillMaxWidth()
             )
 
@@ -564,24 +573,34 @@ private fun VideoControls(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                IconButton(onClick = onPlayPause) {
+                LiquidButton(
+                    onClick = onPlayPause,
+                    modifier = Modifier.size(40.dp),
+                    contentPadding = PaddingValues(0.dp),
+                ) {
                     Icon(
                         imageVector = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
                         contentDescription = if (isPlaying) "暂停" else "播放"
                     )
-                }
+                    }
+                Spacer(Modifier.width(8.dp))
                 Text(
                     text = "${formatPreviewTime(sliderValue.toLong())} / ${formatPreviewTime(duration)}",
                     style = MaterialTheme.typography.labelSmall,
                     color = Color.White
                 )
                 Spacer(Modifier.weight(1f))
-                IconButton(onClick = onToggleMute) {
+                LiquidButton(
+                    onClick = onToggleMute,
+                    modifier = Modifier.size(40.dp),
+                    contentPadding = PaddingValues(0.dp),
+                ) {
                     Icon(
                         imageVector = if (isMuted) Icons.Filled.VolumeOff else Icons.Filled.VolumeUp,
                         contentDescription = if (isMuted) "取消静音" else "静音"
                     )
                 }
+                Spacer(Modifier.width(8.dp))
                 SpeedMenu(selectedSpeed = selectedSpeed, onSpeedSelected = onSpeedSelected)
             }
         }
@@ -596,7 +615,11 @@ private fun SpeedMenu(
     var expanded by remember { mutableStateOf(false) }
     val speeds = listOf(0.5f, 1f, 1.25f, 1.5f, 2f)
     Box {
-        TextButton(onClick = { expanded = true }) {
+        LiquidButton(
+            onClick = { expanded = true },
+            modifier = Modifier.height(40.dp),
+            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
+        ) {
             Text("${selectedSpeed}x", color = Color.White)
             Icon(Icons.Filled.ExpandMore, contentDescription = "倍速", tint = Color.White)
         }

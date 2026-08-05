@@ -2,10 +2,15 @@ package com.qihe.clipflow.navigation
 
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.History
@@ -13,7 +18,6 @@ import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.Text
@@ -29,6 +33,7 @@ import com.qihe.clipflow.data.preferences.AppPreferences
 import com.qihe.clipflow.ui.bilibili.BilibiliAccountAction
 import com.qihe.clipflow.ui.component.LiquidBottomTab
 import com.qihe.clipflow.ui.component.LiquidBottomTabs
+import com.qihe.clipflow.ui.component.LiquidButton
 import com.kyant.backdrop.Backdrop
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -47,7 +52,11 @@ fun ClipFlowTopBar(
     CenterAlignedTopAppBar(
         navigationIcon = {
             if (isDetailPage) {
-                IconButton(onClick = navController::popBackStack) {
+                LiquidButton(
+                    onClick = navController::popBackStack,
+                    modifier = Modifier.padding(start = 12.dp).size(40.dp),
+                    contentPadding = PaddingValues(0.dp),
+                ) {
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
                 }
             }
@@ -70,14 +79,24 @@ fun ClipFlowTopBar(
         },
         actions = {
             if (!isDetailPage) {
-                IconButton(onClick = { navController.navigate(Screen.History.route) }) {
-                    Icon(Icons.Outlined.History, contentDescription = "历史")
+                LiquidButton(
+                    onClick = { navController.navigate(Screen.History.route) },
+                    modifier = Modifier.size(40.dp),
+                    contentPadding = PaddingValues(0.dp),
+                ) {
+                    Icon(Icons.Outlined.History, contentDescription = "历史", tint = Color.White)
                 }
+                Spacer(Modifier.width(4.dp))
                 if (currentRoute == Screen.Bilibili.route) {
                     BilibiliAccountAction()
+                    Spacer(Modifier.width(4.dp))
                 }
-                IconButton(onClick = { navController.navigate(Screen.Settings.route) }) {
-                    Icon(Icons.Outlined.Settings, contentDescription = "设置")
+                LiquidButton(
+                    onClick = { navController.navigate(Screen.Settings.route) },
+                    modifier = Modifier.padding(end = 12.dp).size(40.dp),
+                    contentPadding = PaddingValues(0.dp),
+                ) {
+                    Icon(Icons.Outlined.Settings, contentDescription = "设置", tint = Color.White)
                 }
             }
         },
@@ -103,8 +122,9 @@ fun FloatingBottomBar(
 
     LiquidBottomTabs(
         modifier = modifier
+            .fillMaxWidth(0.8f)
             .padding(bottom = 12.dp + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()),
-        selectedTabIndex = { primaryPagerState.selectedPage },
+        selectedTabIndex = primaryPagerState.selectedPage,
         onTabSelected = primaryPagerState::animateToPage,
         backdrop = backdrop,
         tabsCount = items.size,

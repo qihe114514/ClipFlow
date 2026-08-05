@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.AssistChip
-import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -27,6 +26,7 @@ import com.qihe.clipflow.ui.components.GlassCard
 import com.qihe.clipflow.ui.components.ParseInfoCard
 import com.qihe.clipflow.ui.parser.PlatformParseInputCard
 import com.qihe.clipflow.ui.component.liquid.PROGRESSIVE_TOPBAR_CONTENT_START_DP
+import com.qihe.clipflow.ui.component.LiquidButton
 
 @Composable
 fun BilibiliScreen(
@@ -108,7 +108,7 @@ fun BilibiliScreen(
                                     horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
                                     Text(quality.label)
-                                    Button(onClick = { viewModel.download(index) }) { Text("下载 MP4") }
+                                    LiquidButton(onClick = { viewModel.download(index) }) { Text("下载 MP4") }
                                 }
                             }
                         }

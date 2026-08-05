@@ -27,6 +27,13 @@ class PrimaryNavigationTest {
     }
 
     @Test
+    fun historyDestinationUsesTheRecordedPlatformRoute() {
+        assertEquals(Screen.Bilibili.route, historyPlatformRoute("bilibili"))
+        assertEquals(Screen.Douyin.route, historyPlatformRoute("douyin"))
+        assertEquals(Screen.Home.route, historyPlatformRoute("unknown"))
+    }
+
+    @Test
     fun persistedThreeTabOrderStillProducesAllFourTabs() {
         assertEquals(
             listOf("home", "douyin", "xiaohongshu", "bilibili"),

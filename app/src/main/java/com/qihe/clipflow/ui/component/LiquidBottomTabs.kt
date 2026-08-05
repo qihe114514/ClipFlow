@@ -61,7 +61,7 @@ internal fun indicatorValue(dampedValue: Float, tabsCount: Int): Float = dampedV
 
 @Composable
 fun LiquidBottomTabs(
-    selectedTabIndex: () -> Int,
+    selectedTabIndex: Int,
     onTabSelected: (index: Int) -> Unit,
     backdrop: Backdrop,
     tabsCount: Int,
@@ -91,11 +91,13 @@ fun LiquidBottomTabs(
         }
         val isLtr = LocalLayoutDirection.current == LayoutDirection.Ltr
         val animationScope = rememberCoroutineScope()
-        var currentIndex by remember(selectedTabIndex) { mutableIntStateOf(selectedTabIndex()) }
+        var currentIndex by remember {
+            mutableIntStateOf(selectedTabIndex.coerceIn(0, tabsCount - 1))
+        }
         val dampedDragAnimation = remember(animationScope) {
             DampedDragAnimation(
                 animationScope = animationScope,
-                initialValue = selectedTabIndex().toFloat(),
+                initialValue = selectedTabIndex.coerceIn(0, tabsCount - 1).toFloat(),
                 valueRange = 0f..(tabsCount - 1).toFloat(),
                 visibilityThreshold = 0.001f,
                 initialScale = 1f,
@@ -117,7 +119,7 @@ fun LiquidBottomTabs(
             )
         }
         LaunchedEffect(selectedTabIndex) {
-            snapshotFlow { selectedTabIndex() }.collectLatest { index -> currentIndex = index }
+            currentIndex = selectedTabIndex.coerceIn(0, tabsCount - 1)
         }
         LaunchedEffect(dampedDragAnimation) {
             snapshotFlow { currentIndex }.drop(1).collectLatest { index ->

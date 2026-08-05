@@ -16,7 +16,7 @@
 
 [下载最新版 APK](https://github.com/qihe114514/ClipFlow/releases/latest) · [查看所有版本](https://github.com/qihe114514/ClipFlow/releases)
 
-当前版本：**v3.4**（versionCode **62**）· 最低支持：**Android 10**
+当前版本：**v3.5**（versionCode **68**）· 最低支持：**Android 10**
 
 ## 主要功能
 

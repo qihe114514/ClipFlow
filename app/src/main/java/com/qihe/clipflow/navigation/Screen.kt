@@ -97,6 +97,24 @@ fun primaryPageIndex(route: String?, items: List<BottomNavItem>): Int {
     return items.indexOfFirst { it.route == route }.coerceAtLeast(0)
 }
 
+fun historyPlatformRoute(platform: String): String {
+    return when (platform) {
+        Screen.Douyin.route -> Screen.Douyin.route
+        Screen.Xiaohongshu.route -> Screen.Xiaohongshu.route
+        Screen.Bilibili.route -> Screen.Bilibili.route
+        else -> Screen.Home.route
+    }
+}
+
+fun historyDestinationRoute(platform: String, sourceUrl: String): String {
+    return when (historyPlatformRoute(platform)) {
+        Screen.Douyin.route -> Screen.Douyin.withSourceUrl(sourceUrl)
+        Screen.Xiaohongshu.route -> Screen.Xiaohongshu.withSourceUrl(sourceUrl)
+        Screen.Bilibili.route -> Screen.Bilibili.withSourceUrl(sourceUrl)
+        else -> Screen.Home.route
+    }
+}
+
 fun NavHostController.navigateToPrimary(route: String) {
     navigate(route) {
         popUpTo(graph.findStartDestination().id) { saveState = true }

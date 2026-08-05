@@ -20,9 +20,7 @@ import androidx.compose.material.icons.outlined.ContentPaste
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -38,6 +36,8 @@ import com.qihe.clipflow.ui.components.GlassButton
 import com.qihe.clipflow.ui.components.GlassCard
 import com.qihe.clipflow.ui.components.GlassTextField
 import com.qihe.clipflow.ui.components.ParseInfoCard
+import com.qihe.clipflow.ui.component.LiquidButton
+import com.qihe.clipflow.ui.component.LiquidButtonTint
 import com.qihe.clipflow.ui.component.liquid.PROGRESSIVE_TOPBAR_CONTENT_START_DP
 
 /** Shared parser-page layout. Platform screens only provide labels, color, and actions. */
@@ -158,17 +158,16 @@ fun PlatformParseInputCard(
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 val hasInput = inputUrl.isNotBlank()
-                FilledTonalIconButton(
+                LiquidButton(
                     onClick = { onClearOrPaste(hasInput) },
                     modifier = Modifier.size(44.dp),
-                    colors = IconButtonDefaults.filledTonalIconButtonColors(
-                        containerColor = accent.copy(alpha = 0.12f)
-                    )
+                    contentPadding = PaddingValues(0.dp),
+                    tint = LiquidButtonTint,
                 ) {
                     Icon(
                         imageVector = if (hasInput) Icons.Filled.Close else Icons.Outlined.ContentPaste,
                         contentDescription = if (hasInput) "清空" else "粘贴",
-                        tint = accent,
+                        tint = Color.White,
                         modifier = Modifier.size(20.dp)
                     )
                 }

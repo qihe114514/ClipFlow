@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -17,19 +18,15 @@ import androidx.compose.material.icons.outlined.AccountCircle
 import androidx.compose.material.icons.outlined.QrCode2
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.Sms
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
+import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -48,6 +45,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.compose.ui.window.Dialog
 import coil.compose.rememberAsyncImagePainter
 import com.qihe.clipflow.data.bilibili.BilibiliAccount
 import com.qihe.clipflow.data.bilibili.BilibiliLoginClient
@@ -60,6 +58,7 @@ import com.qihe.clipflow.data.bilibili.generateBilibiliQrBitmap
 import com.qihe.clipflow.data.bilibili.isBilibiliPhoneValid
 import com.qihe.clipflow.data.bilibili.isBilibiliSmsCodeValid
 import com.qihe.clipflow.data.bilibili.BilibiliApiClient
+import com.qihe.clipflow.ui.component.LiquidButton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -71,7 +70,11 @@ fun BilibiliAccountAction() {
     var showAccount by remember { mutableStateOf(false) }
     val account = BilibiliSessionStore.session()?.account
 
-    IconButton(onClick = { if (account == null) showLogin = true else showAccount = true }) {
+    LiquidButton(
+        onClick = { if (account == null) showLogin = true else showAccount = true },
+        modifier = Modifier.size(40.dp),
+        contentPadding = PaddingValues(0.dp),
+    ) {
         if (account?.avatar.isNullOrBlank()) {
             Icon(Icons.Outlined.AccountCircle, contentDescription = "Bilibili account")
         } else {
@@ -276,7 +279,7 @@ private fun BilibiliLoginDialog(onSuccess: () -> Unit, onDismiss: () -> Unit) {
                 }
                 Spacer(Modifier.weight(1f))
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                    TextButton(onClick = onDismiss) { Text("取消") }
+                    LiquidButton(onClick = onDismiss) { Text("取消") }
                 }
             }
         }
@@ -341,7 +344,11 @@ private fun PhoneLoginContent(
             modifier = Modifier.fillMaxWidth(),
             label = { Text("短信验证码") },
             trailingIcon = {
-                TextButton(onClick = onRequestSms, enabled = !isSendingSms && smsCountdown == 0) {
+                LiquidButton(
+                    onClick = onRequestSms,
+                    enabled = !isSendingSms && smsCountdown == 0,
+                    contentPadding = PaddingValues(horizontal = 8.dp),
+                ) {
                     Text(if (smsCountdown > 0) "重新获取 ${smsCountdown}s" else "获取验证码")
                 }
             },
@@ -349,7 +356,7 @@ private fun PhoneLoginContent(
             singleLine = true
         )
         errorMessage?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-        Button(
+        LiquidButton(
             onClick = onLogin,
             enabled = !isSendingSms && !isLoggingIn,
             modifier = Modifier.fillMaxWidth()
@@ -384,7 +391,7 @@ private fun QrLoginContent(
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Icon(Icons.Outlined.QrCode2, contentDescription = null)
             Text("使用 B 站手机客户端扫码登录", modifier = Modifier.weight(1f))
-            IconButton(onClick = onRefresh) {
+            LiquidButton(onClick = onRefresh, modifier = Modifier.size(40.dp), contentPadding = PaddingValues(0.dp)) {
                 Icon(Icons.Outlined.Refresh, contentDescription = "刷新二维码")
             }
         }
@@ -399,7 +406,7 @@ private fun QrLoginContent(
         }
         Text("${status} · ${remainingSeconds}s", style = MaterialTheme.typography.bodyMedium)
         errorMessage?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-        OutlinedButton(onClick = onRefresh) { Text("刷新二维码") }
+        LiquidButton(onClick = onRefresh) { Text("刷新二维码") }
     }
 }
 
@@ -409,20 +416,21 @@ private fun BilibiliAccountDialog(
     onDismiss: () -> Unit,
     onLogout: () -> Unit
 ) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(account.name) },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Dialog(onDismissRequest = onDismiss) {
+        Card(shape = MaterialTheme.shapes.extraLarge) {
+            Column(modifier = Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(account.name, style = MaterialTheme.typography.titleLarge)
                 Text("硬币 ${account.coins}")
                 Row(horizontalArrangement = Arrangement.spacedBy(20.dp)) {
                     Text("${account.following} 关注")
                     Text("${account.followers} 粉丝")
                 }
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                    LiquidButton(onClick = onLogout) { Text("退出登录") }
+                }
             }
-        },
-        confirmButton = { TextButton(onClick = onLogout) { Text("退出登录") } }
-    )
+        }
+    }
 }
 
 private suspend fun validateAndSave(cookie: String): Result<BilibiliAccount> = withContext(Dispatchers.IO) {

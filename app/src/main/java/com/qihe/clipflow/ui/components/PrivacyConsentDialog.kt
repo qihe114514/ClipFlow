@@ -15,6 +15,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.qihe.clipflow.ui.component.LiquidButton
 
 @Composable
 fun PrivacyConsentDialog(
@@ -89,7 +90,7 @@ fun PrivacyConsentDialog(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 if (viewOnly) {
-                    Button(
+                    LiquidButton(
                         onClick = { onDisagree?.invoke() },
                         modifier = Modifier.fillMaxWidth()
                     ) {
@@ -100,13 +101,13 @@ fun PrivacyConsentDialog(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        OutlinedButton(
+                        LiquidButton(
                             onClick = { onDisagree?.invoke() },
                             modifier = Modifier.weight(1f)
                         ) {
                             Text("不同意")
                         }
-                        Button(
+                        LiquidButton(
                             onClick = { onAgree?.invoke() },
                             modifier = Modifier.weight(1f)
                         ) {

@@ -28,12 +28,9 @@ import androidx.compose.material.icons.filled.ChatBubbleOutline
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.OpenInBrowser
 import androidx.compose.material.icons.filled.Share
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -49,6 +46,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.qihe.clipflow.data.api.model.ContentItem
@@ -56,6 +54,7 @@ import com.qihe.clipflow.data.api.model.DouyinStatistics
 import com.qihe.clipflow.ui.theme.ImageTypeBadge
 import com.qihe.clipflow.ui.theme.LiveTypeBadge
 import com.qihe.clipflow.ui.theme.VideoTypeBadge
+import com.qihe.clipflow.ui.component.LiquidButton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -93,18 +92,23 @@ fun ParseInfoCard(
         )
     }
     if (showSaveDialog) {
-        AlertDialog(
-            onDismissRequest = { showSaveDialog = false },
-            title = { Text("保存封面到相册？") },
-            text = { Text("是否将封面保存到系统相册？") },
-            confirmButton = {
-                TextButton(onClick = {
-                    showSaveDialog = false
-                    scope.launch { saveCoverToGallery(context, cover) }
-                }) { Text("好的喵") }
-            },
-            dismissButton = { TextButton(onClick = { showSaveDialog = false }) { Text("不好喵") } }
-        )
+        Dialog(onDismissRequest = { showSaveDialog = false }) {
+            androidx.compose.material3.Card(shape = MaterialTheme.shapes.extraLarge) {
+                Column(modifier = Modifier.padding(24.dp)) {
+                    Text("保存封面到相册？", style = MaterialTheme.typography.titleLarge)
+                    Spacer(Modifier.height(12.dp))
+                    Text("是否将封面保存到系统相册？")
+                    Spacer(Modifier.height(20.dp))
+                    Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {
+                        LiquidButton(onClick = { showSaveDialog = false }) { Text("不好喵") }
+                        LiquidButton(onClick = {
+                            showSaveDialog = false
+                            scope.launch { saveCoverToGallery(context, cover) }
+                        }) { Text("好的喵") }
+                    }
+                }
+            }
+        }
     }
 
     GlassCard(modifier = modifier) {
@@ -155,7 +159,7 @@ private fun ExpandableDescription(desc: String, isExpanded: Boolean, onExpandedC
             modifier = Modifier.weight(1f)
         )
         if (isOverflowed || isExpanded) {
-            TextButton(onClick = { onExpandedChange(!isExpanded) }, modifier = Modifier.widthIn(min = 48.dp), contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)) {
+            LiquidButton(onClick = { onExpandedChange(!isExpanded) }, modifier = Modifier.widthIn(min = 48.dp), contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)) {
                 Text(if (isExpanded) "收起" else "展开", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
             }
         }
@@ -188,9 +192,10 @@ private fun ParseAuthorRow(authorName: String, authorAvatar: String, contentType
         }
         if (shareUrl.isNotEmpty()) {
             Spacer(Modifier.weight(1f))
-            FilledTonalIconButton(
+            LiquidButton(
                 onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse(shareUrl))) },
-                modifier = Modifier.size(32.dp)
+                modifier = Modifier.size(32.dp),
+                contentPadding = PaddingValues(0.dp),
             ) {
                 Icon(Icons.Filled.OpenInBrowser, "打开原链接", modifier = Modifier.size(16.dp))
             }

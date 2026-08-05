@@ -26,10 +26,15 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.qihe.clipflow.data.preferences.AppPreferences
 import com.qihe.clipflow.navigation.Screen
+import com.qihe.clipflow.ui.component.LiquidSlider
 import com.qihe.clipflow.ui.components.GlassCard
+import com.qihe.clipflow.ui.component.LiquidButton
+import com.qihe.clipflow.ui.component.LocalLiquidBackdrop
 import com.qihe.clipflow.ui.component.liquid.PROGRESSIVE_TOPBAR_CONTENT_START_DP
+import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 data class SettingsUiState(
@@ -57,7 +62,10 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             launch { prefs.imageSavePath.collect { _uiState.value = _uiState.value.copy(imageSavePath = it) } }
             launch { prefs.audioSavePath.collect { _uiState.value = _uiState.value.copy(audioSavePath = it) } }
             launch { prefs.wallpaperUri.collect { _uiState.value = _uiState.value.copy(wallpaperUri = it) } }
-            launch { prefs.wallpaperOpacity.collect { _uiState.value = _uiState.value.copy(wallpaperOpacity = it) } }
+            launch {
+                val opacity = prefs.wallpaperOpacity.first()
+                _uiState.value = _uiState.value.copy(wallpaperOpacity = opacity)
+            }
             launch { prefs.wallpaperEnabled.collect { _uiState.value = _uiState.value.copy(wallpaperEnabled = it) } }
             launch { prefs.defaultPage.collect { _uiState.value = _uiState.value.copy(defaultPage = it) } }
             launch { prefs.bottomBarOrder.collect { _uiState.value = _uiState.value.copy(bottomBarOrder = it) } }
@@ -72,7 +80,11 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun resetImageSavePath() { viewModelScope.launch { prefs.setImageSavePath("") } }
     fun resetAudioSavePath() { viewModelScope.launch { prefs.setAudioSavePath("") } }
     fun setWallpaperUri(uri: String) { viewModelScope.launch { prefs.setWallpaperUri(uri) } }
-    fun setWallpaperOpacity(o: Float) { viewModelScope.launch { prefs.setWallpaperOpacity(o) } }
+    fun setWallpaperOpacity(o: Float) {
+        val opacity = o.coerceIn(10f, 100f)
+        _uiState.value = _uiState.value.copy(wallpaperOpacity = opacity)
+        viewModelScope.launch { prefs.setWallpaperOpacity(opacity) }
+    }
     fun setWallpaperEnabled(e: Boolean) { viewModelScope.launch { prefs.setWallpaperEnabled(e) } }
     fun setDefaultPage(page: String) { viewModelScope.launch { prefs.setDefaultPage(page) } }
     fun setBottomBarOrder(order: List<String>) { viewModelScope.launch { prefs.setBottomBarOrder(order) } }
@@ -201,10 +213,12 @@ fun SettingsScreen(
                     fontWeight = FontWeight.Medium
                 )
                 Spacer(Modifier.height(4.dp))
-                Slider(
-                    value = uiState.wallpaperOpacity,
+                LiquidSlider(
+                    value = { uiState.wallpaperOpacity },
                     onValueChange = { viewModel.setWallpaperOpacity(it) },
                     valueRange = 10f..100f,
+                    visibilityThreshold = 0.001f,
+                    backdrop = LocalLiquidBackdrop.current ?: rememberLayerBackdrop(),
                     modifier = Modifier.fillMaxWidth()
                 )
             }
@@ -236,16 +250,16 @@ fun SettingsScreen(
                         Text(label, style = MaterialTheme.typography.bodyMedium)
                         Spacer(Modifier.weight(1f))
                         if (index > 0) {
-                            IconButton(onClick = {
+                            LiquidButton(onClick = {
                                 val o = uiState.bottomBarOrder.toMutableList(); val t = o[index]; o[index] = o[index - 1]; o[index - 1] = t; viewModel.setBottomBarOrder(o)
-                            }, modifier = Modifier.size(32.dp)) {
+                            }, modifier = Modifier.size(32.dp), contentPadding = PaddingValues(0.dp)) {
                                 Icon(Icons.Filled.KeyboardArrowUp, "上移", Modifier.size(18.dp))
                             }
                         }
                         if (index < uiState.bottomBarOrder.size - 1) {
-                            IconButton(onClick = {
+                            LiquidButton(onClick = {
                                 val o = uiState.bottomBarOrder.toMutableList(); val t = o[index]; o[index] = o[index + 1]; o[index + 1] = t; viewModel.setBottomBarOrder(o)
-                            }, modifier = Modifier.size(32.dp)) {
+                            }, modifier = Modifier.size(32.dp), contentPadding = PaddingValues(0.dp)) {
                                 Icon(Icons.Filled.KeyboardArrowDown, "下移", Modifier.size(18.dp))
                             }
                         }
@@ -266,16 +280,17 @@ fun SettingsScreen(
                 Icon(Icons.Filled.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f))
             }
         }
-        TextButton(
+        LiquidButton(
             onClick = { viewModel.resetTutorial() },
             modifier = Modifier.fillMaxWidth(),
-            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
+            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
         ) {
             Text("重置新手教程", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f))
         }
         Spacer(Modifier.height(20.dp))
     }
 }
+
 
 @Composable
 fun SectionHeader(title: String) {
@@ -300,10 +315,21 @@ private fun PathRow(
             Text(label, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
             Text(path, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-        TextButton(onClick = onCustomize, contentPadding = PaddingValues(horizontal = 6.dp)) {
+        LiquidButton(
+            onClick = onCustomize,
+            modifier = Modifier.size(40.dp),
+            shape = { androidx.compose.foundation.shape.CircleShape },
+            contentPadding = PaddingValues(0.dp),
+        ) {
             Text("自定义", style = MaterialTheme.typography.labelSmall)
         }
-        TextButton(onClick = onReset, contentPadding = PaddingValues(horizontal = 6.dp)) {
+        Spacer(Modifier.width(8.dp))
+        LiquidButton(
+            onClick = onReset,
+            modifier = Modifier.size(40.dp),
+            shape = { androidx.compose.foundation.shape.CircleShape },
+            contentPadding = PaddingValues(0.dp),
+        ) {
             Text("默认", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error)
         }
     }
