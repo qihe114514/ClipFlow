@@ -1,11 +1,21 @@
 @file:Suppress("DEPRECATION")
 
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
     id("org.jetbrains.kotlin.kapt")
 }
+
+val localProperties = Properties().apply {
+    val file = rootProject.file("local.properties")
+    if (file.exists()) {
+        file.inputStream().use { load(it) }
+    }
+}
+val douyinApiKey = localProperties.getProperty("douyin.api.key", "")
 
 android {
     namespace = "com.qihe.clipflow"
@@ -15,8 +25,9 @@ android {
         applicationId = "com.qihe.clipflow"
         minSdk = 29
         targetSdk = 37
-        versionCode = 68
-        versionName = "3.5"
+        versionCode = 86
+        versionName = "3.6"
+        buildConfigField("String", "DOUYIN_API_KEY", "\"$douyinApiKey\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {

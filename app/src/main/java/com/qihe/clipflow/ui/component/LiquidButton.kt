@@ -19,6 +19,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.isSpecified
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastCoerceAtMost
 import androidx.compose.ui.util.lerp
@@ -49,10 +50,12 @@ fun LiquidButton(
     tint: Color = Color.Unspecified,
     surfaceColor: Color = Color.Unspecified,
     shape: () -> Shape = { Capsule() },
+    height: Dp = 48.dp,
     contentPadding: PaddingValues = PaddingValues(horizontal = 16.dp),
     content: @Composable RowScope.() -> Unit,
 ) {
     val backdrop = LocalLiquidBackdrop.current ?: rememberLayerBackdrop()
+    val buttonGlass = LocalGlassStyle.current.button
     val effectiveSurfaceColor = when {
         surfaceColor.isSpecified -> surfaceColor
         !tint.isSpecified -> LiquidButtonSurface
@@ -70,9 +73,14 @@ fun LiquidButton(
                 backdrop = backdrop,
                 shape = shape,
                 effects = {
-                    vibrancy()
-                    blur(2f.dp.toPx())
-                    lens(12f.dp.toPx(), 24f.dp.toPx())
+                    if (!buttonGlass.isOff) {
+                        vibrancy()
+                        blur(2f.dp.toPx())
+                        if (buttonGlass.extraBlur > 0f) {
+                            blur(buttonGlass.extraBlur.dp.toPx())
+                        }
+                        lens(buttonGlass.lensBlur.dp.toPx(), buttonGlass.refraction.dp.toPx())
+                    }
                 },
                 layerBlock = if (interactive) {
                     {
@@ -98,6 +106,7 @@ fun LiquidButton(
                     if (effectiveSurfaceColor.isSpecified) drawRect(effectiveSurfaceColor)
                 }
             )
+            .then(if (interactive) interactiveHighlight.modifier.then(interactiveHighlight.gestureModifier) else Modifier)
             .clickable(
                 enabled = enabled,
                 interactionSource = null,
@@ -105,8 +114,7 @@ fun LiquidButton(
                 role = Role.Button,
                 onClick = onClick,
             )
-            .then(if (interactive) interactiveHighlight.modifier.then(interactiveHighlight.gestureModifier) else Modifier)
-            .height(48.dp)
+            .height(height)
             .padding(contentPadding),
         horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
         verticalAlignment = Alignment.CenterVertically,

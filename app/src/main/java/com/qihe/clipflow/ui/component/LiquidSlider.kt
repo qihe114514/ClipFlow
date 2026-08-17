@@ -1,7 +1,8 @@
 package com.qihe.clipflow.ui.component
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
@@ -22,15 +23,19 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.changedToUpIgnoreConsumed
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastCoerceIn
+import androidx.compose.ui.util.fastFirstOrNull
 import androidx.compose.ui.util.fastRoundToInt
 import androidx.compose.ui.util.lerp
 import com.kyant.backdrop.Backdrop
@@ -77,15 +82,6 @@ fun LiquidSlider(
         val didDrag = remember { mutableStateOf(false) }
         val isDragging = remember { mutableStateOf(false) }
         val dragTarget = remember { mutableFloatStateOf(value()) }
-
-        fun valueAtPosition(x: Float): Float {
-            val fraction = (x / trackWidth.coerceAtLeast(1)).coerceIn(0f, 1f)
-            return if (isLtr) {
-                valueRange.start + fraction * (valueRange.endInclusive - valueRange.start)
-            } else {
-                valueRange.endInclusive - fraction * (valueRange.endInclusive - valueRange.start)
-            }
-        }
 
         lateinit var dampedDragAnimation: DampedDragAnimation
 
@@ -182,34 +178,53 @@ fun LiquidSlider(
                 .fillMaxWidth()
                 .height(48.dp)
                 .pointerInput(animationScope, trackWidth) {
-                    detectDragGestures(
-                        onDragStart = { position ->
-                            isDragging.value = true
-                            didDrag.value = true
-                            dampedDragAnimation.press()
-                            updateDragTarget(valueAtPosition(position.x))
-                        },
-                        onDragEnd = {
-                            onValueChange(dragTarget.floatValue)
-                            onValueChangeFinished()
-                            isDragging.value = false
-                            dampedDragAnimation.release()
-                        },
-                        onDragCancel = {
-                            onValueChangeFinished()
-                            isDragging.value = false
-                            dampedDragAnimation.release()
-                        },
-                    ) { change, dragAmount ->
-                        change.consume()
-                        val delta = (valueRange.endInclusive - valueRange.start) *
-                            (dragAmount.x / trackWidth)
-                        val nextValue = if (isLtr) {
-                            dragTarget.floatValue + delta
-                        } else {
-                            dragTarget.floatValue - delta
+                    val touchSlopPx = viewConfiguration.touchSlop
+                    awaitEachGesture {
+                        // 按下即消费并持续接管所有移动：外层滚动容器永远无法
+                        // 通过触摸 slop，拖动滑块时页面不会跟着上下滚动
+                        val down = awaitFirstDown(requireUnconsumed = false)
+                        down.consume()
+                        dampedDragAnimation.press()
+                        var pointer = down.id
+                        var accumulated = Offset.Zero
+                        var dragStarted = false
+                        while (true) {
+                            val event = awaitPointerEvent()
+                            val change = event.changes.fastFirstOrNull { it.id == pointer } ?: break
+                            if (change.changedToUpIgnoreConsumed()) break
+                            if (change.isConsumed) break
+                            // 先计算位移再消费事件：consume 之后 positionChange() 会返回 0，
+                            // 导致滑块拖动永远无法启动（同时保持对外层滚动容器的锁定）
+                            val dragAmount = change.positionChange()
+                            change.consume()
+                            accumulated += dragAmount
+                            if (!dragStarted) {
+                                // 累计位移超过触摸 slop 才进入拖动（轻点不改变值）
+                                if (kotlin.math.abs(accumulated.x) >= touchSlopPx ||
+                                    kotlin.math.abs(accumulated.y) >= touchSlopPx
+                                ) {
+                                    dragStarted = true
+                                    isDragging.value = true
+                                    didDrag.value = true
+                                }
+                            }
+                            if (dragStarted) {
+                                val delta = (valueRange.endInclusive - valueRange.start) *
+                                    (dragAmount.x / trackWidth)
+                                val nextValue = if (isLtr) {
+                                    dragTarget.floatValue + delta
+                                } else {
+                                    dragTarget.floatValue - delta
+                                }
+                                updateDragTarget(nextValue)
+                            }
+                            pointer = change.id
                         }
-                        updateDragTarget(nextValue)
+                        if (dragStarted) {
+                            onValueChangeFinished()
+                            isDragging.value = false
+                        }
+                        dampedDragAnimation.release()
                     }
                 }
         )
@@ -224,7 +239,6 @@ fun LiquidSlider(
                         trackWidth - size.width * 3f / 4f,
                     ) * if (isLtr) 1f else -1f
                 }
-                .then(dampedDragAnimation.modifier)
                 .drawBackdrop(
                     backdrop = rememberCombinedBackdrop(
                         backdrop,

@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.qihe.clipflow.navigation.Screen
 import com.qihe.clipflow.ui.components.GlassCard
+import com.qihe.clipflow.ui.components.withTitleShadow
 import com.qihe.clipflow.ui.component.liquid.PROGRESSIVE_TOPBAR_CONTENT_START_DP
 import com.qihe.clipflow.ui.theme.DouyinAccent
 import com.qihe.clipflow.ui.theme.XiaohongshuAccent
@@ -57,7 +58,7 @@ fun HomeScreen(navController: NavHostController) {
 
         Text(
             text = "ClipFlow",
-            style = MaterialTheme.typography.displayMedium,
+            style = MaterialTheme.typography.displayMedium.withTitleShadow(),
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface
         )
@@ -170,7 +171,7 @@ fun HomeScreen(navController: NavHostController) {
         // ========== 特色标签 ==========
         Text(
             text = "核心特性",
-            style = MaterialTheme.typography.titleMedium,
+            style = MaterialTheme.typography.titleMedium.withTitleShadow(),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.fillMaxWidth()
         )

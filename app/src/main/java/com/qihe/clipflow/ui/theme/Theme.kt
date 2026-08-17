@@ -16,6 +16,26 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
+enum class ThemeMode(val key: String, val label: String) {
+    SYSTEM("system", "跟随系统"),
+    LIGHT("light", "浅色"),
+    DARK("dark", "深色");
+
+    companion object {
+        fun fromKey(key: String?): ThemeMode =
+            entries.firstOrNull { it.key == key } ?: SYSTEM
+    }
+}
+
+fun resolveDarkTheme(mode: ThemeMode, systemDarkTheme: Boolean): Boolean = when (mode) {
+    ThemeMode.SYSTEM -> systemDarkTheme
+    ThemeMode.LIGHT -> false
+    ThemeMode.DARK -> true
+}
+
+fun shouldUseDynamicColor(dynamicColor: Boolean, sdkInt: Int): Boolean =
+    dynamicColor && sdkInt >= Build.VERSION_CODES.S
+
 private val LightColorScheme = lightColorScheme(
     primary = BrandBlue,
     onPrimary = Color.White,
@@ -61,7 +81,7 @@ fun ClipFlowTheme(
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
+        shouldUseDynamicColor(dynamicColor, Build.VERSION.SDK_INT) -> {
             val context = LocalContext.current
             if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
         }

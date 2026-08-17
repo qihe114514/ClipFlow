@@ -27,6 +27,10 @@ internal class OneShotSourceUrl {
         consumedUrl = url
         return url
     }
+
+    fun reset() {
+        consumedUrl = null
+    }
 }
 
 data class ParsePageUiState(
@@ -88,6 +92,10 @@ open class PlatformParseViewModel(
 
     fun consumeSourceUrl(sourceUrl: String?): String? {
         return sourceUrlGate.consume(sourceUrl)
+    }
+
+    fun resetSourceGate() {
+        sourceUrlGate.reset()
     }
 
     fun clearUrl() {

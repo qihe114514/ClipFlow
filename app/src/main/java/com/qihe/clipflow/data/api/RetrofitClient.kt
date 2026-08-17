@@ -1,6 +1,7 @@
 package com.qihe.clipflow.data.api
 
 import com.google.gson.GsonBuilder
+import com.qihe.clipflow.BuildConfig
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
@@ -10,11 +11,13 @@ import java.util.concurrent.TimeUnit
 object RetrofitClient {
 
     private const val BASE_URL = "https://api.bugpk.com/"
+    private const val DOUYIN_PRIMARY_BASE_URL = "https://api-new.ifphp.com/"
     private const val BACKUP_BASE_URL = "https://douyin.wtf/"
 
     private val okHttpClient: OkHttpClient by lazy {
         val logging = HttpLoggingInterceptor().apply {
             level = HttpLoggingInterceptor.Level.BODY
+            redactHeader("X-API-Key")
         }
 
         OkHttpClient.Builder()
@@ -45,6 +48,23 @@ object RetrofitClient {
 
     val apiService: ApiService by lazy {
         retrofit(BASE_URL).create(ApiService::class.java)
+    }
+
+    val douyinPrimaryApiService: DouyinPrimaryApiService by lazy {
+        val client = okHttpClient.newBuilder()
+            .addInterceptor { chain ->
+                val request = chain.request().newBuilder()
+                    .addHeader("X-API-Key", BuildConfig.DOUYIN_API_KEY)
+                    .build()
+                chain.proceed(request)
+            }
+            .build()
+        Retrofit.Builder()
+            .baseUrl(DOUYIN_PRIMARY_BASE_URL)
+            .client(client)
+            .addConverterFactory(GsonConverterFactory.create(gson))
+            .build()
+            .create(DouyinPrimaryApiService::class.java)
     }
 
     val douyinBackupApiService: DouyinBackupApiService by lazy {

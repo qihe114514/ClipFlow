@@ -24,17 +24,24 @@ class AppPreferences(private val context: Context) {
         // 底栏按钮排序: JSON 数组如 ["home","douyin","xiaohongshu"]
         val KEY_BOTTOM_BAR_ORDER = stringPreferencesKey("bottom_bar_order")
 
-        // 背景壁纸 URI
+        // 背景壁纸 URI（空 = 使用内置默认壁纸）
         val KEY_WALLPAPER_URI = stringPreferencesKey("wallpaper_uri")
 
-        // 背景壁纸模糊度 0-100
-        val KEY_WALLPAPER_BLUR = floatPreferencesKey("wallpaper_blur")
+        // 外观模式: system / light / dark；动态配色默认开启
+        val KEY_THEME_MODE = stringPreferencesKey("theme_mode")
+        val KEY_DYNAMIC_COLOR = booleanPreferencesKey("dynamic_color")
 
-        // 背景壁纸透明度 10-100
-        val KEY_WALLPAPER_OPACITY = floatPreferencesKey("wallpaper_opacity")
+        // 壁纸档位预设: off / low / medium / high；对比度: low / default / high
+        val KEY_WALLPAPER_OPACITY_PRESET = stringPreferencesKey("wallpaper_opacity_preset")
+        val KEY_WALLPAPER_CONTRAST_PRESET = stringPreferencesKey("wallpaper_contrast_preset")
 
-        // 是否启用壁纸（关闭则完全不显示）
-        val KEY_WALLPAPER_ENABLED = booleanPreferencesKey("wallpaper_enabled")
+        // 卡片/按钮玻璃效果档位预设: off / low / medium / high
+        val KEY_GLASS_CARD_PRESET = stringPreferencesKey("glass_card_preset")
+        val KEY_GLASS_BUTTON_PRESET = stringPreferencesKey("glass_button_preset")
+
+        // 卡片/按钮额外模糊度档位预设: off / low / medium / high
+        val KEY_GLASS_CARD_BLUR_PRESET = stringPreferencesKey("glass_card_blur_preset")
+        val KEY_GLASS_BUTTON_BLUR_PRESET = stringPreferencesKey("glass_button_blur_preset")
 
         // 用户是否已同意隐私政策
         val KEY_PRIVACY_AGREED = booleanPreferencesKey("privacy_agreed")
@@ -79,16 +86,36 @@ class AppPreferences(private val context: Context) {
         prefs[KEY_WALLPAPER_URI] ?: ""
     }
 
-    val wallpaperBlur: Flow<Float> = context.dataStore.data.map { prefs ->
-        prefs[KEY_WALLPAPER_BLUR] ?: 50f
+    val themeMode: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[KEY_THEME_MODE] ?: "system"
     }
 
-    val wallpaperOpacity: Flow<Float> = context.dataStore.data.map { prefs ->
-        prefs[KEY_WALLPAPER_OPACITY] ?: 75f
+    val dynamicColor: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[KEY_DYNAMIC_COLOR] ?: true
     }
 
-    val wallpaperEnabled: Flow<Boolean> = context.dataStore.data.map { prefs ->
-        prefs[KEY_WALLPAPER_ENABLED] ?: true
+    val wallpaperOpacityPreset: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[KEY_WALLPAPER_OPACITY_PRESET] ?: "medium"
+    }
+
+    val wallpaperContrastPreset: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[KEY_WALLPAPER_CONTRAST_PRESET] ?: "default"
+    }
+
+    val glassCardPreset: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[KEY_GLASS_CARD_PRESET] ?: "medium"
+    }
+
+    val glassButtonPreset: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[KEY_GLASS_BUTTON_PRESET] ?: "medium"
+    }
+
+    val glassCardBlurPreset: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[KEY_GLASS_CARD_BLUR_PRESET] ?: "medium"
+    }
+
+    val glassButtonBlurPreset: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[KEY_GLASS_BUTTON_BLUR_PRESET] ?: "low"
     }
 
     val privacyAgreed: Flow<Boolean> = context.dataStore.data.map { prefs ->
@@ -144,21 +171,51 @@ class AppPreferences(private val context: Context) {
         }
     }
 
-    suspend fun setWallpaperBlur(blur: Float) {
+    suspend fun setThemeMode(mode: String) {
         context.dataStore.edit { prefs ->
-            prefs[KEY_WALLPAPER_BLUR] = blur
+            prefs[KEY_THEME_MODE] = mode
         }
     }
 
-    suspend fun setWallpaperOpacity(opacity: Float) {
+    suspend fun setDynamicColor(enabled: Boolean) {
         context.dataStore.edit { prefs ->
-            prefs[KEY_WALLPAPER_OPACITY] = opacity
+            prefs[KEY_DYNAMIC_COLOR] = enabled
         }
     }
 
-    suspend fun setWallpaperEnabled(enabled: Boolean) {
+    suspend fun setWallpaperOpacityPreset(preset: String) {
         context.dataStore.edit { prefs ->
-            prefs[KEY_WALLPAPER_ENABLED] = enabled
+            prefs[KEY_WALLPAPER_OPACITY_PRESET] = preset
+        }
+    }
+
+    suspend fun setWallpaperContrastPreset(preset: String) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_WALLPAPER_CONTRAST_PRESET] = preset
+        }
+    }
+
+    suspend fun setGlassCardPreset(preset: String) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_GLASS_CARD_PRESET] = preset
+        }
+    }
+
+    suspend fun setGlassButtonPreset(preset: String) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_GLASS_BUTTON_PRESET] = preset
+        }
+    }
+
+    suspend fun setGlassCardBlurPreset(preset: String) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_GLASS_CARD_BLUR_PRESET] = preset
+        }
+    }
+
+    suspend fun setGlassButtonBlurPreset(preset: String) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_GLASS_BUTTON_BLUR_PRESET] = preset
         }
     }
 

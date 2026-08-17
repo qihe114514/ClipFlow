@@ -21,6 +21,9 @@ suspend fun PointerInputScope.inspectDragGestures(
     awaitEachGesture {
         val initialDown = awaitFirstDown(false, PointerEventPass.Initial)
         val down = awaitFirstDown(false)
+        // 消费按下事件：手指按住控件时，外层垂直滚动容器不再响应，
+        // 避免拖动/按压控件时页面被带着滚动（同 Material3 Slider 的做法）。
+        down.consume()
 
         onDragStart(down)
         onDrag(initialDown, Offset.Zero)

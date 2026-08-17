@@ -2,7 +2,6 @@ package com.qihe.clipflow.navigation
 
 import androidx.compose.animation.core.EaseInOut
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -28,27 +27,33 @@ class PrimaryPagerState(
         private set
 
     private var navigationJob: Job? = null
+    private var pendingPage: Int? = null
 
     fun animateToPage(targetIndex: Int) {
-        if (targetIndex == selectedPage) return
+        if (targetIndex == selectedPage && pagerState.currentPage == targetIndex) return
 
         navigationJob?.cancel()
+        pendingPage = null
 
         selectedPage = targetIndex
-        isNavigating = true
 
         val distance = abs(targetIndex - pagerState.currentPage).coerceAtLeast(2)
         val duration = 100 * distance + 100
         val pageSize = pagerState.layoutInfo.pageSize + pagerState.layoutInfo.pageSpacing
-        val currentDistanceInPages =
-            targetIndex - pagerState.currentPage - pagerState.currentPageOffsetFraction
-        val scrollPixels = currentDistanceInPages * pageSize
+        if (pageSize <= 0) {
+            pendingPage = targetIndex
+            pagerState.requestScrollToPage(targetIndex)
+            isNavigating = false
+            return
+        }
+
+        isNavigating = true
 
         navigationJob = coroutineScope.launch {
             val myJob = coroutineContext.job
             try {
-                pagerState.animateScrollBy(
-                    value = scrollPixels,
+                pagerState.animateScrollToPage(
+                    page = targetIndex,
                     animationSpec = tween(easing = EaseInOut, durationMillis = duration),
                 )
             } finally {
@@ -56,6 +61,8 @@ class PrimaryPagerState(
                     isNavigating = false
                     if (pagerState.currentPage != targetIndex) {
                         selectedPage = pagerState.currentPage
+                    } else {
+                        pendingPage = null
                     }
                 }
             }
@@ -63,6 +70,13 @@ class PrimaryPagerState(
     }
 
     fun syncPage() {
+        pendingPage?.let { targetPage ->
+            if (pagerState.currentPage == targetPage) {
+                pendingPage = null
+            } else {
+                return
+            }
+        }
         if (!isNavigating && selectedPage != pagerState.currentPage) {
             selectedPage = pagerState.currentPage
         }

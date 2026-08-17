@@ -28,4 +28,15 @@ class OneShotSourceUrlTest {
 
         assertEquals("https://example.test/two", gate.consume("https://example.test/two"))
     }
+
+    @Test
+    fun resetAllowsSameSourceToBeConsumedAgain() {
+        val gate = OneShotSourceUrl()
+        assertEquals("https://example.test/video", gate.consume("https://example.test/video"))
+        assertNull(gate.consume("https://example.test/video"))
+
+        gate.reset()
+
+        assertEquals("https://example.test/video", gate.consume("https://example.test/video"))
+    }
 }

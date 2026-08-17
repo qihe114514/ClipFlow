@@ -1,7 +1,7 @@
 package com.qihe.clipflow.data.repository
 
-import com.qihe.clipflow.data.api.ApiService
 import com.qihe.clipflow.data.api.DouyinBackupApiService
+import com.qihe.clipflow.data.api.DouyinPrimaryApiService
 import com.qihe.clipflow.data.api.model.ContentType
 import com.qihe.clipflow.data.api.model.DouyinBackupData
 import com.qihe.clipflow.data.api.model.DouyinBackupImageData
@@ -18,10 +18,9 @@ import org.junit.Test
 class DouyinPlatformParserTest {
 
     @Test
-    fun `primary route keeps get then post fallback`() = runBlocking {
+    fun `primary route requests the gateway once`() = runBlocking {
         val primary = FakePrimaryApi(
-            getResponse = DouyinResponse(500, "GET failed"),
-            postResponse = DouyinResponse(
+            response = DouyinResponse(
                 200,
                 "OK",
                 DouyinData(type = "video", url = "https://primary.fixture/video.mp4")
@@ -33,8 +32,7 @@ class DouyinPlatformParserTest {
             .parse("https://v.douyin.com/fixture")
 
         assertEquals("https://primary.fixture/video.mp4", result.getOrThrow().items.single().url)
-        assertEquals(1, primary.getCalls)
-        assertEquals(1, primary.postCalls)
+        assertEquals(1, primary.calls)
         assertEquals(0, backup.calls)
     }
 
@@ -60,8 +58,7 @@ class DouyinPlatformParserTest {
 
         assertEquals("https://backup.fixture/high.mp4", result.getOrThrow().items.single().url)
         assertEquals(ContentType.VIDEO, result.getOrThrow().items.single().type)
-        assertEquals(0, primary.getCalls)
-        assertEquals(0, primary.postCalls)
+        assertEquals(0, primary.calls)
         assertEquals(1, backup.calls)
     }
 
@@ -158,25 +155,13 @@ class DouyinPlatformParserTest {
     }
 
     private class FakePrimaryApi(
-        private val getResponse: DouyinResponse = DouyinResponse(500, "GET failed"),
-        private val postResponse: DouyinResponse = DouyinResponse(500, "POST failed")
-    ) : ApiService {
-        var getCalls = 0
-        var postCalls = 0
+        private val response: DouyinResponse = DouyinResponse(500, "gateway failed")
+    ) : DouyinPrimaryApiService {
+        var calls = 0
 
-        override suspend fun parseDouyinGet(url: String): DouyinResponse {
-            getCalls++
-            return getResponse
-        }
-
-        override suspend fun parseDouyinPost(url: String): DouyinResponse {
-            postCalls++
-            return postResponse
-        }
-
-        override suspend fun parseXiaohongshu(url: String): XiaohongshuResponse {
-            assertTrue("Xiaohongshu should not be called", false)
-            return XiaohongshuResponse(500, "unexpected")
+        override suspend fun parseVideo(url: String): DouyinResponse {
+            calls++
+            return response
         }
     }
 

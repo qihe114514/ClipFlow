@@ -53,4 +53,36 @@ class PrimaryNavigationTest {
         assertFalse(isSecondaryRoute(Screen.Douyin.route))
         assertFalse(isSecondaryRoute(Screen.Bilibili.route))
     }
+
+    @Test
+    fun historyRequestsUseFreshPrimaryNavigationState() {
+        val bilibili = primaryNavigationOptions(
+            "bilibili?sourceUrl=https%3A%2F%2Fwww.bilibili.com%2Fvideo%2FBV1abc"
+        )
+        val douyin = primaryNavigationOptions(
+            "douyin?sourceUrl=https%3A%2F%2Fwww.douyin.com%2Fvideo%2F123"
+        )
+
+        assertEquals(
+            PrimaryNavigationOptions(
+                saveState = false,
+                launchSingleTop = false,
+                restoreState = false,
+            ),
+            bilibili,
+        )
+        assertEquals(bilibili, douyin)
+    }
+
+    @Test
+    fun tabRequestsKeepStateRestoration() {
+        assertEquals(
+            PrimaryNavigationOptions(
+                saveState = true,
+                launchSingleTop = true,
+                restoreState = true,
+            ),
+            primaryNavigationOptions(Screen.Douyin.route),
+        )
+    }
 }

@@ -28,7 +28,9 @@ import com.qihe.clipflow.data.preferences.AppPreferences
 import com.qihe.clipflow.navigation.Screen
 import com.qihe.clipflow.ui.component.liquid.PROGRESSIVE_TOPBAR_CONTENT_START_DP
 import com.qihe.clipflow.ui.components.GlassCard
+import com.qihe.clipflow.ui.components.withTitleShadow
 import com.qihe.clipflow.ui.component.LiquidButton
+import com.qihe.clipflow.ui.component.secondaryPageEntrance
 import com.qihe.clipflow.ui.components.PrivacyConsentDialog
 import com.qihe.clipflow.util.UpdateManager
 import kotlinx.coroutines.launch
@@ -69,7 +71,7 @@ fun AboutScreen(navController: NavHostController) {
 
         Text(
             text = "ClipFlow",
-            style = MaterialTheme.typography.displayMedium,
+            style = MaterialTheme.typography.displayMedium.withTitleShadow(),
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface
         )
@@ -93,7 +95,7 @@ fun AboutScreen(navController: NavHostController) {
         Spacer(Modifier.height(40.dp))
 
         // ========== 基本信息 ==========
-        GlassCard(modifier = Modifier.fillMaxWidth()) {
+        GlassCard(modifier = Modifier.fillMaxWidth().secondaryPageEntrance(0)) {
             Column {
                 AboutInfoRow(label = "应用名称", value = "ClipFlow")
                 HorizontalDivider(
@@ -126,7 +128,7 @@ fun AboutScreen(navController: NavHostController) {
                 .padding(bottom = 8.dp)
         )
 
-        GlassCard(modifier = Modifier.fillMaxWidth()) {
+        GlassCard(modifier = Modifier.fillMaxWidth().secondaryPageEntrance(1)) {
             Column {
                 AboutInfoRow(label = "开发者", value = "其核")
                 HorizontalDivider(
@@ -154,7 +156,7 @@ fun AboutScreen(navController: NavHostController) {
                 .padding(bottom = 8.dp)
         )
 
-        GlassCard(modifier = Modifier.fillMaxWidth()) {
+        GlassCard(modifier = Modifier.fillMaxWidth().secondaryPageEntrance(2)) {
             Column {
                 // B站
                 ExternalLinkRow(
@@ -195,7 +197,7 @@ fun AboutScreen(navController: NavHostController) {
                 .padding(bottom = 8.dp)
         )
 
-        GlassCard(modifier = Modifier.fillMaxWidth()) {
+        GlassCard(modifier = Modifier.fillMaxWidth().secondaryPageEntrance(3)) {
             Column {
                 // 当前版本 + 手动检查
                 Row(
@@ -375,7 +377,7 @@ fun AboutScreen(navController: NavHostController) {
         )
 
         GlassCard(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().secondaryPageEntrance(4),
             onClick = { navController.navigate(Screen.OpenSource.route) }
         ) {
             Row(
@@ -424,7 +426,7 @@ fun AboutScreen(navController: NavHostController) {
                 .padding(bottom = 8.dp)
         )
 
-        GlassCard(modifier = Modifier.fillMaxWidth()) {
+        GlassCard(modifier = Modifier.fillMaxWidth().secondaryPageEntrance(5)) {
             Column {
                 // 查看隐私政策
                 Row(

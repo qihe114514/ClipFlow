@@ -1,6 +1,7 @@
 package com.qihe.clipflow.ui.history
 
 import android.net.Uri
+import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
@@ -27,6 +28,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
@@ -39,9 +41,14 @@ import com.qihe.clipflow.ui.components.GlassCard
 import com.qihe.clipflow.ui.components.GlassTextField
 import com.qihe.clipflow.ui.components.TypeBadge
 import com.qihe.clipflow.ui.component.LiquidButton
+import com.qihe.clipflow.ui.component.SecondaryPageSection
+import com.qihe.clipflow.ui.component.secondaryPageEntrance
 import com.qihe.clipflow.ui.component.liquid.PROGRESSIVE_TOPBAR_CONTENT_START_DP
+import com.qihe.clipflow.ui.douyin.DouyinViewModel
+import com.qihe.clipflow.ui.parser.PlatformParseViewModel
 import com.qihe.clipflow.ui.theme.DouyinAccent
 import com.qihe.clipflow.ui.theme.XiaohongshuAccent
+import com.qihe.clipflow.ui.xiaohongshu.XiaohongshuViewModel
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -82,6 +89,7 @@ fun HistoryScreen(
         }
     }
 
+    SecondaryPageSection(index = 0) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -208,6 +216,7 @@ fun HistoryScreen(
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 val groupedItems = uiState.items.groupBy { formatDateHeader(it.timestamp) }
+                var animationIndex = 1
                 groupedItems.forEach { (dateHeader, items) ->
                     item(key = "header_$dateHeader") {
                         Text(
@@ -218,6 +227,7 @@ fun HistoryScreen(
                         )
                     }
                     items(items = items, key = { it.id }) { item ->
+                        val entranceIndex = animationIndex++.coerceAtMost(5)
                         HistoryItemCard(
                             item = item,
                             isSelectionMode = uiState.isSelectionMode,
@@ -227,6 +237,18 @@ fun HistoryScreen(
                                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                     viewModel.toggleItemSelection(item.id)
                                 } else {
+                                    // 重置目标平台解析页的一次性链接门控，确保用户主动点击的历史记录能再次触发解析
+                                    val activity = context as? ComponentActivity
+                                    val targetViewModel: PlatformParseViewModel? = when (item.platform) {
+                                        "douyin" -> activity?.let {
+                                            ViewModelProvider(it)[DouyinViewModel::class.java]
+                                        }
+                                        "xiaohongshu" -> activity?.let {
+                                            ViewModelProvider(it)[XiaohongshuViewModel::class.java]
+                                        }
+                                        else -> null
+                                    }
+                                    targetViewModel?.resetSourceGate()
                                     navController.navigateToPrimary(
                                         historyDestinationRoute(item.platform, item.url)
                                     )
@@ -238,7 +260,8 @@ fun HistoryScreen(
                                     viewModel.toggleSelectionMode()
                                     viewModel.toggleItemSelection(item.id)
                                 }
-                            }
+                            },
+                            modifier = Modifier.secondaryPageEntrance(entranceIndex),
                         )
                     }
                 }
@@ -247,6 +270,7 @@ fun HistoryScreen(
 
         Spacer(Modifier.height(8.dp))
         SnackbarHost(hostState = snackbarHostState)
+    }
     }
 
     // ========== 删除确认弹窗 ==========

@@ -34,6 +34,7 @@ import com.qihe.clipflow.ui.bilibili.BilibiliAccountAction
 import com.qihe.clipflow.ui.component.LiquidBottomTab
 import com.qihe.clipflow.ui.component.LiquidBottomTabs
 import com.qihe.clipflow.ui.component.LiquidButton
+import com.qihe.clipflow.ui.components.withTitleShadow
 import com.kyant.backdrop.Backdrop
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -46,6 +47,7 @@ fun ClipFlowTopBar(
     val isDetailPage = currentRoute in setOf(
         Screen.History.route,
         Screen.Settings.route,
+        Screen.Personalization.route,
         Screen.About.route,
         Screen.OpenSource.route,
     )
@@ -70,11 +72,12 @@ fun ClipFlowTopBar(
                     Screen.Xiaohongshu.route -> "小红书解析"
                     Screen.History.route -> "解析历史"
                     Screen.Settings.route -> "设置"
+                    Screen.Personalization.route -> "个性化"
                     Screen.About.route -> "关于"
                     Screen.OpenSource.route -> "开源与须知"
                     else -> "ClipFlow"
                 },
-                style = MaterialTheme.typography.titleLarge
+                style = MaterialTheme.typography.titleLarge.withTitleShadow()
             )
         },
         actions = {

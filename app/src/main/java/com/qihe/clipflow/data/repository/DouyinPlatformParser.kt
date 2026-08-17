@@ -1,7 +1,7 @@
 package com.qihe.clipflow.data.repository
 
-import com.qihe.clipflow.data.api.ApiService
 import com.qihe.clipflow.data.api.DouyinBackupApiService
+import com.qihe.clipflow.data.api.DouyinPrimaryApiService
 import com.qihe.clipflow.data.api.RetrofitClient
 import com.qihe.clipflow.data.api.model.ContentItem
 import com.qihe.clipflow.data.api.model.ContentType
@@ -10,7 +10,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 class DouyinPlatformParser(
-    private val api: ApiService,
+    private val primaryApi: DouyinPrimaryApiService,
     private val backupApi: DouyinBackupApiService = RetrofitClient.douyinBackupApiService
 ) : PlatformParser {
 
@@ -46,10 +46,7 @@ class DouyinPlatformParser(
 
         return withContext(Dispatchers.IO) {
             try {
-                var response = api.parseDouyinGet(normalizedInput)
-                if (response.code != 200) {
-                    response = api.parseDouyinPost(normalizedInput)
-                }
+                val response = primaryApi.parseVideo(normalizedInput)
 
                 val data = response.data
                 if (response.code != 200 || data == null) {

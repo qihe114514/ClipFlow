@@ -4,7 +4,6 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -13,84 +12,96 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.qihe.clipflow.ui.component.LiquidButton
+import com.qihe.clipflow.ui.component.LocalGlassStyle
+import com.qihe.clipflow.ui.component.LocalLiquidBackdrop
+import com.kyant.backdrop.backdrops.rememberLayerBackdrop
+import com.kyant.backdrop.drawBackdrop
+import com.kyant.backdrop.effects.blur
+import com.kyant.backdrop.effects.colorControls
+import com.kyant.backdrop.effects.lens
+import com.kyant.shapes.RoundedRectangle
 
 internal val LocalWallpaperEnabled = staticCompositionLocalOf { true }
 
+fun TextStyle.withTitleShadow(): TextStyle = copy(
+    shadow = Shadow(
+        color = Color.Black.copy(alpha = 0.48f),
+        offset = Offset(0f, 1f),
+        blurRadius = 3f,
+    )
+)
+
 /**
- * 玻璃拟态卡片 — 半透明背景透过全局模糊壁纸，形成毛玻璃
+ * 玻璃拟态卡片 — 与 AndroidLiquidGlass 的 ScrollContainer 卡片一致：
+ * 32dp 大圆角，vibrancy + lens 对背后场景做实时毛玻璃折射
  */
 @Composable
 fun GlassCard(
     modifier: Modifier = Modifier,
     onClick: (() -> Unit)? = null,
-    cornerRadius: Dp = 20.dp,
-    borderWidth: Dp = 0.5.dp,
+    cornerRadius: Dp = 32.dp,
     content: @Composable ColumnScope.() -> Unit
 ) {
-    val isDark = isSystemInDarkTheme()
-    val hasWallpaper = LocalWallpaperEnabled.current
-    val surfaceColor = when {
-        !hasWallpaper && isDark -> Color.Black.copy(alpha = 0.48f)
-        !hasWallpaper -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.52f)
-        isDark -> Color.Black.copy(alpha = 0.35f)
-        else -> Color.White.copy(alpha = 0.32f)
-    }
-    val borderColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.15f)
-    val noWallpaperBorderColor = Color.Gray.copy(alpha = 0.5f)
-
-    Card(
-        modifier = modifier
-            .clip(RoundedCornerShape(cornerRadius))
-            .then(
-                if (onClick != null) Modifier.clickable(onClick = onClick)
-                else Modifier
-            )
-            .then(
-                if (!hasWallpaper) {
-                    Modifier.drawWithContent {
-                        drawContent()
-                        drawRoundRect(
-                            color = noWallpaperBorderColor,
-                            cornerRadius = CornerRadius(cornerRadius.toPx()),
-                            style = Stroke(
-                                width = 1.dp.toPx(),
-                                pathEffect = PathEffect.dashPathEffect(
-                                    intervals = floatArrayOf(8.dp.toPx(), 5.dp.toPx()),
-                                    phase = 0f,
-                                ),
-                            ),
+    val backdrop = LocalLiquidBackdrop.current ?: rememberLayerBackdrop()
+    val glassStyle = LocalGlassStyle.current
+    val glass = glassStyle.card
+    val shape = RoundedCornerShape(cornerRadius)
+    val density = LocalDensity.current
+    val isDarkSurface = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+    val readabilityScrim = if (LocalWallpaperEnabled.current) {
+        if (isDarkSurface) Color.Black.copy(alpha = 0.20f) else Color.White.copy(alpha = 0.28f)
+    } else Color.Transparent
+    val offSurfaceColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
+    Column(
+            modifier = modifier
+                .graphicsLayer {
+                    shadowElevation = with(density) { 3.dp.toPx() }
+                    this.shape = shape
+                    clip = false
+                }
+                .then(
+                    if (glass.isOff) {
+                        // 关闭档：无玻璃效果，用半透明表面色兜底保证可读性
+                        Modifier.background(offSurfaceColor, shape)
+                    } else {
+                        Modifier.drawBackdrop(
+                            backdrop = backdrop,
+                            shape = { RoundedRectangle(cornerRadius) },
+                            effects = {
+                                colorControls(
+                                    contrast = glassStyle.contrast,
+                                    saturation = 1.5f,
+                                )
+                                if (glass.extraBlur > 0f) {
+                                    blur(glass.extraBlur.dp.toPx())
+                                }
+                                lens(glass.lensBlur.dp.toPx(), glass.refraction.dp.toPx())
+                            },
                         )
                     }
-                } else {
-                    Modifier
-                }
-            ),
-        shape = RoundedCornerShape(cornerRadius),
-        colors = CardDefaults.cardColors(containerColor = surfaceColor),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        border = if (hasWallpaper) {
-            androidx.compose.foundation.BorderStroke(borderWidth, borderColor)
-        } else {
-            null
-        },
-    ) {
-        Column(
-            modifier = Modifier.padding(20.dp),
-            content = content
-        )
-    }
+                )
+                .background(readabilityScrim, shape)
+                .clip(shape)
+                .then(
+                    if (onClick != null) Modifier.clickable(onClick = onClick)
+                    else Modifier
+                )
+                .padding(20.dp),
+                content = content
+    )
 }
-
 /**
  * 玻璃拟态输入框
  */
@@ -103,15 +114,30 @@ fun GlassTextField(
     readOnly: Boolean = false,
     singleLine: Boolean = true
 ) {
+    val backdrop = LocalLiquidBackdrop.current ?: rememberLayerBackdrop()
+    val glassStyle = LocalGlassStyle.current
+    val glass = glassStyle.card
+    val shape = RoundedCornerShape(16.dp)
     val surfaceColor = MaterialTheme.colorScheme.surfaceVariant
     val borderColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
     val textColor = MaterialTheme.colorScheme.onSurface
 
     Box(
         modifier = modifier
-            .clip(RoundedCornerShape(16.dp))
-            .background(surfaceColor.copy(alpha = 0.3f))
-            .border(0.5.dp, borderColor, RoundedCornerShape(16.dp))
+            .drawBackdrop(
+                backdrop = backdrop,
+                shape = { RoundedRectangle(16.dp) },
+                effects = {
+                    if (!glass.isOff) {
+                        colorControls(contrast = glassStyle.contrast, saturation = 1.5f)
+                        if (glass.extraBlur > 0f) blur(glass.extraBlur.dp.toPx())
+                        lens(glass.lensBlur.dp.toPx(), glass.refraction.dp.toPx())
+                    }
+                },
+            )
+            .background(surfaceColor.copy(alpha = 0.16f), shape)
+            .clip(shape)
+            .border(0.5.dp, borderColor, shape)
             .padding(horizontal = 16.dp, vertical = 14.dp)
     ) {
         BasicTextField(

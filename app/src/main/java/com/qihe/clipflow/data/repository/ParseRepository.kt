@@ -4,7 +4,12 @@ import com.qihe.clipflow.data.api.RetrofitClient
 
 class ParseRepository(
     private val parsers: Map<SupportedPlatform, PlatformParser> =
-        PlatformRegistry.createParsers(RetrofitClient.apiService)
+        PlatformRegistry.createParsers(
+            PlatformApis(
+                api = RetrofitClient.apiService,
+                douyinPrimaryApi = RetrofitClient.douyinPrimaryApiService,
+            )
+        )
 ) {
 
     suspend fun parse(

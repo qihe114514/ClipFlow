@@ -6,6 +6,7 @@ import androidx.compose.foundation.pager.PagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.saveable.SaveableStateHolder
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.navigation.NavHostController
 import com.qihe.clipflow.ui.bilibili.BilibiliScreen
 import com.qihe.clipflow.ui.douyin.DouyinScreen
@@ -20,10 +21,14 @@ fun MainPager(
     stateHolder: SaveableStateHolder,
     currentRoute: String?,
     sourceUrl: String?,
+    visible: Boolean,
 ) {
     HorizontalPager(
         state = pagerState,
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize()
+            .graphicsLayer { alpha = if (visible) 1f else 0f },
+        userScrollEnabled = visible,
         beyondViewportPageCount = 1,
         key = { page -> pages[page].route },
     ) { page ->

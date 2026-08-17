@@ -58,6 +58,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -96,6 +97,7 @@ import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -120,12 +122,14 @@ fun MediaPreviewSheet(
     var videoWidth by remember { mutableIntStateOf(0) }
     var videoHeight by remember { mutableIntStateOf(0) }
     var isPlaying by remember { mutableStateOf(false) }
+    var playbackEnded by remember { mutableStateOf(false) }
     var duration by remember { mutableLongStateOf(0L) }
     var position by remember { mutableLongStateOf(0L) }
     var playerError by remember { mutableStateOf<PlaybackException?>(null) }
     var isScrubbing by remember { mutableStateOf(false) }
     var scrubPosition by remember { mutableFloatStateOf(0f) }
     val previewBackdrop = rememberLayerBackdrop()
+    val scrubFinishScope = rememberCoroutineScope()
 
     val currentItem = items.getOrNull(pagerState.currentPage)
     val currentVideoUrl = currentItem
@@ -192,6 +196,7 @@ fun MediaPreviewSheet(
 
             override fun onPlaybackStateChanged(playbackState: Int) {
                 duration = player?.duration?.coerceAtLeast(0L) ?: 0L
+                playbackEnded = playbackState == Player.STATE_ENDED
                 if (playbackState == Player.STATE_READY) {
                     controlsVisible = true
                 }
@@ -222,6 +227,7 @@ fun MediaPreviewSheet(
     LaunchedEffect(player) {
         isPlaying = player?.isPlaying == true
         playerError = null
+        playbackEnded = false
         isLandscapeVideo = false
         videoWidth = 0
         videoHeight = 0
@@ -339,6 +345,7 @@ fun MediaPreviewSheet(
                             backdrop = previewBackdrop,
                             controlsVisible = controlsVisible,
                             isPlaying = isPlaying,
+                            playbackEnded = playbackEnded,
                             duration = duration,
                             position = position,
                             isScrubbing = isScrubbing,
@@ -357,8 +364,24 @@ fun MediaPreviewSheet(
                                 player.seekTo(it.toLong())
                             },
                             onSeekFinished = {
-                                isScrubbing = false
                                 player.seekTo(scrubPosition.toLong())
+                                // seekTo 是异步的：若立刻复位 isScrubbing，进度条会改读
+                                // 尚未更新的播放位置，滑块松手后先弹回旧位置、再跳回
+                                // 目标位置（快速拖动时表现为"抖两下"）。
+                                // 改为等播放器位置跟上目标后再复位。
+                                scrubFinishScope.launch {
+                                    val target = scrubPosition.toLong()
+                                    repeat(20) { // 最多等 1 秒
+                                        delay(50)
+                                        if (kotlin.math.abs(player.currentPosition - target) < 200L) {
+                                            // 若期间用户已开始新的拖动，交给新一次
+                                            // onSeekFinished 处理，这里不复位
+                                            if (scrubPosition.toLong() == target) isScrubbing = false
+                                            return@launch
+                                        }
+                                    }
+                                    if (scrubPosition.toLong() == target) isScrubbing = false
+                                }
                             },
                             onToggleMute = {
                                 if (player.volume == 0f) {
@@ -516,6 +539,7 @@ private fun VideoControls(
     backdrop: Backdrop,
     controlsVisible: Boolean,
     isPlaying: Boolean,
+    playbackEnded: Boolean,
     duration: Long,
     position: Long,
     isScrubbing: Boolean,
@@ -578,9 +602,19 @@ private fun VideoControls(
                     modifier = Modifier.size(40.dp),
                     contentPadding = PaddingValues(0.dp),
                 ) {
+                    val icon = when {
+                        isPlaying -> Icons.Filled.Pause
+                        playbackEnded -> Icons.Filled.Replay
+                        else -> Icons.Filled.PlayArrow
+                    }
+                    val description = when {
+                        isPlaying -> "暂停"
+                        playbackEnded -> "重播"
+                        else -> "播放"
+                    }
                     Icon(
-                        imageVector = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                        contentDescription = if (isPlaying) "暂停" else "播放"
+                        imageVector = icon,
+                        contentDescription = description
                     )
                     }
                 Spacer(Modifier.width(8.dp))

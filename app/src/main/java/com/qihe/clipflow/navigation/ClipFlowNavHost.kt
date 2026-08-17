@@ -1,6 +1,8 @@
 package com.qihe.clipflow.navigation
 
+import androidx.activity.compose.PredictiveBackHandler
 import androidx.compose.animation.*
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.rememberPagerState
@@ -10,6 +12,7 @@ import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -38,12 +41,23 @@ import com.qihe.clipflow.ui.component.liquid.TOP_BAR_BLUR_HEIGHT_DP
 import com.qihe.clipflow.ui.component.liquid.PROGRESSIVE_TOPBAR_CONTENT_START_DP
 import com.qihe.clipflow.ui.history.HistoryScreen
 import com.qihe.clipflow.ui.settings.SettingsScreen
+import com.qihe.clipflow.ui.personalization.PersonalizationScreen
 import com.qihe.clipflow.ui.about.AboutScreen
 import com.qihe.clipflow.ui.about.OpenSourceScreen
+import com.qihe.clipflow.ui.component.ContrastPreset
+import com.qihe.clipflow.ui.component.GlassStyle
+import com.qihe.clipflow.ui.component.GlassTarget
+import com.qihe.clipflow.ui.component.IntensityPreset
+import com.qihe.clipflow.ui.component.LocalGlassStyle
+import com.qihe.clipflow.ui.component.blurExtraFor
+import com.qihe.clipflow.ui.component.glassEffectsFor
+import com.qihe.clipflow.ui.component.wallpaperContrastScale
+import com.qihe.clipflow.ui.component.SecondaryPageEasing
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
 @Composable
@@ -55,6 +69,13 @@ fun ClipFlowNavHost() {
     val currentDestination = navBackStackEntry?.destination
     val currentRoute = currentDestination?.route?.substringBefore("?")
     val currentRouteState = rememberUpdatedState(currentRoute)
+    val secondaryRoute = isSecondaryRoute(currentRoute)
+    var predictiveBackProgress by remember { mutableFloatStateOf(0f) }
+    val settledBackProgress by animateFloatAsState(
+        targetValue = predictiveBackProgress,
+        animationSpec = tween(120, easing = SecondaryPageEasing),
+        label = "predictiveBackProgress",
+    )
 
     // ========== 隐私政策同意检查 ==========
     var isPrivacyCheckReady by remember { mutableStateOf(false) }
@@ -99,7 +120,11 @@ fun ClipFlowNavHost() {
     val showBottomBar = currentRoute in primaryRoutes
     val showTopBar = currentRoute != null
     val showTopBarBlur = showTopBar && currentRoute != Screen.History.route
-    val showDetailBottomBlur = currentRoute in setOf(Screen.History.route, Screen.Settings.route)
+    val showDetailBottomBlur = currentRoute in setOf(
+        Screen.History.route,
+        Screen.Settings.route,
+        Screen.Personalization.route,
+    )
     val pagerState = rememberPagerState(
         initialPage = primaryPageIndex(currentRoute ?: defaultPage, primaryItems),
         pageCount = { primaryItems.size },
@@ -139,6 +164,32 @@ fun ClipFlowNavHost() {
 
     val bottomBarBackdrop = rememberLayerBackdrop { drawContent() }
     val sceneBackdrop = rememberContentLayerBackdrop { drawContent() }
+
+    // ========== 玻璃效果档位（个性化设置 → 全局 CompositionLocal） ==========
+    val glassCardPresetKey by produceState(initialValue = IntensityPreset.MEDIUM.key) {
+        prefs.glassCardPreset.collect { value = it }
+    }
+    val glassCardBlurPresetKey by produceState(initialValue = IntensityPreset.MEDIUM.key) {
+        prefs.glassCardBlurPreset.collect { value = it }
+    }
+    val glassButtonPresetKey by produceState(initialValue = IntensityPreset.MEDIUM.key) {
+        prefs.glassButtonPreset.collect { value = it }
+    }
+    val glassButtonBlurPresetKey by produceState(initialValue = IntensityPreset.LOW.key) {
+        prefs.glassButtonBlurPreset.collect { value = it }
+    }
+    val wallpaperContrastPresetKey by produceState(initialValue = ContrastPreset.DEFAULT.key) {
+        prefs.wallpaperContrastPreset.collect { value = it }
+    }
+    val glassStyle = GlassStyle(
+        card = glassEffectsFor(IntensityPreset.fromKey(glassCardPresetKey), GlassTarget.CARD)
+            .copy(extraBlur = blurExtraFor(IntensityPreset.fromKey(glassCardBlurPresetKey))),
+        button = glassEffectsFor(IntensityPreset.fromKey(glassButtonPresetKey), GlassTarget.BUTTON)
+            .copy(extraBlur = blurExtraFor(IntensityPreset.fromKey(glassButtonBlurPresetKey))),
+        contrast = wallpaperContrastScale(ContrastPreset.fromKey(wallpaperContrastPresetKey)),
+    )
+
+    CompositionLocalProvider(LocalGlassStyle provides glassStyle) {
         Box(modifier = Modifier.fillMaxSize()) {
             Box(
                 modifier = Modifier
@@ -158,32 +209,37 @@ fun ClipFlowNavHost() {
                         .fillMaxSize()
                         .padding(innerPadding)
                 ) {
-                    if (showBottomBar) {
-                        MainPager(
-                            navController = navController,
-                            pages = primaryItems,
-                            pagerState = pagerState,
-                            stateHolder = pagerStateHolder,
-                            currentRoute = currentRoute,
-                            sourceUrl = currentSourceUrl,
-                        )
-                    }
+                    MainPager(
+                        navController = navController,
+                        pages = primaryItems,
+                        pagerState = pagerState,
+                        stateHolder = pagerStateHolder,
+                        currentRoute = currentRoute,
+                        sourceUrl = currentSourceUrl,
+                        visible = currentRoute in primaryRoutes,
+                    )
 
                     NavHost(
                         navController = navController,
                         startDestination = primaryRoutes.firstOrNull { it == defaultPage }
                             ?: primaryRoutes.first(),
-                        modifier = Modifier.fillMaxSize(),
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .graphicsLayer {
+                                if (secondaryRoute) {
+                                    translationX = size.width * settledBackProgress
+                                    scaleX = 1f - 0.04f * settledBackProgress
+                                    scaleY = 1f - 0.04f * settledBackProgress
+                                    alpha = 1f - 0.15f * settledBackProgress
+                                }
+                            },
                     enterTransition = {
-                        val from = initialState.destination.route?.substringBefore("?")
-                        val to = targetState.destination.route?.substringBefore("?")
-                        if (to in primaryRoutes) {
-                            EnterTransition.None
-                        } else {
-                            val fromIdx = primaryRoutes.indexOf(from)
-                            val toIdx = primaryRoutes.indexOf(to)
-                            val direction = if (toIdx > fromIdx) 1 else -1
-                            fadeIn(tween(300)) + slideInHorizontally(tween(300)) { direction * it / 4 }
+                            val to = targetState.destination.route?.substringBefore("?")
+                            if (to in primaryRoutes) {
+                                EnterTransition.None
+                            } else {
+                                fadeIn(tween(280, easing = SecondaryPageEasing)) +
+                                    slideInHorizontally(tween(280, easing = SecondaryPageEasing)) { it / 3 }
                         }
                     },
                     exitTransition = {
@@ -191,11 +247,8 @@ fun ClipFlowNavHost() {
                         if (from in primaryRoutes) {
                             ExitTransition.None
                         } else {
-                            val to = targetState.destination.route?.substringBefore("?")
-                            val fromIdx = primaryRoutes.indexOf(from)
-                            val toIdx = primaryRoutes.indexOf(to)
-                            val direction = if (toIdx > fromIdx) 1 else -1
-                            fadeOut(tween(300)) + slideOutHorizontally(tween(300)) { -direction * it / 4 }
+                            fadeOut(tween(280, easing = SecondaryPageEasing)) +
+                                slideOutHorizontally(tween(280, easing = SecondaryPageEasing)) { -it / 6 }
                         }
                     },
                     popEnterTransition = {
@@ -203,7 +256,8 @@ fun ClipFlowNavHost() {
                         if (to in primaryRoutes) {
                             EnterTransition.None
                         } else {
-                            fadeIn(tween(300)) + slideInHorizontally(tween(300)) { -it / 4 }
+                            fadeIn(tween(280, easing = SecondaryPageEasing)) +
+                                slideInHorizontally(tween(280, easing = SecondaryPageEasing)) { -it / 6 }
                         }
                     },
                     popExitTransition = {
@@ -211,7 +265,8 @@ fun ClipFlowNavHost() {
                         if (from in primaryRoutes) {
                             ExitTransition.None
                         } else {
-                            fadeOut(tween(300)) + slideOutHorizontally(tween(300)) { it / 4 }
+                            fadeOut(tween(280, easing = SecondaryPageEasing)) +
+                                slideOutHorizontally(tween(280, easing = SecondaryPageEasing)) { it / 3 }
                         }
                     }
                     ) {
@@ -250,6 +305,7 @@ fun ClipFlowNavHost() {
                         ) { Spacer(Modifier.fillMaxSize()) }
                         composable(Screen.History.route) { HistoryScreen(navController) }
                         composable(Screen.Settings.route) { SettingsScreen(navController) }
+                        composable(Screen.Personalization.route) { PersonalizationScreen(navController) }
                         composable(Screen.About.route) { AboutScreen(navController) }
                         composable(Screen.OpenSource.route) { OpenSourceScreen() }
                     }
@@ -364,6 +420,22 @@ fun ClipFlowNavHost() {
                     backdrop = sceneBackdrop,
                     modifier = Modifier.matchParentSize(),
                 )
+            }
+        }
+
+            PredictiveBackHandler(
+                enabled = secondaryRoute && navController.previousBackStackEntry != null,
+            ) { progress ->
+                try {
+                    progress.collect { event ->
+                        predictiveBackProgress = event.progress
+                    }
+                    navController.popBackStack()
+                } catch (_: CancellationException) {
+                    // The gesture was cancelled; keep the current destination.
+                } finally {
+                    predictiveBackProgress = 0f
+                }
             }
         }
     }

@@ -1,6 +1,12 @@
 package com.qihe.clipflow.data.repository
 
 import com.qihe.clipflow.data.api.ApiService
+import com.qihe.clipflow.data.api.DouyinPrimaryApiService
+
+data class PlatformApis(
+    val api: ApiService,
+    val douyinPrimaryApi: DouyinPrimaryApiService,
+)
 
 data class PlatformDescriptor(
     val platform: SupportedPlatform,
@@ -15,7 +21,7 @@ data class PlatformDescriptor(
  */
 data class PlatformRegistration(
     val descriptor: PlatformDescriptor,
-    val createParser: (ApiService) -> PlatformParser
+    val createParser: (PlatformApis) -> PlatformParser
 )
 
 object PlatformRegistry {
@@ -41,7 +47,7 @@ object PlatformRegistry {
                     }
                 }
             ),
-            createParser = ::DouyinPlatformParser
+            createParser = { DouyinPlatformParser(it.douyinPrimaryApi) }
         ),
         PlatformRegistration(
             descriptor = PlatformDescriptor(
@@ -59,7 +65,7 @@ object PlatformRegistry {
                     }
                 }
             ),
-            createParser = ::XiaohongshuPlatformParser
+            createParser = { XiaohongshuPlatformParser(it.api) }
         ),
         PlatformRegistration(
             descriptor = PlatformDescriptor(
@@ -87,9 +93,9 @@ object PlatformRegistry {
         return registrationsByPlatform.getValue(platform).descriptor
     }
 
-    fun createParsers(api: ApiService): Map<SupportedPlatform, PlatformParser> {
+    fun createParsers(apis: PlatformApis): Map<SupportedPlatform, PlatformParser> {
         return registrations.associate { registration ->
-            val parser = registration.createParser(api)
+            val parser = registration.createParser(apis)
             parser.platform to parser
         }
     }

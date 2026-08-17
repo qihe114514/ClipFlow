@@ -20,6 +20,7 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:label="ClipFlow"
         android:supportsRtl="true"
+        android:enableOnBackInvokedCallback="true"
         android:usesCleartextTraffic="true"
         android:theme="@style/Theme.ClipFlow"
         tools:targetApi="35">

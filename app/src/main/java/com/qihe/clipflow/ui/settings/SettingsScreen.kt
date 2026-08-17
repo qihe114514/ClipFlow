@@ -5,8 +5,6 @@ import android.app.Application
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -26,15 +24,14 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.qihe.clipflow.data.preferences.AppPreferences
 import com.qihe.clipflow.navigation.Screen
-import com.qihe.clipflow.ui.component.LiquidSlider
 import com.qihe.clipflow.ui.components.GlassCard
+import com.qihe.clipflow.ui.components.withTitleShadow
+import com.qihe.clipflow.ui.component.SecondaryPageSection
+import com.qihe.clipflow.ui.component.secondaryPageEntrance
 import com.qihe.clipflow.ui.component.LiquidButton
-import com.qihe.clipflow.ui.component.LocalLiquidBackdrop
 import com.qihe.clipflow.ui.component.liquid.PROGRESSIVE_TOPBAR_CONTENT_START_DP
-import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 data class SettingsUiState(
@@ -42,9 +39,6 @@ data class SettingsUiState(
     val videoSavePath: String = "",
     val imageSavePath: String = "",
     val audioSavePath: String = "",
-    val wallpaperUri: String = "",
-    val wallpaperOpacity: Float = 75f,
-    val wallpaperEnabled: Boolean = true,
     val defaultPage: String = "home",
     val bottomBarOrder: List<String> = listOf("home", "douyin", "xiaohongshu", "bilibili")
 )
@@ -61,12 +55,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             launch { prefs.videoSavePath.collect { _uiState.value = _uiState.value.copy(videoSavePath = it) } }
             launch { prefs.imageSavePath.collect { _uiState.value = _uiState.value.copy(imageSavePath = it) } }
             launch { prefs.audioSavePath.collect { _uiState.value = _uiState.value.copy(audioSavePath = it) } }
-            launch { prefs.wallpaperUri.collect { _uiState.value = _uiState.value.copy(wallpaperUri = it) } }
-            launch {
-                val opacity = prefs.wallpaperOpacity.first()
-                _uiState.value = _uiState.value.copy(wallpaperOpacity = opacity)
-            }
-            launch { prefs.wallpaperEnabled.collect { _uiState.value = _uiState.value.copy(wallpaperEnabled = it) } }
             launch { prefs.defaultPage.collect { _uiState.value = _uiState.value.copy(defaultPage = it) } }
             launch { prefs.bottomBarOrder.collect { _uiState.value = _uiState.value.copy(bottomBarOrder = it) } }
         }
@@ -79,19 +67,12 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun resetVideoSavePath() { viewModelScope.launch { prefs.setVideoSavePath("") } }
     fun resetImageSavePath() { viewModelScope.launch { prefs.setImageSavePath("") } }
     fun resetAudioSavePath() { viewModelScope.launch { prefs.setAudioSavePath("") } }
-    fun setWallpaperUri(uri: String) { viewModelScope.launch { prefs.setWallpaperUri(uri) } }
-    fun setWallpaperOpacity(o: Float) {
-        val opacity = o.coerceIn(10f, 100f)
-        _uiState.value = _uiState.value.copy(wallpaperOpacity = opacity)
-        viewModelScope.launch { prefs.setWallpaperOpacity(opacity) }
-    }
-    fun setWallpaperEnabled(e: Boolean) { viewModelScope.launch { prefs.setWallpaperEnabled(e) } }
     fun setDefaultPage(page: String) { viewModelScope.launch { prefs.setDefaultPage(page) } }
     fun setBottomBarOrder(order: List<String>) { viewModelScope.launch { prefs.setBottomBarOrder(order) } }
     fun resetTutorial() { viewModelScope.launch { prefs.setTutorialShown(false) } }
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     navController: NavHostController,
@@ -99,15 +80,6 @@ fun SettingsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
-
-    val imagePickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
-    ) { uri: Uri? ->
-        uri?.let {
-            context.contentResolver.takePersistableUriPermission(it, android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            viewModel.setWallpaperUri(it.toString())
-        }
-    }
 
     val videoDirLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocumentTree()
@@ -140,6 +112,7 @@ fun SettingsScreen(
         }
     }
 
+    SecondaryPageSection(index = 0) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -150,7 +123,7 @@ fun SettingsScreen(
     ) {
         // ========== 保存路径 ==========
         SectionHeader(title = "保存路径")
-        GlassCard(modifier = Modifier.fillMaxWidth()) {
+        GlassCard(modifier = Modifier.fillMaxWidth().secondaryPageEntrance(0)) {
             Column {
                 PathRow(
                     icon = Icons.Filled.Videocam,
@@ -175,56 +148,25 @@ fun SettingsScreen(
                 )
             }
         }
-        // ========== 背景壁纸 ==========
-        SectionHeader(title = "背景壁纸")
-        GlassCard {
-            Column {
-                FlowRow(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    FilterChip(
-                        selected = uiState.wallpaperUri.isNotEmpty(),
-                        onClick = { imagePickerLauncher.launch("image/*") },
-                        label = { Text("选择图片") },
-                        leadingIcon = { Icon(Icons.Filled.Image, null, Modifier.size(16.dp)) }
-                    )
-                    if (uiState.wallpaperUri.isNotEmpty()) {
-                        FilterChip(
-                            selected = false,
-                            onClick = { viewModel.setWallpaperUri("") },
-                            label = { Text("恢复默认") },
-                            leadingIcon = { Icon(Icons.Filled.Restore, null, Modifier.size(16.dp)) }
-                        )
-                    }
-                    FilterChip(
-                        selected = !uiState.wallpaperEnabled,
-                        onClick = { viewModel.setWallpaperEnabled(!uiState.wallpaperEnabled) },
-                        label = { Text(if (uiState.wallpaperEnabled) "关闭壁纸" else "已关闭") },
-                        leadingIcon = { Icon(if (uiState.wallpaperEnabled) Icons.Filled.Wallpaper else Icons.Filled.HideImage, null, Modifier.size(16.dp)) }
-                    )
+        // ========== 个性化 ==========
+        SectionHeader(title = "个性化")
+        GlassCard(
+            modifier = Modifier.secondaryPageEntrance(1),
+            onClick = { navController.navigate(Screen.Personalization.route) },
+        ) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Filled.Palette, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
+                Spacer(Modifier.width(14.dp))
+                Column(Modifier.weight(1f)) {
+                    Text("壁纸与玻璃效果", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
+                    Text("背景壁纸、玻璃模糊/折射/色差", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-
-                Spacer(Modifier.height(14.dp))
-                Text(
-                    "壁纸透明度: ${uiState.wallpaperOpacity.toInt()}%",
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Medium
-                )
-                Spacer(Modifier.height(4.dp))
-                LiquidSlider(
-                    value = { uiState.wallpaperOpacity },
-                    onValueChange = { viewModel.setWallpaperOpacity(it) },
-                    valueRange = 10f..100f,
-                    visibilityThreshold = 0.001f,
-                    backdrop = LocalLiquidBackdrop.current ?: rememberLayerBackdrop(),
-                    modifier = Modifier.fillMaxWidth()
-                )
+                Icon(Icons.Filled.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f))
             }
         }
+
         SectionHeader(title = "页面设置")
-        GlassCard {
+        GlassCard(modifier = Modifier.secondaryPageEntrance(2)) {
             Column {
                 Text("打开软件默认页面", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
                 Spacer(Modifier.height(8.dp))
@@ -270,7 +212,10 @@ fun SettingsScreen(
 
         // ========== 关于 ==========
         SectionHeader(title = "更多")
-        GlassCard(onClick = { navController.navigate(Screen.About.route) }) {
+        GlassCard(
+            modifier = Modifier.secondaryPageEntrance(3),
+            onClick = { navController.navigate(Screen.About.route) },
+        ) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Outlined.Info, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
                 Spacer(Modifier.width(14.dp))
@@ -280,21 +225,23 @@ fun SettingsScreen(
                 Icon(Icons.Filled.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f))
             }
         }
-        LiquidButton(
+        TextButton(
             onClick = { viewModel.resetTutorial() },
-            modifier = Modifier.fillMaxWidth(),
-            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+            modifier = Modifier
+                .align(Alignment.CenterHorizontally)
+                .secondaryPageEntrance(4),
         ) {
             Text("重置新手教程", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f))
         }
         Spacer(Modifier.height(20.dp))
+    }
     }
 }
 
 
 @Composable
 fun SectionHeader(title: String) {
-    Text(title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(top = 4.dp))
+    Text(title, style = MaterialTheme.typography.titleSmall.withTitleShadow(), fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(top = 4.dp))
 }
 
 @Composable

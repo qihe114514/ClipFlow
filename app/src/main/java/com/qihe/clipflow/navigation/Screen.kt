@@ -42,6 +42,7 @@ sealed class Screen(val route: String) {
     }
     data object History : Screen("history")
     data object Settings : Screen("settings")
+    data object Personalization : Screen("personalization")
     data object About : Screen("about")
     data object OpenSource : Screen("open-source")
 }
@@ -83,6 +84,7 @@ val bottomNavItems = listOf(
 val secondaryRoutes = setOf(
     Screen.History.route,
     Screen.Settings.route,
+    Screen.Personalization.route,
     Screen.About.route,
     Screen.OpenSource.route,
 )
@@ -124,10 +126,34 @@ fun historyDestinationRoute(platform: String, sourceUrl: String): String {
     }
 }
 
+data class PrimaryNavigationOptions(
+    val saveState: Boolean,
+    val launchSingleTop: Boolean,
+    val restoreState: Boolean,
+)
+
+fun primaryNavigationOptions(route: String): PrimaryNavigationOptions {
+    val hasExplicitSource = route.substringAfter("?", missingDelimiterValue = "").isNotBlank()
+    return if (hasExplicitSource) {
+        PrimaryNavigationOptions(
+            saveState = false,
+            launchSingleTop = false,
+            restoreState = false,
+        )
+    } else {
+        PrimaryNavigationOptions(
+            saveState = true,
+            launchSingleTop = true,
+            restoreState = true,
+        )
+    }
+}
+
 fun NavHostController.navigateToPrimary(route: String) {
     navigate(route) {
-        popUpTo(graph.findStartDestination().id) { saveState = true }
-        launchSingleTop = true
-        restoreState = true
+        val options = primaryNavigationOptions(route)
+        popUpTo(graph.findStartDestination().id) { saveState = options.saveState }
+        launchSingleTop = options.launchSingleTop
+        restoreState = options.restoreState
     }
 }
