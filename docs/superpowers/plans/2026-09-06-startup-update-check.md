@@ -13,7 +13,7 @@
 - 不导航到关于页。
 - 无更新提示“已是最新版本”；检查失败静默。
 - 每次 Activity 创建只检查一次。
-- 打包前 `versionCode` 加 1，`versionName` 保持 `3.6`。
+- 打包前 `versionCode` 加 1；本次 `versionName` 升到 `3.7`，与发布标签保持一致。
 
 ### Task 1: 提交设计文档
 
@@ -47,12 +47,12 @@ Use `DownloadManager` for the APK. Provide “稍后” and “下载更新” a
 
 - [ ] **Step 1: Increment only `versionCode`**
 
-Change `versionCode = 86` to `versionCode = 87`; keep `versionName = "3.6"`.
+Change `versionCode = 86` to `versionCode = 87` and `versionName = "3.6"` to `versionName = "3.7"`.
 
 ### Task 4: Verify and publish
 
 **Files:**
-- Create: `RELEASE_NOTES_v3.6.1.md`
+- Create: `RELEASE_NOTES_v3.7.md`
 
 - [ ] **Step 1: Run unit tests and release build**
 
@@ -67,4 +67,4 @@ Check `app/build.gradle.kts` and `app/build/outputs/apk/release/*.apk`.
 
 - [ ] **Step 3: Commit, tag, and publish the GitHub release**
 
-Create release tag `v3.6.1` (higher than the installed `3.6` for `UpdateManager.compareVersion`), attach the built APK, and push the commit/tag to `origin`.
+Create release tag `v3.7` (higher than the installed `3.6` for `UpdateManager.compareVersion`), attach the built APK, and push the commit/tag to `origin`.
