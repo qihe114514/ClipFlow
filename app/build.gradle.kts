@@ -15,7 +15,12 @@ val localProperties = Properties().apply {
         file.inputStream().use { load(it) }
     }
 }
-val douyinApiKey = localProperties.getProperty("douyin.api.key", "")
+// 线路1（api-new.ifphp.com）：local.properties 可覆盖；未提供时使用内置 Key，
+// 否则 CI 等没有 local.properties 的构建会打进空 Key，接口直接返回 401。
+val douyinApiKey = localProperties.getProperty(
+    "douyin.api.key",
+    "bp_live_0316aed1002cb08aedb8f6966a09140cafbe83a6db97ea3d7700339e40ae8ca2"
+)
 
 android {
     namespace = "com.qihe.clipflow"
@@ -25,8 +30,8 @@ android {
         applicationId = "com.qihe.clipflow"
         minSdk = 29
         targetSdk = 37
-        versionCode = 87
-        versionName = "3.7"
+        versionCode = 89
+        versionName = "3.9"
         buildConfigField("String", "DOUYIN_API_KEY", "\"$douyinApiKey\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
