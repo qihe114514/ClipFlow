@@ -41,5 +41,5 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           generate_release_notes: false
-          body_path: RELEASE_NOTES_v3.7.md
+          body_path: RELEASE_NOTES_${{ github.ref_name }}.md
           files: app/build/outputs/apk/release/app-release.apk
