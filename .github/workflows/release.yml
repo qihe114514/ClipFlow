@@ -22,8 +22,21 @@ jobs:
           distribution: temurin
           java-version: '21'
 
+      # 不再使用 android-actions/setup-android@v3：新镜像的 sdkmanager 已移除 "tools" 包，
+      # 该 action 会因 "Failed to find package 'tools'" 失败。这里直接安装构建所需组件。
       - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
+        shell: bash
+        run: |
+          SDK="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
+          echo "SDK=$SDK"
+          TOOLS_BIN="$(ls -d "$SDK"/cmdline-tools/*/bin 2>/dev/null | head -1)"
+          if [ -z "$TOOLS_BIN" ]; then TOOLS_BIN="$(dirname "$(command -v sdkmanager)")"; fi
+          export PATH="$TOOLS_BIN:$PATH"
+          echo "ANDROID_HOME=$SDK" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$SDK" >> "$GITHUB_ENV"
+          sdkmanager --version
+          yes | sdkmanager --licenses > /dev/null 2>&1 || true
+          sdkmanager "platform-tools" "platforms;android-37.0" "build-tools;36.0.0"
 
       - name: Restore release signing keystore
         shell: bash
