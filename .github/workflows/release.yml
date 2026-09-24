@@ -46,7 +46,9 @@ jobs:
           test -s "$HOME/.android/debug.keystore"
 
       - name: Run unit tests
-        run: ./gradlew testDebugUnitTest --no-daemon
+        run: |
+          chmod +x gradlew
+          ./gradlew testDebugUnitTest --no-daemon
 
       - name: Build release APK
         run: |
