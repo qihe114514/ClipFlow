@@ -66,7 +66,7 @@ fun HomeScreen(navController: NavHostController) {
         Spacer(Modifier.height(6.dp))
 
         Text(
-            text = "抖音 · 小红书 无水印解析",
+            text = "抖音 · 小红书 · B 站 无水印解析",
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
@@ -183,7 +183,7 @@ fun HomeScreen(navController: NavHostController) {
         ) {
             items(features) { (title, desc, icon) ->
                 GlassCard(
-                    modifier = Modifier.width(140.dp).height(115.dp)
+                    modifier = Modifier.width(140.dp).heightIn(min = 115.dp)
                 ) {
                     Icon(
                         imageVector = icon,
@@ -205,7 +205,6 @@ fun HomeScreen(navController: NavHostController) {
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
-                        lineHeight = MaterialTheme.typography.labelSmall.lineHeight
                     )
                 }
             }

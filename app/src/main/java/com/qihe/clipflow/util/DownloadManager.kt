@@ -3,6 +3,8 @@ package com.qihe.clipflow.util
 import android.content.Context
 import android.util.Log
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -40,7 +42,7 @@ object DownloadProgress {
 class DownloadManager(private val context: Context) {
     private companion object { const val TAG = "ClipFlowDownload" }
 
-    private val client = OkHttpClient.Builder()
+    private val client = AppHttp.shared.newBuilder()
         .connectTimeout(30, TimeUnit.SECONDS)
         .readTimeout(120, TimeUnit.SECONDS)
         .build()
@@ -95,6 +97,7 @@ class DownloadManager(private val context: Context) {
                             tempFile.sink().buffer().use { sink ->
                                 var bytesRead: Long
                                 while (source.read(buffer, 8192).also { bytesRead = it } != -1L) {
+                                    currentCoroutineContext().ensureActive()
                                     sink.write(buffer, bytesRead)
                                     downloadedBytes += bytesRead
                                     val now = System.currentTimeMillis()
@@ -132,6 +135,7 @@ class DownloadManager(private val context: Context) {
                         return@withContext Result.success(tempFile)
                     }
                 } catch (e: CancellationException) {
+                    tempFile.delete()
                     throw e
                 } catch (e: Exception) {
                     Log.w(TAG, "download attempt failed type=${e::class.java.simpleName}")

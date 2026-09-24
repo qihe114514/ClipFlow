@@ -53,6 +53,7 @@ fun PlatformParseScreenContent(
     parseRoute: DouyinParseRoute? = null,
     onParseRouteChange: ((DouyinParseRoute) -> Unit)? = null,
     onDismissDownloadDialog: (background: Boolean) -> Unit,
+    onCancelDownload: (() -> Unit)? = null,
 ) {
     Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
@@ -126,7 +127,11 @@ fun PlatformParseScreenContent(
             DownloadProgressDialog(
                 state = uiState.downloadStates[uiState.downloadingItemId],
                 onDismiss = { onDismissDownloadDialog(false) },
-                onBackground = { onDismissDownloadDialog(true) }
+                onBackground = { onDismissDownloadDialog(true) },
+                onCancel = onCancelDownload,
+                mediaType = uiState.parseResult
+                    ?.firstOrNull { it.id == uiState.downloadingItemId }
+                    ?.type
             )
         }
     }

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- B 站登录凭证用本机 Keystore 加密，云备份/设备迁移后无法解密，直接排除。 -->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="sharedpref" path="clipflow_bilibili_secure_session.xml" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="sharedpref" path="clipflow_bilibili_secure_session.xml" />
+    </device-transfer>
+</data-extraction-rules>

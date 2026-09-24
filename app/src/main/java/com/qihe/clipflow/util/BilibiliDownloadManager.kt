@@ -3,8 +3,12 @@ package com.qihe.clipflow.util
 import android.content.Context
 import android.util.Log
 import com.qihe.clipflow.data.api.model.ContentType
+import com.qihe.clipflow.data.preferences.AppPreferences
+import com.qihe.clipflow.data.preferences.MediaDestinationKind
+import com.qihe.clipflow.data.preferences.destinationFlowOf
 import com.qihe.clipflow.data.bilibili.BilibiliSessionStore
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import java.io.File
 
@@ -86,9 +90,12 @@ class BilibiliDownloadManager(private val context: Context) {
             Log.i(TAG, "bilibili mux start")
             return@withContext DashMuxer.mux(video, audio, output).fold(
                 onSuccess = { file ->
-                    val uri = MediaStoreHelper.saveToGallery(context, file, ContentType.VIDEO)
-                    if (uri == null) {
-                        val error = IllegalStateException("保存视频失败")
+                    val customTree = AppPreferences(context)
+                        .destinationFlowOf(MediaDestinationKind.VIDEO)
+                        .first()
+                    val outcome = MediaStoreHelper.saveToGallery(context, file, ContentType.VIDEO, customTree)
+                    if (!outcome.isSuccess) {
+                        val error = IllegalStateException(outcome.error ?: "保存视频失败")
                         emitFailure(error)
                         return@fold Result.failure(error)
                     }
@@ -100,7 +107,7 @@ class BilibiliDownloadManager(private val context: Context) {
                             downloadedBytes = videoState.downloadedBytes + audioState.downloadedBytes
                         )
                     )
-                    Result.success(uri.toString())
+                    Result.success(outcome.uri.toString())
                 },
                 onFailure = {
                     emitFailure(it)

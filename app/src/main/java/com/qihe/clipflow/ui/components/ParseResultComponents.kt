@@ -87,10 +87,20 @@ private fun DownloadOptionRow(item: ContentItem, state: DownloadState?, onDownlo
                 .takeIf { it.isNotEmpty() }
                 ?.let { Text(it.joinToString(" · "), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
         }
-        if (state?.isDownloading == true) {
-            CircularProgressIndicator(progress = { state.progress }, modifier = Modifier.size(32.dp), strokeWidth = 3.dp)
-        } else {
-            LiquidButton(onClick = onDownload) { Text("下载", fontWeight = FontWeight.SemiBold) }
+        when {
+            state?.isDownloading == true -> {
+                CircularProgressIndicator(progress = { state.progress }, modifier = Modifier.size(32.dp), strokeWidth = 3.dp)
+            }
+            state?.isComplete == true -> {
+                Text(
+                    text = "已保存",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
+            else -> {
+                LiquidButton(onClick = onDownload) { Text("下载", fontWeight = FontWeight.SemiBold) }
+            }
         }
     }
 }

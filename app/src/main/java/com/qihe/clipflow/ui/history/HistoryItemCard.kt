@@ -16,6 +16,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.LiveTv
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
@@ -36,6 +37,7 @@ import com.qihe.clipflow.data.local.HistoryEntity
 import com.qihe.clipflow.ui.components.GlassCard
 import com.qihe.clipflow.ui.components.TypeBadge
 import com.qihe.clipflow.ui.theme.DouyinAccent
+import com.qihe.clipflow.ui.theme.VideoTypeBadge
 import com.qihe.clipflow.ui.theme.XiaohongshuAccent
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -73,9 +75,17 @@ fun HistoryItemCard(
                 } else {
                     val isDouyin = item.platform == "douyin"
                     Icon(
-                        imageVector = if (isDouyin) Icons.Filled.MusicNote else Icons.Filled.Favorite,
+                        imageVector = when (item.platform) {
+                            "douyin" -> Icons.Filled.MusicNote
+                            "xiaohongshu" -> Icons.Filled.Favorite
+                            else -> Icons.Filled.LiveTv
+                        },
                         contentDescription = null,
-                        tint = (if (isDouyin) DouyinAccent else XiaohongshuAccent).copy(alpha = 0.4f),
+                        tint = when (item.platform) {
+                            "douyin" -> DouyinAccent
+                            "xiaohongshu" -> XiaohongshuAccent
+                            else -> VideoTypeBadge
+                        }.copy(alpha = 0.4f),
                         modifier = Modifier.size(24.dp)
                     )
                 }
@@ -94,9 +104,14 @@ fun HistoryItemCard(
                         text = when (item.platform) {
                             "douyin" -> "抖音"
                             "xiaohongshu" -> "小红书"
+                            "bilibili" -> "B站"
                             else -> item.platform
                         },
-                        color = if (isDouyin) DouyinAccent else XiaohongshuAccent
+                        color = when (item.platform) {
+                            "douyin" -> DouyinAccent
+                            "xiaohongshu" -> XiaohongshuAccent
+                            else -> VideoTypeBadge
+                        }
                     )
                     Text(formatTime(item.timestamp), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f))
                 }

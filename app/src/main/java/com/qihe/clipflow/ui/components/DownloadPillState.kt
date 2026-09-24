@@ -31,6 +31,7 @@ object DownloadPillState {
     }
 
     fun hide() {
+        _onClick = null
         _visible.value = false
     }
 

@@ -8,9 +8,12 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -113,7 +116,7 @@ private enum class BilibiliLoginTab {
 @Composable
 private fun BilibiliLoginDialog(onSuccess: () -> Unit, onDismiss: () -> Unit) {
     val configuration = LocalConfiguration.current
-    val dialogHeight = (configuration.screenHeightDp - 48).coerceAtLeast(520).dp
+    val dialogHeight = (configuration.screenHeightDp - 48).coerceAtLeast(280).dp
     val scope = rememberCoroutineScope()
     val client = remember { BilibiliLoginClient() }
     var selectedTab by remember { mutableStateOf(BilibiliLoginTab.Phone) }
@@ -149,8 +152,9 @@ private fun BilibiliLoginDialog(onSuccess: () -> Unit, onDismiss: () -> Unit) {
                 qrCode = code
                 qrStatus = "请使用 B 站手机客户端扫码"
                 while (qrRemaining > 0) {
-                    delay(1000)
-                    qrRemaining -= 1
+                    // B 站建议 2~3s 轮询一次；过密会耗电并增加被风控概率。
+                    delay(2000)
+                    qrRemaining = (qrRemaining - 2).coerceAtLeast(0)
                     val polled = client.pollQrCode(code.key).getOrElse {
                         errorMessage = "二维码状态获取失败，请检查网络后刷新"
                         return@fold
@@ -190,11 +194,11 @@ private fun BilibiliLoginDialog(onSuccess: () -> Unit, onDismiss: () -> Unit) {
         )
     ) {
         Surface(
-            modifier = Modifier.fillMaxWidth(0.94f).height(dialogHeight),
+            modifier = Modifier.fillMaxWidth(0.94f).heightIn(max = dialogHeight),
             shape = RoundedCornerShape(24.dp),
             tonalElevation = 6.dp
         ) {
-            Column(modifier = Modifier.padding(20.dp)) {
+            Column(modifier = Modifier.padding(20.dp).verticalScroll(rememberScrollState())) {
                 Text("登录 B 站", style = MaterialTheme.typography.titleLarge)
                 Spacer(Modifier.height(12.dp))
                 TabRow(selectedTabIndex = selectedTab.ordinal) {
@@ -277,7 +281,7 @@ private fun BilibiliLoginDialog(onSuccess: () -> Unit, onDismiss: () -> Unit) {
                         onRefresh = { qrRefreshKey += 1 }
                     )
                 }
-                Spacer(Modifier.weight(1f))
+                Spacer(Modifier.height(12.dp))
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                     LiquidButton(onClick = onDismiss) { Text("取消") }
                 }
@@ -380,8 +384,16 @@ private fun QrLoginContent(
     errorMessage: String?,
     onRefresh: () -> Unit
 ) {
-    val bitmap = remember(qrCode?.url) {
-        qrCode?.url?.let { runCatching { generateBilibiliQrBitmap(it, 520) }.getOrNull() }
+    var bitmap by remember(qrCode?.url) { mutableStateOf<android.graphics.Bitmap?>(null) }
+    LaunchedEffect(qrCode?.url) {
+        val url = qrCode?.url
+        bitmap = if (url == null) {
+            null
+        } else {
+            withContext(Dispatchers.Default) {
+                runCatching { generateBilibiliQrBitmap(url, 520) }.getOrNull()
+            }
+        }
     }
     Column(
         modifier = Modifier.fillMaxWidth(),
@@ -395,9 +407,10 @@ private fun QrLoginContent(
                 Icon(Icons.Outlined.Refresh, contentDescription = "刷新二维码")
             }
         }
-        if (bitmap != null) {
+        val currentBitmap = bitmap
+        if (currentBitmap != null) {
             Image(
-                bitmap = bitmap.asImageBitmap(),
+                bitmap = currentBitmap.asImageBitmap(),
                 contentDescription = "Bilibili login QR code",
                 modifier = Modifier.size(220.dp)
             )

@@ -1,11 +1,8 @@
 package com.qihe.clipflow.ui.components
 
-import android.content.ContentValues
+import com.qihe.clipflow.util.AppHttp
 import android.content.Context
 import android.content.Intent
-import android.os.Build
-import android.os.Environment
-import android.provider.MediaStore
 import android.widget.Toast
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
@@ -50,6 +47,11 @@ import androidx.compose.ui.window.Dialog
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.qihe.clipflow.data.api.model.ContentItem
+import com.qihe.clipflow.data.api.model.ContentType
+import com.qihe.clipflow.data.preferences.AppPreferences
+import com.qihe.clipflow.data.preferences.MediaDestinationKind
+import com.qihe.clipflow.data.preferences.destinationFlowOf
+import com.qihe.clipflow.util.MediaStoreHelper
 import com.qihe.clipflow.data.api.model.DouyinStatistics
 import com.qihe.clipflow.ui.theme.ImageTypeBadge
 import com.qihe.clipflow.ui.theme.LiveTypeBadge
@@ -57,11 +59,11 @@ import com.qihe.clipflow.ui.theme.VideoTypeBadge
 import com.qihe.clipflow.ui.component.LiquidButton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.io.File
-import java.io.FileOutputStream
 import java.util.concurrent.TimeUnit
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -116,7 +118,7 @@ fun ParseInfoCard(
             if (cover.isNotEmpty()) {
                 AsyncImage(
                     model = ImageRequest.Builder(context).data(cover).crossfade(true).build(),
-                    contentDescription = null,
+                    contentDescription = "封面：点击预览，长按保存图片",
                     modifier = Modifier.fillMaxWidth().height(200.dp).clip(RoundedCornerShape(12.dp)).combinedClickable(
                         onClick = { if (availablePreviewItems.isNotEmpty()) showMediaPreview = true },
                         onLongClick = { showSaveDialog = true }
@@ -221,32 +223,19 @@ private fun formatCount(count: Long): String = when {
 private suspend fun saveCoverToGallery(context: Context, imageUrl: String) {
     val saved = runCatching {
         withContext(Dispatchers.IO) {
-            OkHttpClient.Builder().connectTimeout(15, TimeUnit.SECONDS).readTimeout(30, TimeUnit.SECONDS).build()
+            AppHttp.shared
                 .newCall(Request.Builder().url(imageUrl).addHeader("User-Agent", "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36").build())
                 .execute().use { response ->
                     if (!response.isSuccessful) return@withContext false
                     val bytes = response.body?.bytes() ?: return@withContext false
-                    val fileName = "ClipFlow_cover_${System.currentTimeMillis()}.jpg"
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                        val values = ContentValues().apply {
-                            put(MediaStore.Images.Media.DISPLAY_NAME, fileName)
-                            put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
-                            put(MediaStore.Images.Media.RELATIVE_PATH, "${Environment.DIRECTORY_PICTURES}/ClipFlow")
-                            put(MediaStore.MediaColumns.IS_PENDING, 1)
-                        }
-                        val uri = context.contentResolver.insert(MediaStore.Images.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY), values)
-                            ?: return@withContext false
-                        context.contentResolver.openOutputStream(uri)?.use { it.write(bytes) } ?: return@withContext false
-                        values.clear()
-                        values.put(MediaStore.MediaColumns.IS_PENDING, 0)
-                        context.contentResolver.update(uri, values, null, null)
-                        true
-                    } else {
-                        val directory = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "ClipFlow")
-                        if (!directory.exists()) directory.mkdirs()
-                        FileOutputStream(File(directory, fileName)).use { it.write(bytes) }
-                        true
-                    }
+                    val tempFile = File(context.cacheDir, "ClipFlow_cover_${System.currentTimeMillis()}.jpg")
+                    tempFile.writeBytes(bytes)
+                    val customTree = AppPreferences(context)
+                        .destinationFlowOf(MediaDestinationKind.IMAGE)
+                        .first()
+                    val outcome = MediaStoreHelper.saveToGallery(context, tempFile, ContentType.IMAGE, customTree)
+                    tempFile.delete()
+                    outcome.isSuccess
                 }
         }
     }.getOrDefault(false)

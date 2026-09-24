@@ -1,7 +1,9 @@
 package com.qihe.clipflow.data.api
 
+import com.qihe.clipflow.util.AppHttp
 import com.google.gson.GsonBuilder
 import com.qihe.clipflow.BuildConfig
+import com.qihe.clipflow.util.HttpRetry
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
@@ -16,15 +18,16 @@ object RetrofitClient {
 
     private val okHttpClient: OkHttpClient by lazy {
         val logging = HttpLoggingInterceptor().apply {
-            level = HttpLoggingInterceptor.Level.BODY
+            level = if (BuildConfig.DEBUG) HttpLoggingInterceptor.Level.BODY else HttpLoggingInterceptor.Level.NONE
             redactHeader("X-API-Key")
         }
 
-        OkHttpClient.Builder()
+        AppHttp.shared.newBuilder()
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(60, TimeUnit.SECONDS)
             .writeTimeout(30, TimeUnit.SECONDS)
             .addInterceptor(logging)
+            .addInterceptor(HttpRetry.interceptor())
             .addInterceptor { chain ->
                 val request = chain.request().newBuilder()
                     .addHeader("User-Agent", "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36")

@@ -201,6 +201,10 @@ open class PlatformParseViewModel(
         )
     }
 
+    fun cancelDownload() {
+        parseSupport.cancelDownload(_uiState.value.downloadingItemId)
+    }
+
     fun dismissDownloadDialog(background: Boolean = false) {
         parseSupport.dismissDownloadDialog(background)
     }

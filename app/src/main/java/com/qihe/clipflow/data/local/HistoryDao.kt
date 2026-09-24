@@ -12,7 +12,12 @@ interface HistoryDao {
     @Query("SELECT * FROM history WHERE platform = :platform ORDER BY timestamp DESC")
     fun getByPlatform(platform: String): Flow<List<HistoryEntity>>
 
-    @Query("SELECT * FROM history WHERE title LIKE '%' || :query || '%' OR url LIKE '%' || :query || '%' ORDER BY timestamp DESC")
+    @Query(
+        "SELECT * FROM history WHERE " +
+            "title LIKE '%' || :query || '%' ESCAPE '\\' OR " +
+            "url LIKE '%' || :query || '%' ESCAPE '\\' " +
+            "ORDER BY timestamp DESC"
+    )
     fun search(query: String): Flow<List<HistoryEntity>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -29,6 +34,9 @@ interface HistoryDao {
 
     @Query("DELETE FROM history")
     suspend fun deleteAll()
+
+    @Query("SELECT url FROM history")
+    suspend fun getAllUrls(): List<String>
 
     @Query("SELECT * FROM history WHERE url = :url LIMIT 1")
     suspend fun getByUrl(url: String): HistoryEntity?

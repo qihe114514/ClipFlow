@@ -4,14 +4,19 @@ import android.content.Context
 import androidx.annotation.VisibleForTesting
 import com.qihe.clipflow.data.api.model.ContentItem
 import com.qihe.clipflow.data.api.model.ContentType
+import com.qihe.clipflow.data.preferences.AppPreferences
+import com.qihe.clipflow.data.preferences.destinationFlowOf
+import com.qihe.clipflow.data.preferences.destinationKindOf
 import com.qihe.clipflow.ui.components.DownloadPillState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.util.concurrent.ConcurrentHashMap
 
 data class DownloadSessionState(
     val downloadStates: Map<String, DownloadState> = emptyMap(),
@@ -28,13 +33,16 @@ class DownloadCoordinator(
 
     private val appContext = context.applicationContext
     private val downloadManager = DownloadManager(appContext)
-    private val jobs = mutableMapOf<String, Job>()
+    private val jobs = ConcurrentHashMap<String, Job>()
+    private val jobTitles = ConcurrentHashMap<String, String>()
 
     private val _session = MutableStateFlow(DownloadSessionState())
     val session: StateFlow<DownloadSessionState> = _session.asStateFlow()
 
     fun startDownload(item: ContentItem) {
         val fileName = buildFileName(item)
+        val title = item.description.ifEmpty { fileName }
+        jobTitles[item.id] = title
         _session.update {
             it.copy(
                 showDownloadDialog = true,
@@ -43,32 +51,62 @@ class DownloadCoordinator(
             )
         }
         DownloadPillState.hide()
+        DownloadSessionTracker.begin(item.id)
+        DownloadForegroundService.start(appContext)
+        DownloadSessionTracker.update(0f, "")
 
-        jobs[item.id]?.cancel()
         jobs[item.id] = scope.launch {
-            val result = downloadManager.downloadWithProgress(item.url, fileName, onProgress = { state ->
-                updateItemState(item.id, state)
-            })
+            try {
+                val result = downloadManager.downloadWithProgress(item.url, fileName, onProgress = { state ->
+                    updateItemState(item.id, state)
+                })
 
-            result.onSuccess { tempFile ->
-                val savedUri = MediaStoreHelper.saveToGallery(appContext, tempFile, item.type)
-                if (savedUri != null) {
-                    updateItemState(
-                        item.id,
-                        latestState(item.id).copy(savedMediaUri = savedUri.toString())
-                    )
-                } else {
-                    updateItemState(
-                        item.id,
-                        latestState(item.id).copy(
-                            isComplete = false,
-                            error = "���浽���ʧ��"
+                result.onSuccess { tempFile ->
+                    // 保存包含大文件复制，MediaStoreHelper 内部已切到 IO；
+                    // 自定义目录失败时明确报错，不回退系统默认目录。
+                    val customTree = AppPreferences(appContext)
+                        .destinationFlowOf(destinationKindOf(item.type))
+                        .first()
+                    val outcome = MediaStoreHelper.saveToGallery(appContext, tempFile, item.type, customTree)
+                    if (outcome.isSuccess) {
+                        updateItemState(
+                            item.id,
+                            latestState(item.id).copy(savedMediaUri = outcome.uri.toString())
                         )
-                    )
+                    } else {
+                        updateItemState(
+                            item.id,
+                            latestState(item.id).copy(
+                                isComplete = false,
+                                error = outcome.error ?: "保存到相册失败"
+                            )
+                        )
+                    }
+                    tempFile.delete()
                 }
-                tempFile.delete()
+            } finally {
+                // 协程被取消（重复下载/页面销毁）时也要释放前台服务计数，避免服务常驻。
+                DownloadSessionTracker.finish(item.id)
             }
         }
+    }
+
+    /** 取消下载并丢弃临时文件/进度，不写入媒体库。 */
+    fun cancel(itemId: String?) {
+        val id = itemId ?: return
+        jobs.remove(id)?.cancel()
+        jobTitles.remove(id)
+        DownloadSessionTracker.finish(id)
+        DownloadNotifier.cancel(appContext, id)
+        _session.update { current ->
+            current.copy(
+                downloadStates = current.downloadStates - id,
+                showDownloadDialog = false,
+                downloadingItemId = null,
+                isBackgroundDownload = false
+            )
+        }
+        DownloadPillState.hide()
     }
 
     fun dismiss(background: Boolean) {
@@ -133,6 +171,21 @@ class DownloadCoordinator(
     }
 
     private fun updateItemState(itemId: String, state: DownloadState) {
+        val title = jobTitles[itemId] ?: "下载"
+        when {
+            state.isDownloading -> DownloadSessionTracker.update(state.progress, state.speedText)
+            state.isComplete -> {
+                DownloadSessionTracker.finish(itemId)
+                DownloadNotifier.complete(appContext, itemId, title)
+                jobTitles.remove(itemId)
+            }
+            state.error != null -> {
+                DownloadSessionTracker.finish(itemId)
+                DownloadNotifier.cancel(appContext, itemId)
+                jobTitles.remove(itemId)
+            }
+        }
+
         _session.update { current ->
             val nextStates = current.downloadStates.toMutableMap()
             nextStates[itemId] = state
@@ -141,6 +194,7 @@ class DownloadCoordinator(
             if (current.isBackgroundDownload && isCurrentItem && state.isDownloading) {
                 DownloadPillState.update(state.progress, state.speedText)
             } else if (isCurrentItem && (state.isComplete || state.error != null)) {
+                jobs.remove(itemId)
                 DownloadPillState.hide()
             }
 
@@ -163,4 +217,3 @@ class DownloadCoordinator(
         }
     }
 }
-

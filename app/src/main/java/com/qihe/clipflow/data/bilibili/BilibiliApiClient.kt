@@ -1,5 +1,7 @@
 package com.qihe.clipflow.data.bilibili
 
+import com.qihe.clipflow.util.HttpRetry
+import com.qihe.clipflow.util.AppHttp
 import com.google.gson.GsonBuilder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -22,10 +24,11 @@ object BilibiliApiClient {
     }
 
     private val httpClient: OkHttpClient by lazy {
-        OkHttpClient.Builder()
+        AppHttp.shared.newBuilder()
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(60, TimeUnit.SECONDS)
             .writeTimeout(30, TimeUnit.SECONDS)
+            .addInterceptor(HttpRetry.interceptor())
             .addInterceptor { chain ->
                 val request = chain.request()
                 if (isBilibiliHost(request.url.host)) {

@@ -4,7 +4,6 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -37,6 +36,7 @@ import com.qihe.clipflow.ui.theme.ClipFlowTheme
 import com.qihe.clipflow.ui.theme.ThemeMode
 import com.qihe.clipflow.ui.theme.resolveDarkTheme
 import com.qihe.clipflow.util.DownloadManager
+import com.qihe.clipflow.util.IncomingShare
 import com.qihe.clipflow.util.UpdateManager
 import kotlinx.coroutines.launch
 import java.io.File
@@ -47,21 +47,37 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         splashScreen.setKeepOnScreenCondition { false }
+        handleShareIntent(intent)
 
         setContent {
             val preferences = remember { AppPreferences(applicationContext) }
             val themeModeKey by preferences.themeMode.collectAsState(initial = ThemeMode.SYSTEM.key)
             val dynamicColor by preferences.dynamicColor.collectAsState(initial = true)
             val isSystemDark = isSystemInDarkTheme()
+            val privacyAgreed by preferences.privacyAgreed.collectAsState(initial = false)
             ClipFlowTheme(
                 darkTheme = resolveDarkTheme(ThemeMode.fromKey(themeModeKey), isSystemDark),
                 dynamicColor = dynamicColor,
             ) {
                 Surface(modifier = Modifier.fillMaxSize()) {
-                    StartupUpdateCheck()
+                    // 合规：同意隐私政策前不发起任何网络请求（含更新检查）。
+                    if (privacyAgreed) StartupUpdateCheck()
                     ClipFlowNavHost()
                 }
             }
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleShareIntent(intent)
+    }
+
+    /** 接收系统分享的文本（抖音/小红书/B 站链接），交给导航层决定跳转与解析。 */
+    private fun handleShareIntent(intent: Intent?) {
+        if (intent?.action == Intent.ACTION_SEND && intent.type == "text/plain") {
+            IncomingShare.publish(intent.getStringExtra(Intent.EXTRA_TEXT))
         }
     }
 }
@@ -76,15 +92,12 @@ private fun StartupUpdateCheck() {
     var updateInfo by remember { mutableStateOf<UpdateManager.UpdateInfo?>(null) }
     var downloadedApk by remember { mutableStateOf<File?>(null) }
     var downloadError by remember { mutableStateOf<String?>(null) }
+    var downloadJob by remember { mutableStateOf<kotlinx.coroutines.Job?>(null) }
 
     LaunchedEffect(Unit) {
         try {
             UpdateManager.checkUpdate(BuildConfig.VERSION_NAME).onSuccess { info ->
-                if (info == null) {
-                    Toast.makeText(appContext, "已是最新版本", Toast.LENGTH_SHORT).show()
-                } else {
-                    updateInfo = info
-                }
+                if (info != null) updateInfo = info
             }
         } catch (_: Exception) {
             // Startup update checks must not interrupt normal app use.
@@ -138,21 +151,32 @@ private fun StartupUpdateCheck() {
                     ) {
                         Text("安装更新")
                     }
-                    downloadState.isDownloading -> TextButton(onClick = {}, enabled = false) {
-                        Text("下载中")
+                    downloadState.isDownloading -> TextButton(onClick = {
+                        downloadJob?.cancel()
+                        downloadJob = null
+                        downloadManager.reset()
+                        downloadedApk = null
+                        downloadError = "已取消下载"
+                    }) {
+                        Text("取消下载")
                     }
                     else -> TextButton(
                         onClick = {
                             downloadError = null
                             downloadedApk = null
                             downloadManager.reset()
-                            scope.launch {
+                            downloadJob = scope.launch {
                                 downloadManager.downloadWithProgress(
                                     info.downloadUrl,
                                     info.fileName,
                                     onProgress = {}
                                 ).onSuccess { file ->
-                                    downloadedApk = file
+                                    if (UpdateManager.verifyPackage(context, file, info)) {
+                                        downloadedApk = file
+                                    } else {
+                                        file.delete()
+                                        downloadError = "安装包校验失败，已删除，请重试"
+                                    }
                                 }.onFailure { error ->
                                     downloadError = error.message ?: "下载失败"
                                 }

@@ -24,9 +24,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.input.pointer.changedToUpIgnoreConsumed
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChange
@@ -62,7 +64,7 @@ fun LiquidSlider(
     backdrop: Backdrop,
     modifier: Modifier = Modifier,
 ) {
-    val isLightTheme = !isSystemInDarkTheme()
+    val isLightTheme = MaterialTheme.colorScheme.surface.luminance() >= 0.5f
     val accentColor = if (isLightTheme) Color(0xFF0088FF) else Color(0xFF0091FF)
     val trackColor = if (isLightTheme) {
         Color(0xFF787878).copy(alpha = 0.2f)

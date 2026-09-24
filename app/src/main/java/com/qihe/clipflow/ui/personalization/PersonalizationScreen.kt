@@ -181,13 +181,16 @@ fun PersonalizationScreen(
     var showResetSheet by rememberSaveable { mutableStateOf(false) }
 
     val imagePickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent(),
+        contract = ActivityResultContracts.OpenDocument(),
     ) { uri: Uri? ->
         uri?.let {
-            context.contentResolver.takePersistableUriPermission(
-                it,
-                android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION,
-            )
+            // ACTION_OPEN_DOCUMENT 才可能带持久化授权；部分提供方不支持，失败也不应崩溃。
+            runCatching {
+                context.contentResolver.takePersistableUriPermission(
+                    it,
+                    android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION,
+                )
+            }
             viewModel.setWallpaperUri(it.toString())
         }
     }
@@ -234,7 +237,7 @@ fun PersonalizationScreen(
         GlassCard(modifier = Modifier.fillMaxWidth().secondaryPageEntrance(2), cornerRadius = 20.dp) {
             WallpaperSourceRow(
                 hasCustomWallpaper = uiState.wallpaperUri.isNotEmpty(),
-                onChoose = { imagePickerLauncher.launch("image/*") },
+                onChoose = { imagePickerLauncher.launch(arrayOf("image/*")) },
                 onReset = { viewModel.setWallpaperUri("") },
             )
             Spacer(Modifier.height(16.dp))

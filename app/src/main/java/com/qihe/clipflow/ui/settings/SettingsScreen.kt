@@ -1,5 +1,6 @@
 package com.qihe.clipflow.ui.settings
 
+import android.widget.Toast
 import com.qihe.clipflow.BuildConfig
 import android.app.Application
 import android.net.Uri
@@ -18,12 +19,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
+import androidx.documentfile.provider.DocumentFile
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.qihe.clipflow.data.preferences.AppPreferences
 import com.qihe.clipflow.navigation.Screen
+import com.qihe.clipflow.util.CacheCleaner
 import com.qihe.clipflow.ui.components.GlassCard
 import com.qihe.clipflow.ui.components.withTitleShadow
 import com.qihe.clipflow.ui.component.SecondaryPageSection
@@ -32,7 +36,9 @@ import com.qihe.clipflow.ui.component.LiquidButton
 import com.qihe.clipflow.ui.component.liquid.PROGRESSIVE_TOPBAR_CONTENT_START_DP
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 data class SettingsUiState(
     val savePath: String = "",
@@ -80,6 +86,12 @@ fun SettingsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var cacheSize by remember { mutableStateOf(0L) }
+    var clearingCache by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        cacheSize = withContext(Dispatchers.IO) { CacheCleaner.sizeBytes(context) }
+    }
 
     val videoDirLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocumentTree()
@@ -128,21 +140,21 @@ fun SettingsScreen(
                 PathRow(
                     icon = Icons.Filled.Videocam,
                     label = "视频",
-                    path = uiState.videoSavePath.ifEmpty { "Movies/ClipFlow（默认）" },
+                    path = rememberDestinationLabel(uiState.videoSavePath, "Movies/ClipFlow（默认）"),
                     onCustomize = { videoDirLauncher.launch(null) },
                     onReset = { viewModel.resetVideoSavePath() }
                 )
                 PathRow(
                     icon = Icons.Filled.Image,
                     label = "图片",
-                    path = uiState.imageSavePath.ifEmpty { "Pictures/ClipFlow（默认）" },
+                    path = rememberDestinationLabel(uiState.imageSavePath, "Pictures/ClipFlow（默认）"),
                     onCustomize = { imageDirLauncher.launch(null) },
                     onReset = { viewModel.resetImageSavePath() }
                 )
                 PathRow(
                     icon = Icons.Filled.MusicNote,
                     label = "音乐",
-                    path = uiState.audioSavePath.ifEmpty { "Music/ClipFlow（默认）" },
+                    path = rememberDestinationLabel(uiState.audioSavePath, "Music/ClipFlow（默认）"),
                     onCustomize = { audioDirLauncher.launch(null) },
                     onReset = { viewModel.resetAudioSavePath() }
                 )
@@ -171,7 +183,7 @@ fun SettingsScreen(
                 Text("打开软件默认页面", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
                 Spacer(Modifier.height(8.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    listOf("home" to "主页", "douyin" to "抖音", "xiaohongshu" to "小红书").forEach { (key, label) ->
+                    listOf("home" to "主页", "douyin" to "抖音", "xiaohongshu" to "小红书", "bilibili" to "B站").forEach { (key, label) ->
                         FilterChip(selected = uiState.defaultPage == key, onClick = { viewModel.setDefaultPage(key) }, label = { Text(label) })
                     }
                 }
@@ -183,7 +195,7 @@ fun SettingsScreen(
                 Spacer(Modifier.height(8.dp))
 
                 uiState.bottomBarOrder.forEachIndexed { index, key ->
-                    val label = when (key) { "home" -> "主页"; "douyin" -> "抖音"; "xiaohongshu" -> "小红书"; else -> key }
+                    val label = when (key) { "home" -> "主页"; "douyin" -> "抖音"; "xiaohongshu" -> "小红书"; "bilibili" -> "B站"; else -> key }
                     Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                         Surface(shape = MaterialTheme.shapes.extraSmall, color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f), modifier = Modifier.size(24.dp)) {
                             Box(contentAlignment = Alignment.Center) { Text("${index + 1}", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold) }
@@ -209,6 +221,46 @@ fun SettingsScreen(
                 }
             }
         }
+        // ========== 存储 ==========
+        SectionHeader(title = "存储")
+        GlassCard(modifier = Modifier.fillMaxWidth().secondaryPageEntrance(3)) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    Icons.Filled.CleaningServices,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(Modifier.width(14.dp))
+                Column(Modifier.weight(1f)) {
+                    Text("下载缓存", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
+                    Text(
+                        text = CacheCleaner.formatSize(cacheSize),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                LiquidButton(
+                    onClick = {
+                        clearingCache = true
+                        scope.launch {
+                            val freed = withContext(Dispatchers.IO) { CacheCleaner.clear(context) }
+                            cacheSize = withContext(Dispatchers.IO) { CacheCleaner.sizeBytes(context) }
+                            clearingCache = false
+                            Toast.makeText(
+                                context,
+                                if (freed == null) "有下载任务进行中，暂不能清理" else "已清理 ${CacheCleaner.formatSize(freed)}",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    },
+                    enabled = !clearingCache,
+                ) {
+                    Text("清理")
+                }
+            }
+        }
+
 
         // ========== 关于 ==========
         SectionHeader(title = "更多")
@@ -226,7 +278,10 @@ fun SettingsScreen(
             }
         }
         TextButton(
-            onClick = { viewModel.resetTutorial() },
+            onClick = {
+                viewModel.resetTutorial()
+                Toast.makeText(context, "已重置，下次解析成功后会再次显示引导", Toast.LENGTH_SHORT).show()
+            },
             modifier = Modifier
                 .align(Alignment.CenterHorizontally)
                 .secondaryPageEntrance(4),
@@ -242,6 +297,29 @@ fun SettingsScreen(
 @Composable
 fun SectionHeader(title: String) {
     Text(title, style = MaterialTheme.typography.titleSmall.withTitleShadow(), fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(top = 4.dp))
+}
+
+@Composable
+private fun rememberDestinationLabel(uri: String, defaultLabel: String): String {
+    val context = LocalContext.current
+    val label by produceState(initialValue = defaultLabel, key1 = uri) {
+        value = if (uri.isBlank()) {
+            defaultLabel
+        } else {
+            withContext(Dispatchers.IO) {
+                val document = runCatching {
+                    DocumentFile.fromTreeUri(context, uri.toUri())
+                }.getOrNull()
+                when {
+                    document == null -> "自定义目录（不可用，请重新选择）"
+                    !document.exists() -> "自定义目录（已不存在，请重新选择）"
+                    !document.canWrite() -> "${document.name ?: "自定义目录"}（无写入权限）"
+                    else -> document.name ?: "自定义目录"
+                }
+            }
+        }
+    }
+    return label
 }
 
 @Composable

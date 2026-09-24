@@ -32,6 +32,9 @@ jobs:
           echo "${{ secrets.CLIPFLOW_RELEASE_KEYSTORE_BASE64 }}" | base64 --decode > "$HOME/.android/debug.keystore"
           test -s "$HOME/.android/debug.keystore"
 
+      - name: Run unit tests
+        run: ./gradlew testDebugUnitTest --no-daemon
+
       - name: Build release APK
         run: |
           chmod +x gradlew

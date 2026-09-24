@@ -1,5 +1,6 @@
 package com.qihe.clipflow.data.bilibili
 
+import com.qihe.clipflow.util.AppHttp
 import android.util.Log
 import androidx.annotation.Keep
 import com.google.gson.Gson
@@ -219,7 +220,7 @@ class BilibiliLoginClient(
         private const val loginReferer = "https://passport.bilibili.com/login"
 
         private val defaultCallFactory: Call.Factory by lazy {
-            OkHttpClient.Builder()
+            AppHttp.shared.newBuilder()
                 .connectTimeout(30, TimeUnit.SECONDS)
                 .readTimeout(60, TimeUnit.SECONDS)
                 .writeTimeout(30, TimeUnit.SECONDS)

@@ -8,6 +8,23 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "clipflow_settings")
+private val defaultBottomBarOrder = listOf("home", "douyin", "xiaohongshu", "bilibili")
+
+/**
+ * 解析底栏顺序配置。任何非法输入（null/空/非 JSON/空数组）都回退到全部默认页，
+ * 保证老版本或损坏的配置不会导致底栏缺项。
+ */
+internal fun parseBottomBarOrder(raw: String?): List<String> {
+    if (raw.isNullOrBlank()) return defaultBottomBarOrder
+    val parsed = runCatching {
+        com.google.gson.Gson().fromJson(raw, Array<String>::class.java)
+    }.getOrNull()
+    val cleaned = parsed.orEmpty()
+        .mapNotNull { it?.trim() }
+        .filter { it.isNotBlank() }
+        .distinct()
+    return cleaned.ifEmpty { defaultBottomBarOrder }
+}
 
 class AppPreferences(private val context: Context) {
 
@@ -70,16 +87,7 @@ class AppPreferences(private val context: Context) {
     }
 
     val bottomBarOrder: Flow<List<String>> = context.dataStore.data.map { prefs ->
-        val json = prefs[KEY_BOTTOM_BAR_ORDER]
-        if (json != null) {
-            try {
-                json.trim('[', ']').split(",").map { it.trim('"', ' ') }
-            } catch (_: Exception) {
-                listOf("home", "douyin", "xiaohongshu", "bilibili")
-            }
-        } else {
-            listOf("home", "douyin", "xiaohongshu", "bilibili")
-        }
+        parseBottomBarOrder(prefs[KEY_BOTTOM_BAR_ORDER])
     }
 
     val wallpaperUri: Flow<String> = context.dataStore.data.map { prefs ->

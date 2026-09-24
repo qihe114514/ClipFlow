@@ -141,7 +141,7 @@ class BilibiliPlatformParser(
                             type = ContentType.VIDEO,
                             url = quality.streamUrl,
                             thumbnailUrl = coverUrl,
-                            mediaInfo = MediaInfo(resolution = quality.label, format = "DASH"),
+                            mediaInfo = MediaInfo(resolution = quality.label, codec = quality.codec, format = "DASH"),
                             description = firstPart.part.orEmpty(),
                             companionUrl = quality.audioUrl,
                             previewUrl = quality.previewUrl
@@ -214,7 +214,7 @@ object BilibiliUrl {
 object BilibiliStreamMapper {
     fun previewUrl(playUrl: BilibiliPlayUrl?): String? = playUrl?.durl.orEmpty()
         .asSequence()
-        .mapNotNull { it.url }
+        .mapNotNull { it.url?.httpsUrl() }
         .firstOrNull { it.isNotBlank() }
 
     fun qualities(playUrl: BilibiliPlayUrl?): List<BilibiliQuality> {
@@ -225,23 +225,26 @@ object BilibiliStreamMapper {
             .maxByOrNull { it.bandwidth }
         val audioUrls = audio?.urls().orEmpty()
         val audioUrl = audioUrls.firstOrNull()
-        val dash = playUrl.dash?.video.orEmpty().mapNotNull { video ->
-            if (video.codecs?.contains("avc", ignoreCase = true) == false) return@mapNotNull null
-            val urls = video.urls()
-            urls.firstOrNull()?.let {
-                BilibiliQuality(
-                    id = video.id,
-                    label = descriptions[video.id] ?: "Q${video.id}",
-                    streamUrl = it,
-                    audioUrl = audioUrl,
-                    streamUrls = urls,
-                    audioUrls = audioUrls
-                )
+        val dash = playUrl.dash?.video.orEmpty()
+            .filter { isMuxerSupported(it.codecs) }
+            .mapNotNull { video ->
+                val urls = video.urls()
+                urls.firstOrNull()?.let {
+                    BilibiliQuality(
+                        id = video.id,
+                        label = descriptions[video.id] ?: "Q${video.id}",
+                        streamUrl = it.httpsUrl(),
+                        audioUrl = audioUrl,
+                        streamUrls = urls.map { url -> url.httpsUrl() },
+                        audioUrls = audioUrls.map { url -> url.httpsUrl() },
+                        codec = video.codecs
+                    )
+                }
             }
-        }
+            .sortedBy { codecRank(it.codec) }
         if (dash.isNotEmpty()) return dash.distinctBy { it.id }.sortedByDescending { it.id }
         return playUrl.durl.orEmpty().mapIndexedNotNull { index, item ->
-            item.url?.takeIf { it.isNotBlank() }?.let { BilibiliQuality(playUrl.quality + index, "Q${playUrl.quality}", it) }
+            item.url?.takeIf { it.isNotBlank() }?.httpsUrl()?.let { BilibiliQuality(playUrl.quality + index, "Q${playUrl.quality}", it) }
         }
     }
 
@@ -257,3 +260,23 @@ object BilibiliStreamMapper {
         .filter { it.isNotBlank() }
         .distinct()
 }
+
+    /** DashMuxer 基于 MediaMuxer(MP4)，支持 AVC 与 HEVC；AV1/未知编码在部分机型无法封装，故不参与候选。 */
+    private fun isMuxerSupported(codecs: String?): Boolean {
+        val codec = codecs.orEmpty().lowercase()
+        if (codec.isBlank()) return true
+        return codec.contains("avc") ||
+            codec.contains("hev") ||
+            codec.contains("hvc") ||
+            codec.contains("h265")
+    }
+
+    /** 同一清晰度可能同时提供多种编码，优先 AVC（兼容性最好），其次 HEVC。 */
+    private fun codecRank(codecs: String?): Int {
+        val codec = codecs.orEmpty().lowercase()
+        return when {
+            codec.contains("avc") -> 0
+            codec.contains("hev") || codec.contains("hvc") || codec.contains("h265") -> 1
+            else -> 2
+        }
+    }

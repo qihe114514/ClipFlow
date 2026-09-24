@@ -23,10 +23,13 @@ object UpdateManager {
         val latestVersion: String,
         val releaseNotes: String,
         val downloadUrl: String,
-        val fileName: String
+        val fileName: String,
+        /** GitHub Release 提供的 SHA-256（可能为空，为空时不做完整性校验） */
+        val sha256: String? = null
     )
 
-    private val client = OkHttpClient.Builder()
+    private val client = AppHttp.shared.newBuilder()
+        .addInterceptor(HttpRetry.interceptor())
         .connectTimeout(15, TimeUnit.SECONDS)
         .readTimeout(15, TimeUnit.SECONDS)
         .build()
@@ -57,7 +60,11 @@ object UpdateManager {
                     latestVersion = latest,
                     releaseNotes = release.body.ifEmpty { release.name },
                     downloadUrl = "${GH_PROXY}${apk.downloadUrl}",
-                    fileName = apk.name
+                    fileName = apk.name,
+                    sha256 = apk.digest
+                        ?.takeIf { it.startsWith("sha256:", ignoreCase = true) }
+                        ?.substringAfter(':')
+                        ?.takeIf { it.length == 64 }
                 )
             )
         }
@@ -88,6 +95,62 @@ object UpdateManager {
             if (a != b) return a - b
         }
         return 0
+    }
+
+    /**
+     * 校验下载得到 APK 的 SHA-256 是否与 Release 声明一致。
+     * 返回 null 表示 Release 未提供摘要（无法校验），false 表示校验失败。
+     */
+    suspend fun verifyDownload(file: File, info: UpdateInfo): Boolean? = withContext(Dispatchers.IO) {
+        val expected = info.sha256 ?: return@withContext null
+        val actual = runCatching { sha256(file) }.getOrNull() ?: return@withContext false
+        actual.equals(expected, ignoreCase = true)
+    }
+
+    private fun sha256(file: File): String {
+        val digest = java.security.MessageDigest.getInstance("SHA-256")
+        file.inputStream().use { input ->
+            val buffer = ByteArray(64 * 1024)
+            while (true) {
+                val read = input.read(buffer)
+                if (read <= 0) break
+                digest.update(buffer, 0, read)
+            }
+        }
+        return digest.digest().joinToString("") { "%02x".format(it) }
+    }
+
+    /**
+     * 摘要 + 签名双重校验：Release 提供 sha256 时必须一致；下载包必须与已安装应用签名一致。
+     * 返回 false 时调用方应删除安装包并提示重试。
+     */
+    suspend fun verifyPackage(context: Context, file: File, info: UpdateInfo): Boolean {
+        if (verifyDownload(file, info) == false) return false
+        return withContext(Dispatchers.IO) { hasSameSignature(context, file) }
+    }
+
+    /** 校验下载 APK 与已安装应用的签名是否一致，防止被替换为第三方签名包。 */
+    @Suppress("DEPRECATION")
+    fun hasSameSignature(context: Context, apkFile: File): Boolean {
+        val packageManager = context.packageManager
+        val archiveInfo = runCatching {
+            packageManager.getPackageArchiveInfo(
+                apkFile.absolutePath,
+                android.content.pm.PackageManager.GET_SIGNING_CERTIFICATES,
+            )
+        }.getOrNull() ?: return false
+        val archiveSigners = archiveInfo.signingInfo?.apkContentsSigners.orEmpty()
+        val installedInfo = runCatching {
+            packageManager.getPackageInfo(
+                context.packageName,
+                android.content.pm.PackageManager.GET_SIGNING_CERTIFICATES,
+            )
+        }.getOrNull() ?: return false
+        val installedSigners = installedInfo.signingInfo?.apkContentsSigners.orEmpty()
+        if (archiveSigners.isEmpty() || installedSigners.isEmpty()) return false
+        val archiveBytes = archiveSigners.map { it.toByteArray().toList() }.toSet()
+        val installedBytes = installedSigners.map { it.toByteArray().toList() }.toSet()
+        return archiveBytes == installedBytes
     }
 
     /** 通过 FileProvider 安装 APK */

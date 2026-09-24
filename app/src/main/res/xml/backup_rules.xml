@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- B 站登录凭证用本机 Keystore 加密，跨设备恢复后无法解密，直接排除备份。 -->
+<full-backup-content>
+    <exclude domain="sharedpref" path="clipflow_bilibili_secure_session.xml" />
+</full-backup-content>

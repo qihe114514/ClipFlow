@@ -17,3 +17,4 @@ local.properties
 /gradle-dist
 gradle-bin.zip
 /.worktrees/
+_tmp/

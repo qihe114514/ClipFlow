@@ -26,7 +26,7 @@ import com.qihe.clipflow.ui.component.LiquidButton
 import org.json.JSONObject
 
 @Composable
-@SuppressLint("SetJavaScriptEnabled")
+@SuppressLint("SetJavaScriptEnabled", "JavascriptInterface")
 fun BilibiliCaptchaDialog(
     challenge: BilibiliCaptchaChallenge,
     onResult: (BilibiliCaptchaResult) -> Unit,

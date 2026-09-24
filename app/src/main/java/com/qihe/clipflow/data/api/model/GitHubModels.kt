@@ -13,5 +13,7 @@ data class GitHubRelease(
 data class GitHubAsset(
     val name: String,
     @SerializedName("browser_download_url") val downloadUrl: String,
-    val size: Long = 0
+    val size: Long = 0,
+    /** GitHub Release 资产摘要，形如 "sha256:..."，可能为空 */
+    val digest: String? = null
 )

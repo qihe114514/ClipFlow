@@ -1,3 +1,5 @@
+@file:androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
+
 package com.qihe.clipflow.ui.components
 
 import android.app.Activity
@@ -456,7 +458,11 @@ private fun VideoPreviewPage(
                             onLongPressRelease()
                         }
                     } else {
-                        onToggleControls()
+                        // 只有“真正的点击”才切换控件；横滑翻页不应误触。
+                        val up = waitForUpOrCancellation()
+                        if (up != null && (up.position - down.position).getDistance() < viewConfiguration.touchSlop) {
+                            onToggleControls()
+                        }
                     }
                 }
             }

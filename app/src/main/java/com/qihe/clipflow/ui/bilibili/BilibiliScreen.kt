@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -21,6 +23,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.qihe.clipflow.data.api.model.ContentType
+import com.qihe.clipflow.ui.components.rememberNotificationPermissionRequest
 import com.qihe.clipflow.ui.components.DownloadProgressDialog
 import com.qihe.clipflow.ui.components.GlassCard
 import com.qihe.clipflow.ui.components.ParseInfoCard
@@ -34,6 +38,7 @@ fun BilibiliScreen(
     viewModel: BilibiliViewModel = viewModel(viewModelStoreOwner = LocalContext.current as androidx.activity.ComponentActivity)
 ) {
     val state by viewModel.state.collectAsState()
+    val requestNotificationPermission = rememberNotificationPermissionRequest()
     val context = LocalContext.current
     LaunchedEffect(sourceUrl) {
         sourceUrl?.let {
@@ -64,7 +69,10 @@ fun BilibiliScreen(
                     if (hasInput) {
                         viewModel.setInput("")
                     } else {
-                        clipboard?.primaryClip?.getItemAt(0)?.text?.toString()?.let(viewModel::setInput)
+                        val clip = clipboard?.primaryClip
+                        if (clip != null && clip.itemCount > 0) {
+                            runCatching { clip.getItemAt(0)?.text?.toString() }.getOrNull()?.let(viewModel::setInput)
+                        }
                     }
                 },
                 onParse = { viewModel.parse() }
@@ -87,11 +95,11 @@ fun BilibiliScreen(
             }
             if (details != null && details.parts.size > 1) {
                 item {
-                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        details.parts.forEachIndexed { index, part ->
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        itemsIndexed(details.parts) { index, part ->
                             AssistChip(
                                 onClick = { viewModel.selectPart(index) },
-                                label = { Text("P${part.index}") }
+                                label = { Text("P${index + 1}") }
                             )
                         }
                     }
@@ -107,8 +115,16 @@ fun BilibiliScreen(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
-                                    Text(quality.label)
-                                    LiquidButton(onClick = { viewModel.download(index) }) { Text("下载 MP4") }
+                                    Text(listOfNotNull(quality.label, quality.codec).joinToString(" · "))
+                                    if (index in state.completedQualityIds) {
+                                        Text(
+                                            text = "已保存",
+                                            style = MaterialTheme.typography.labelMedium,
+                                            color = MaterialTheme.colorScheme.primary,
+                                        )
+                                    } else {
+                                        LiquidButton(onClick = { requestNotificationPermission(); viewModel.download(index) }) { Text("下载 MP4") }
+                                    }
                                 }
                             }
                         }
@@ -122,7 +138,9 @@ fun BilibiliScreen(
                 DownloadProgressDialog(
                     state = download,
                     onDismiss = viewModel::dismissDownload,
-                    onBackground = viewModel::backgroundDownload
+                    onBackground = viewModel::backgroundDownload,
+                    onCancel = viewModel::cancelDownload,
+                    mediaType = ContentType.VIDEO
                 )
             }
         }

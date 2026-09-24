@@ -15,6 +15,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.TouchApp
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -41,7 +45,12 @@ fun TutorialOverlay(onDismiss: () -> Unit, modifier: Modifier = Modifier) {
             modifier = Modifier.align(Alignment.TopCenter).padding(top = 160.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text("2193", fontSize = 40.sp, color = Color.White, modifier = Modifier.offset(y = arrowOffset.dp))
+            Icon(
+                imageVector = Icons.Filled.TouchApp,
+                contentDescription = null,
+                tint = Color.White,
+                modifier = Modifier.size(44.dp).offset(y = arrowOffset.dp)
+            )
             Spacer(Modifier.height(8.dp))
             Text("点击封面在线播放", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(6.dp))

@@ -7,24 +7,77 @@ import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
+import androidx.core.net.toUri
+import androidx.documentfile.provider.DocumentFile
 import com.qihe.clipflow.data.api.model.ContentType
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.io.File
 
 /**
- * 将下载的文件写入系统媒体库
+ * 将下载的文件写入用户选择的自定义目录（SAF）或系统媒体库。
  * 视频→Movies/ClipFlow  图片→Pictures/ClipFlow  音频→Music/ClipFlow
  */
 object MediaStoreHelper {
 
-    fun saveToGallery(
+    data class SaveOutcome(
+        val uri: Uri? = null,
+        val error: String? = null
+    ) {
+        val isSuccess: Boolean get() = uri != null
+    }
+
+    /**
+     * 保存结果：uri 非空表示成功；否则 error 说明原因。
+     * customTreeUri 非空时只写自定义目录，失败不会回退到媒体库（避免“设置无效”的静默行为）。
+     */
+    suspend fun saveToGallery(
         context: Context,
         sourceFile: File,
-        type: ContentType
-    ): Uri? {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        type: ContentType,
+        customTreeUri: String? = null
+    ): SaveOutcome = withContext(Dispatchers.IO) {
+        if (!customTreeUri.isNullOrBlank()) {
+            return@withContext saveToCustomTree(context, sourceFile, customTreeUri)
+        }
+        val uri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             saveUsingMediaStore(context, sourceFile, type)
         } else {
             saveUsingLegacy(context, sourceFile, type)
+        }
+        if (uri != null) SaveOutcome(uri = uri) else SaveOutcome(error = "保存到系统相册失败")
+    }
+
+    private fun saveToCustomTree(
+        context: Context,
+        sourceFile: File,
+        treeUri: String
+    ): SaveOutcome {
+        val tree = runCatching { DocumentFile.fromTreeUri(context, treeUri.toUri()) }.getOrNull()
+            ?: return SaveOutcome(error = "自定义保存目录不可用，请在设置中重新选择")
+        if (!tree.exists()) {
+            return SaveOutcome(error = "自定义保存目录已不存在，请在设置中重新选择")
+        }
+        if (!tree.canWrite()) {
+            return SaveOutcome(error = "自定义保存目录没有写入权限")
+        }
+        val mimeType = getMimeType(sourceFile.name)
+        val target = tree.findFile(sourceFile.name)?.takeIf { it.isFile }
+            ?: runCatching { tree.createFile(mimeType, sourceFile.name) }.getOrNull()
+        if (target == null) {
+            return SaveOutcome(error = "无法在自定义目录创建文件")
+        }
+        return try {
+            context.contentResolver.openOutputStream(target.uri)?.use { output ->
+                sourceFile.inputStream().use { input -> input.copyTo(output) }
+            } ?: run {
+                runCatching { target.delete() }
+                return SaveOutcome(error = "无法写入自定义目录")
+            }
+            SaveOutcome(uri = target.uri)
+        } catch (e: Exception) {
+            runCatching { target.delete() }
+            SaveOutcome(error = e.message ?: "写入自定义目录失败")
         }
     }
 
@@ -76,8 +129,13 @@ object MediaStoreHelper {
 
         val uri = resolver.insert(collection, contentValues) ?: return null
 
-        try {
-            resolver.openOutputStream(uri)?.use { outputStream ->
+        return try {
+            val output = resolver.openOutputStream(uri)
+                ?: run {
+                    resolver.delete(uri, null, null)
+                    return null
+                }
+            output.use { outputStream ->
                 sourceFile.inputStream().use { inputStream ->
                     inputStream.copyTo(outputStream)
                 }
@@ -86,11 +144,10 @@ object MediaStoreHelper {
             contentValues.clear()
             contentValues.put(MediaStore.MediaColumns.IS_PENDING, 0)
             resolver.update(uri, contentValues, null, null)
-
-            return uri
+            uri
         } catch (e: Exception) {
             resolver.delete(uri, null, null)
-            return null
+            null
         }
     }
 
@@ -113,18 +170,17 @@ object MediaStoreHelper {
         if (!dir.exists()) dir.mkdirs()
 
         val destFile = File(dir, sourceFile.name)
-        try {
+        return try {
             sourceFile.copyTo(destFile, overwrite = true)
-            // 通知系统扫描
             MediaScannerConnection.scanFile(
                 context,
                 arrayOf(destFile.absolutePath),
                 null,
                 null
             )
-            return Uri.fromFile(destFile)
+            Uri.fromFile(destFile)
         } catch (e: Exception) {
-            return null
+            null
         }
     }
 

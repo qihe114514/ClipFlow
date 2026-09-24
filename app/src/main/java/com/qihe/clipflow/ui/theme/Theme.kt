@@ -33,6 +33,7 @@ fun resolveDarkTheme(mode: ThemeMode, systemDarkTheme: Boolean): Boolean = when 
     ThemeMode.DARK -> true
 }
 
+@androidx.annotation.ChecksSdkIntAtLeast(api = Build.VERSION_CODES.S)
 fun shouldUseDynamicColor(dynamicColor: Boolean, sdkInt: Int): Boolean =
     dynamicColor && sdkInt >= Build.VERSION_CODES.S
 
@@ -95,7 +96,9 @@ fun ClipFlowTheme(
             val window = (view.context as Activity).window
             window.statusBarColor = Color.Transparent.toArgb()
             window.navigationBarColor = Color.Transparent.toArgb()
-            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
+            val insetsController = WindowCompat.getInsetsController(window, view)
+            insetsController.isAppearanceLightStatusBars = !darkTheme
+            insetsController.isAppearanceLightNavigationBars = !darkTheme
         }
     }
 

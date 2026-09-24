@@ -1,6 +1,6 @@
 package com.qihe.clipflow.ui.component
 
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -21,6 +21,7 @@ internal val LocalLiquidBottomTabScale = staticCompositionLocalOf { { 1f } }
 @Composable
 fun RowScope.LiquidBottomTab(
     onClick: () -> Unit,
+    selected: Boolean = false,
     modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit,
 ) {
@@ -28,7 +29,8 @@ fun RowScope.LiquidBottomTab(
     Column(
         modifier
             .clip(Capsule())
-            .clickable(
+            .selectable(
+                selected = selected,
                 interactionSource = null,
                 indication = null,
                 role = Role.Tab,

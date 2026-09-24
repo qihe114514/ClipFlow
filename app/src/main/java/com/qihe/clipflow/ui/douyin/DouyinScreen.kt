@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.qihe.clipflow.data.preferences.AppPreferences
+import com.qihe.clipflow.ui.components.rememberNotificationPermissionRequest
 import com.qihe.clipflow.ui.components.TutorialOverlay
 import com.qihe.clipflow.ui.parser.PlatformParseScreenContent
 import com.qihe.clipflow.ui.theme.DouyinAccent
@@ -30,6 +31,7 @@ fun DouyinScreen(
     val context = LocalContext.current
     val prefs = remember { AppPreferences(context) }
     val scope = rememberCoroutineScope()
+    val requestNotificationPermission = rememberNotificationPermissionRequest()
     val tutorialShown by produceState(initialValue = true) { prefs.tutorialShown.collect { value = it } }
     var showTutorial by remember { mutableStateOf(false) }
 
@@ -55,11 +57,12 @@ fun DouyinScreen(
             onUrlChange = viewModel::onUrlChange,
             onClearOrPaste = { hasInput -> if (hasInput) viewModel.clearUrl() else viewModel.pasteFromClipboard() },
             onParse = viewModel::parse,
-            onDownload = viewModel::downloadItem,
-            onDownloadBackupUrl = viewModel::downloadBackupUrl,
+            onDownload = { requestNotificationPermission(); viewModel.downloadItem(it) },
+            onDownloadBackupUrl = { url, label -> requestNotificationPermission(); viewModel.downloadBackupUrl(url, label) },
             parseRoute = uiState.parseRoute,
             onParseRouteChange = viewModel::setParseRoute,
             onDismissDownloadDialog = viewModel::dismissDownloadDialog,
+            onCancelDownload = viewModel::cancelDownload,
         )
         if (showTutorial) {
             TutorialOverlay(

@@ -7,7 +7,7 @@ import androidx.browser.customtabs.CustomTabsIntent
 import java.io.File
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -47,6 +47,7 @@ fun AboutScreen(navController: NavHostController) {
     var checkingUpdate by remember { mutableStateOf(false) }
     var updateStatus by remember { mutableStateOf("") } // "" / "checking" / "已是最新版本" / "检查失败"
     var downloadedApk by remember { mutableStateOf<File?>(null) }
+    var updateDownloadJob by remember { mutableStateOf<kotlinx.coroutines.Job?>(null) }
     val downloadManager = remember { com.qihe.clipflow.util.DownloadManager(context) }
     val downloadState by downloadManager.downloadState.collectAsState()
 
@@ -237,7 +238,7 @@ fun AboutScreen(navController: NavHostController) {
                     Surface(
                         modifier = Modifier
                             .size(36.dp)
-                            .combinedClickable(
+                            .clickable(
                                 enabled = !checkingUpdate,
                                 onClick = {
                                     if (!checkingUpdate) {
@@ -258,29 +259,6 @@ fun AboutScreen(navController: NavHostController) {
                                         }
                                     }
                                 },
-                                onLongClick = {
-                                    if (!checkingUpdate) {
-                                        checkingUpdate = true
-                                        updateStatus = ""
-                                        updateInfo = null
-                                        downloadedApk = null
-                                        scope.launch {
-                                            try {
-                                                val result = UpdateManager.checkUpdate("0.0.0")
-                                                val info = result.getOrNull()
-                                                if (info != null) {
-                                                    updateInfo = info
-                                                    updateStatus = "强制下载 v${info.latestVersion}"
-                                                } else {
-                                                    updateStatus = "未找到发布版本"
-                                                }
-                                            } catch (e: Exception) {
-                                                updateStatus = "检查失败"
-                                            }
-                                            checkingUpdate = false
-                                        }
-                                    }
-                                }
                             ),
                         shape = CircleShape,
                         color = MaterialTheme.colorScheme.surfaceVariant,
@@ -298,7 +276,7 @@ fun AboutScreen(navController: NavHostController) {
                         } else {
                             Icon(
                                 imageVector = Icons.Filled.Refresh,
-                                contentDescription = "检查更新（长按强制下载）",
+                                contentDescription = "检查更新",
                                 modifier = Modifier.size(16.dp)
                             )
                         }
@@ -338,19 +316,44 @@ fun AboutScreen(navController: NavHostController) {
                                 modifier = Modifier.fillMaxWidth()
                             )
                             Spacer(Modifier.height(4.dp))
-                            Text(
-                                text = "${(downloadState.progress * 100).toInt()}%  ${downloadState.speedText}",
-                                style = MaterialTheme.typography.labelSmall
-                            )
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "${(downloadState.progress * 100).toInt()}%  ${downloadState.speedText}",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                TextButton(onClick = {
+                                    updateDownloadJob?.cancel()
+                                    updateDownloadJob = null
+                                    downloadManager.reset()
+                                    downloadedApk = null
+                                    updateStatus = "已取消下载"
+                                }) {
+                                    Text("取消")
+                                }
+                            }
                         }
                     } else {
                         LiquidButton(
                             onClick = {
                                 downloadManager.reset()
-                                scope.launch {
-                                    downloadManager.download(info.downloadUrl, info.fileName) { file ->
-                                        downloadedApk = file
-                                    }
+                                updateDownloadJob = scope.launch {
+                                    downloadManager
+                                        .downloadWithProgress(info.downloadUrl, info.fileName, onProgress = {})
+                                        .onSuccess { file ->
+                                            if (UpdateManager.verifyPackage(context, file, info)) {
+                                                downloadedApk = file
+                                            } else {
+                                                file.delete()
+                                                updateStatus = "安装包校验失败，请重试"
+                                            }
+                                        }
+                                        .onFailure { error ->
+                                            updateStatus = "下载失败：${error.message ?: "请重试"}"
+                                        }
                                 }
                             },
                             modifier = Modifier.fillMaxWidth()
@@ -489,10 +492,10 @@ fun AboutScreen(navController: NavHostController) {
                     )
                     LiquidButton(
                         onClick = {
+                            (context.applicationContext as? com.qihe.clipflow.ClipFlowApp)?.revokeUmengConsent()
                             scope.launch {
                                 prefs.setPrivacyAgreed(false)
                             }
-                            (context as? android.app.Activity)?.finishAffinity()
                         },
                         modifier = Modifier.size(36.dp),
                         contentPadding = PaddingValues(0.dp),

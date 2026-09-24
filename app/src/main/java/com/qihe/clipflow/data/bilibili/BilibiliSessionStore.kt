@@ -32,23 +32,42 @@ object BilibiliSessionStore : BilibiliSessionRepository {
         appContext = context.applicationContext
     }
 
+    @Volatile
+    private var cachedSession: BilibiliSession? = null
+
+    @Volatile
+    private var cacheLoaded = false
+
+    @Synchronized
     override fun session(): BilibiliSession? {
+        if (cacheLoaded) return cachedSession
         val context = appContext ?: return null
         val encoded = context.getSharedPreferences(preferencesName, Context.MODE_PRIVATE)
-            .getString(sessionKey, null) ?: return null
-        return try {
-            val bytes = Base64.decode(encoded, Base64.NO_WRAP)
-            if (bytes.size <= ivSize) return null
-            val plain = cipher(Cipher.DECRYPT_MODE, bytes.copyOfRange(0, ivSize))
-                .doFinal(bytes.copyOfRange(ivSize, bytes.size))
-            gson.fromJson(String(plain, Charsets.UTF_8), BilibiliSession::class.java)
-                ?.takeIf { it.cookie.isNotBlank() }
-        } catch (_: Exception) {
-            clear()
+            .getString(sessionKey, null)
+        val result = if (encoded == null) {
             null
+        } else {
+            try {
+                val bytes = Base64.decode(encoded, Base64.NO_WRAP)
+                if (bytes.size <= ivSize) {
+                    null
+                } else {
+                    val plain = cipher(Cipher.DECRYPT_MODE, bytes.copyOfRange(0, ivSize))
+                        .doFinal(bytes.copyOfRange(ivSize, bytes.size))
+                    gson.fromJson(String(plain, Charsets.UTF_8), BilibiliSession::class.java)
+                        ?.takeIf { it.cookie.isNotBlank() }
+                }
+            } catch (_: Exception) {
+                clearInternal()
+                null
+            }
         }
+        cachedSession = result
+        cacheLoaded = true
+        return result
     }
 
+    @Synchronized
     override fun save(session: BilibiliSession) {
         require(session.cookie.isNotBlank()) { "A Bilibili session requires a cookie" }
         val context = requireNotNull(appContext) { "BilibiliSessionStore is not initialized" }
@@ -57,11 +76,20 @@ object BilibiliSessionStore : BilibiliSessionRepository {
         val value = Base64.encodeToString(encryptor.iv + encrypted, Base64.NO_WRAP)
         context.getSharedPreferences(preferencesName, Context.MODE_PRIVATE)
             .edit().putString(sessionKey, value).apply()
+        cachedSession = session
+        cacheLoaded = true
     }
 
+    @Synchronized
     override fun clear() {
+        clearInternal()
+    }
+
+    private fun clearInternal() {
         appContext?.getSharedPreferences(preferencesName, Context.MODE_PRIVATE)
             ?.edit()?.remove(sessionKey)?.apply()
+        cachedSession = null
+        cacheLoaded = true
     }
 
     private fun cipher(mode: Int, iv: ByteArray? = null): Cipher {

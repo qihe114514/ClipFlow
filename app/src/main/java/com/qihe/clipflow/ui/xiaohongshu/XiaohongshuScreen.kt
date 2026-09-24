@@ -1,5 +1,6 @@
 package com.qihe.clipflow.ui.xiaohongshu
 
+import com.qihe.clipflow.ui.components.rememberNotificationPermissionRequest
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -15,6 +16,7 @@ fun XiaohongshuScreen(
     viewModel: XiaohongshuViewModel = viewModel(viewModelStoreOwner = LocalContext.current as androidx.activity.ComponentActivity)
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val requestNotificationPermission = rememberNotificationPermissionRequest()
 
     LaunchedEffect(sourceUrl) {
         viewModel.consumeSourceUrl(sourceUrl)?.let { url ->
@@ -31,7 +33,8 @@ fun XiaohongshuScreen(
         onUrlChange = viewModel::onUrlChange,
         onClearOrPaste = { hasInput -> if (hasInput) viewModel.clearUrl() else viewModel.pasteFromClipboard() },
         onParse = viewModel::parse,
-        onDownload = viewModel::downloadItem,
+        onDownload = { requestNotificationPermission(); viewModel.downloadItem(it) },
         onDismissDownloadDialog = viewModel::dismissDownloadDialog,
+        onCancelDownload = viewModel::cancelDownload,
     )
 }

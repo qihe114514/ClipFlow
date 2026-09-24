@@ -40,7 +40,9 @@ class ParseScreenSupport(
     fun readClipboardText(): String {
         val clipboard = application
             .getSystemService(Application.CLIPBOARD_SERVICE) as ClipboardManager
-        return clipboard.primaryClip?.getItemAt(0)?.text?.toString().orEmpty()
+        val clip = clipboard.primaryClip ?: return ""
+        if (clip.itemCount <= 0) return ""
+        return runCatching { clip.getItemAt(0)?.text?.toString().orEmpty() }.getOrDefault("")
     }
 
     fun emptyInputMessage(): String {
@@ -70,6 +72,10 @@ class ParseScreenSupport(
 
     fun startDownload(item: ContentItem) {
         downloadCoordinator.startDownload(item)
+    }
+
+    fun cancelDownload(itemId: String?) {
+        downloadCoordinator.cancel(itemId)
     }
 
     fun dismissDownloadDialog(background: Boolean) {

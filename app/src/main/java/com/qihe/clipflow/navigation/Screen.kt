@@ -157,3 +157,34 @@ fun NavHostController.navigateToPrimary(route: String) {
         restoreState = options.restoreState
     }
 }
+
+
+/** 系统分享文本可识别的平台。 */
+enum class SharedLinkPlatform {
+    DOUYIN,
+    XIAOHONGSHU,
+    BILIBILI,
+}
+
+/** 纯函数：根据分享文本判断目标平台，便于单测。 */
+fun classifySharedLink(text: String?): SharedLinkPlatform? {
+    val value = text?.trim().orEmpty()
+    if (value.isEmpty()) return null
+    return when {
+        value.contains("douyin.com") || value.contains("iesdouyin.com") -> SharedLinkPlatform.DOUYIN
+        value.contains("xhslink.com") || value.contains("xiaohongshu.com") -> SharedLinkPlatform.XIAOHONGSHU
+        value.contains("bilibili.com") || value.contains("b23.tv") -> SharedLinkPlatform.BILIBILI
+        else -> null
+    }
+}
+
+/** 把系统分享的文本映射到对应平台的一次性解析路由；无法识别时返回 null。 */
+fun sharedTextDestination(text: String?): String? {
+    val value = text?.trim().orEmpty()
+    return when (classifySharedLink(value)) {
+        SharedLinkPlatform.DOUYIN -> Screen.Douyin.withSourceUrl(value)
+        SharedLinkPlatform.XIAOHONGSHU -> Screen.Xiaohongshu.withSourceUrl(value)
+        SharedLinkPlatform.BILIBILI -> Screen.Bilibili.withSourceUrl(value)
+        null -> null
+    }
+}

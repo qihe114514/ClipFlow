@@ -14,7 +14,11 @@ class HistoryRepository(private val historyDao: HistoryDao) {
 
     suspend fun insert(entity: HistoryEntity): Long = historyDao.insert(entity)
 
+    suspend fun update(entity: HistoryEntity) = historyDao.update(entity)
+
     suspend fun getByUrl(url: String): HistoryEntity? = historyDao.getByUrl(url)
+
+    suspend fun getAllUrls(): List<String> = historyDao.getAllUrls()
 
     suspend fun updateTimestamp(url: String, timestamp: Long) = historyDao.updateTimestamp(url, timestamp)
 

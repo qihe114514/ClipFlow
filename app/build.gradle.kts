@@ -6,7 +6,7 @@ plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
-    id("org.jetbrains.kotlin.kapt")
+    id("com.google.devtools.ksp")
 }
 
 val localProperties = Properties().apply {
@@ -17,6 +17,7 @@ val localProperties = Properties().apply {
 }
 // 线路1（api-new.ifphp.com）：local.properties 可覆盖；未提供时使用内置 Key，
 // 否则 CI 等没有 local.properties 的构建会打进空 Key，接口直接返回 401。
+// 注：该 Key 为免费网关凭据，按项目所有者决定明文入库。
 val douyinApiKey = localProperties.getProperty(
     "douyin.api.key",
     "bp_live_0316aed1002cb08aedb8f6966a09140cafbe83a6db97ea3d7700339e40ae8ca2"
@@ -25,13 +26,14 @@ val douyinApiKey = localProperties.getProperty(
 android {
     namespace = "com.qihe.clipflow"
     compileSdk = 37
+    compileSdkMinor = 0
 
     defaultConfig {
         applicationId = "com.qihe.clipflow"
         minSdk = 29
         targetSdk = 37
-        versionCode = 89
-        versionName = "3.9"
+        versionCode = 90
+        versionName = "4.0"
         buildConfigField("String", "DOUYIN_API_KEY", "\"$douyinApiKey\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -136,7 +138,7 @@ dependencies {
     // Room
     implementation("androidx.room:room-runtime:2.8.4")
     implementation("androidx.room:room-ktx:2.8.4")
-    kapt("androidx.room:room-compiler:2.8.4")
+    ksp("androidx.room:room-compiler:2.8.4")
 
     // Progressive backdrop blur
     implementation("io.github.kyant0:backdrop:2.0.0")
@@ -144,6 +146,9 @@ dependencies {
 
     // DataStore
     implementation("androidx.datastore:datastore-preferences:1.1.1")
+
+    // Storage Access Framework（自定义下载目录）
+    implementation("androidx.documentfile:documentfile:1.0.0")
 
     // Browser (CustomTabs)
     implementation("androidx.browser:browser:1.8.0")
@@ -163,6 +168,7 @@ dependencies {
 
     // Testing
     testImplementation("junit:junit:4.13.2")
+    testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
     androidTestImplementation(composeBom)

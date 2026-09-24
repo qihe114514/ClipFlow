@@ -57,6 +57,7 @@ fun ClipFlowTopBar(
                 LiquidButton(
                     onClick = navController::popBackStack,
                     modifier = Modifier.padding(start = 12.dp).size(40.dp),
+                    surfaceColor = Color.Black.copy(alpha = 0.22f),
                     contentPadding = PaddingValues(0.dp),
                 ) {
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
@@ -85,6 +86,7 @@ fun ClipFlowTopBar(
                 LiquidButton(
                     onClick = { navController.navigate(Screen.History.route) },
                     modifier = Modifier.size(40.dp),
+                    surfaceColor = Color.Black.copy(alpha = 0.22f),
                     contentPadding = PaddingValues(0.dp),
                 ) {
                     Icon(Icons.Outlined.History, contentDescription = "历史", tint = Color.White)
@@ -97,6 +99,7 @@ fun ClipFlowTopBar(
                 LiquidButton(
                     onClick = { navController.navigate(Screen.Settings.route) },
                     modifier = Modifier.padding(end = 12.dp).size(40.dp),
+                    surfaceColor = Color.Black.copy(alpha = 0.22f),
                     contentPadding = PaddingValues(0.dp),
                 ) {
                     Icon(Icons.Outlined.Settings, contentDescription = "设置", tint = Color.White)
@@ -134,6 +137,7 @@ fun FloatingBottomBar(
     ) {
         items.forEachIndexed { index, item ->
             LiquidBottomTab(
+                selected = index == primaryPagerState.selectedPage,
                 onClick = { primaryPagerState.animateToPage(index) },
             ) {
                 Icon(item.selectedIcon, contentDescription = item.label)

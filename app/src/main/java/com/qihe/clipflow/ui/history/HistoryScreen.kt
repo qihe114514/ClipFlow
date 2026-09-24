@@ -49,7 +49,6 @@ import com.qihe.clipflow.ui.parser.PlatformParseViewModel
 import com.qihe.clipflow.ui.theme.DouyinAccent
 import com.qihe.clipflow.ui.theme.XiaohongshuAccent
 import com.qihe.clipflow.ui.xiaohongshu.XiaohongshuViewModel
-import java.text.SimpleDateFormat
 import java.util.*
 
 
@@ -212,6 +211,7 @@ fun HistoryScreen(
             }
         } else {
             LazyColumn(
+                modifier = Modifier.weight(1f),
                 contentPadding = PaddingValues(top = 8.dp, bottom = 120.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
@@ -300,17 +300,15 @@ fun HistoryScreen(
 
 
 private fun formatDateHeader(timestamp: Long): String {
-    val today = Calendar.getInstance()
-    val date = Calendar.getInstance().apply { timeInMillis = timestamp }
+    val zone = java.time.ZoneId.systemDefault()
+    val date = java.time.Instant.ofEpochMilli(timestamp).atZone(zone).toLocalDate()
+    val today = java.time.LocalDate.now(zone)
+    val formatter = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd", Locale.getDefault())
     return when {
-        today.get(Calendar.YEAR) == date.get(Calendar.YEAR) &&
-                today.get(Calendar.DAY_OF_YEAR) == date.get(Calendar.DAY_OF_YEAR) -> "今天"
-        today.get(Calendar.YEAR) == date.get(Calendar.YEAR) &&
-                today.get(Calendar.DAY_OF_YEAR) - date.get(Calendar.DAY_OF_YEAR) == 1 -> "昨天"
-        today.get(Calendar.YEAR) == date.get(Calendar.YEAR) &&
-                today.get(Calendar.DAY_OF_YEAR) - date.get(Calendar.DAY_OF_YEAR) < 7 -> {
-            SimpleDateFormat("EEEE", Locale.CHINESE).format(Date(timestamp))
-        }
-        else -> SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date(timestamp))
+        date == today -> "今天"
+        date == today.minusDays(1) -> "昨天"
+        !date.isBefore(today.minusDays(6)) && !date.isAfter(today) ->
+            date.dayOfWeek.getDisplayName(java.time.format.TextStyle.FULL, Locale.CHINESE)
+        else -> date.format(formatter)
     }
 }

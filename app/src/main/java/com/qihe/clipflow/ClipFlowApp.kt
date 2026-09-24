@@ -23,9 +23,8 @@ class ClipFlowApp : Application() {
         super.onCreate()
         BilibiliSessionStore.initialize(this)
         createNotificationChannels()
-        // 预初始化：每次冷启动必须调用（主线程），不含 init，不采集数据
+        // 合规：友盟 preInit/init 延后到用户同意隐私政策后再执行（见 initUmengIfNeeded）。
         UMConfigure.setLogEnabled(false)
-        UMConfigure.preInit(this, UMENG_APPKEY, UMENG_CHANNEL)
     }
 
     /**
@@ -37,6 +36,7 @@ class ClipFlowApp : Application() {
         umengInitialized = true
 
         Thread {
+            UMConfigure.preInit(this, UMENG_APPKEY, UMENG_CHANNEL)
             UMConfigure.init(
                 this,
                 UMENG_APPKEY,
@@ -44,7 +44,17 @@ class ClipFlowApp : Application() {
                 UMConfigure.DEVICE_TYPE_PHONE,
                 null
             )
+            UMConfigure.submitPolicyGrantResult(this, true)
         }.start()
+    }
+
+    /**
+     * 用户在“关于”页撤回隐私同意后调用：通知友盟停止后续采集。
+     * 再次同意时会重新走 initUmengIfNeeded()。
+     */
+    fun revokeUmengConsent() {
+        umengInitialized = false
+        runCatching { UMConfigure.submitPolicyGrantResult(this, false) }
     }
 
     private fun createNotificationChannels() {

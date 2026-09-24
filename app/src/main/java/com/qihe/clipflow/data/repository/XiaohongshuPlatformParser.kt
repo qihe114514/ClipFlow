@@ -246,7 +246,7 @@ class XiaohongshuPlatformParser(
                         authorAvatar = authorAvatar.ifBlank {
                             jsonObj.get("avatar")?.asString.orEmpty()
                         },
-                        contentType = "xiaohongshu"
+                        contentType = type
                     )
                 )
             } catch (e: Exception) {

@@ -6,6 +6,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.rememberPagerState
+import android.widget.Toast
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
@@ -29,6 +30,7 @@ import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.qihe.clipflow.data.preferences.AppPreferences
 import com.qihe.clipflow.ui.components.PrivacyConsentDialog
+import com.qihe.clipflow.util.IncomingShare
 import com.qihe.clipflow.ui.components.DownloadPill
 import com.qihe.clipflow.ClipFlowApp
 import com.qihe.clipflow.ui.components.DownloadPillState
@@ -65,6 +67,19 @@ fun ClipFlowNavHost() {
     val context = LocalContext.current
     val prefs = remember { AppPreferences(context) }
     val navController = rememberNavController()
+
+    // 系统分享进来的链接：直接跳到对应平台并自动解析。
+    val sharedText by IncomingShare.sharedText.collectAsState()
+    LaunchedEffect(sharedText) {
+        val text = sharedText ?: return@LaunchedEffect
+        val target = sharedTextDestination(text)
+        if (target != null) {
+            navController.navigateToPrimary(target)
+        } else {
+            Toast.makeText(context, "未识别到支持的抖音 / 小红书 / B 站链接", Toast.LENGTH_SHORT).show()
+        }
+        IncomingShare.consume()
+    }
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
     val currentRoute = currentDestination?.route?.substringBefore("?")
