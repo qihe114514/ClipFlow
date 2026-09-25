@@ -33,6 +33,13 @@ internal class OneShotSourceUrl {
     }
 }
 
+internal fun scopeItemsToParseRequest(
+    requestId: Long,
+    items: List<ContentItem>
+): List<ContentItem> = items.map { item ->
+    item.copy(id = "$requestId:${item.id}")
+}
+
 data class ParsePageUiState(
     val inputUrl: String = "",
     val isParsing: Boolean = false,
@@ -156,7 +163,7 @@ open class PlatformParseViewModel(
                         _uiState.update {
                             it.copy(
                                 isParsing = false,
-                                parseResult = result.items,
+                                parseResult = scopeItemsToParseRequest(requestId, result.items),
                                 parseTitle = result.title,
                                 parseDesc = result.desc,
                                 parseCover = result.cover,

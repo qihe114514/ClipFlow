@@ -32,8 +32,8 @@ android {
         applicationId = "com.qihe.clipflow"
         minSdk = 29
         targetSdk = 37
-        versionCode = 90
-        versionName = "4.0"
+        versionCode = 91
+        versionName = "4.0.1"
         buildConfigField("String", "DOUYIN_API_KEY", "\"$douyinApiKey\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
