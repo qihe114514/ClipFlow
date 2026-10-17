@@ -6,6 +6,11 @@ import android.app.Application
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -13,18 +18,36 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import androidx.core.net.toUri
 import androidx.documentfile.provider.DocumentFile
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import com.kyant.shapes.RoundedCornerStyle
+import com.kyant.shapes.RoundedRectangle
 import com.qihe.clipflow.data.preferences.AppPreferences
+import com.qihe.clipflow.navigation.BottomNavItem
 import com.qihe.clipflow.navigation.Screen
+import com.qihe.clipflow.navigation.bottomNavItems
+import com.qihe.clipflow.navigation.orderedBottomNavItems
 import com.qihe.clipflow.util.CacheCleaner
 import com.qihe.clipflow.ui.components.ClipFlowSectionHeader
 import com.qihe.clipflow.ui.components.GlassCard
@@ -216,35 +239,24 @@ fun SettingsScreen(
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f))
                 Spacer(Modifier.height(16.dp))
 
-                Text("底栏按钮排序", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
-                Spacer(Modifier.height(8.dp))
-
-                uiState.bottomBarOrder.forEachIndexed { index, key ->
-                    val label = when (key) { "home" -> "主页"; "douyin" -> "抖音"; "xiaohongshu" -> "小红书"; "bilibili" -> "B站"; else -> key }
-                    Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Surface(shape = com.kyant.shapes.RoundedRectangle(8.dp, com.kyant.shapes.RoundedCornerStyle.Continuous), color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f), modifier = Modifier.size(24.dp)) {
-                            Box(contentAlignment = Alignment.Center) { Text("${index + 1}", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold) }
-                        }
-                        Spacer(Modifier.width(10.dp))
-                        Text(label, style = MaterialTheme.typography.bodyMedium)
-                        Spacer(Modifier.weight(1f))
-                        if (index > 0) {
-                            LiquidButton(onClick = {
-                                val o = uiState.bottomBarOrder.toMutableList(); val t = o[index]; o[index] = o[index - 1]; o[index - 1] = t; viewModel.setBottomBarOrder(o)
-                            }, modifier = Modifier.size(32.dp), contentPadding = PaddingValues(0.dp)) {
-                                Icon(ClipFlowIcons.ArrowUp, "上移", Modifier.size(18.dp))
-                            }
-                        }
-                        if (index < uiState.bottomBarOrder.size - 1) {
-                            Spacer(Modifier.width(4.dp))
-                            LiquidButton(onClick = {
-                                val o = uiState.bottomBarOrder.toMutableList(); val t = o[index]; o[index] = o[index + 1]; o[index + 1] = t; viewModel.setBottomBarOrder(o)
-                            }, modifier = Modifier.size(32.dp), contentPadding = PaddingValues(0.dp)) {
-                                Icon(ClipFlowIcons.ArrowDown, "下移", Modifier.size(18.dp))
-                            }
-                        }
-                    }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text("底栏按钮排序", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
+                    Spacer(Modifier.weight(1f))
+                    Text(
+                        text = "长按拖动",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f),
+                    )
                 }
+                Spacer(Modifier.height(10.dp))
+
+                BottomBarOrderEditor(
+                    order = uiState.bottomBarOrder,
+                    onOrderChange = viewModel::setBottomBarOrder,
+                )
             }
         }
         // ========== 存储 ==========
@@ -326,6 +338,242 @@ fun SectionHeader(title: String) {
         title = title,
         modifier = Modifier.padding(top = 4.dp),
     )
+}
+
+/**
+ * Bottom-bar order editor: one horizontal strip that mirrors the real bottom
+ * bar. Items are picked up with a long press and swap slots while dragging.
+ */
+@Composable
+private fun BottomBarOrderEditor(
+    order: List<String>,
+    onOrderChange: (List<String>) -> Unit,
+) {
+    val normalized = remember(order) { orderedBottomNavItems(order).map { it.route } }
+    val localOrder = remember { mutableStateListOf<String>().apply { addAll(normalized) } }
+    var draggingRoute by remember { mutableStateOf<String?>(null) }
+    var dragOffset by remember { mutableFloatStateOf(0f) }
+    val haptic = LocalHapticFeedback.current
+
+    LaunchedEffect(normalized) {
+        if (draggingRoute == null && localOrder.toList() != normalized) {
+            localOrder.clear()
+            localOrder.addAll(normalized)
+        }
+    }
+
+    BoxWithConstraints(Modifier.fillMaxWidth()) {
+        val gap = 6.dp
+        val trackPadding = 6.dp
+        val tileWidth = (maxWidth - trackPadding * 2 - gap * 3) / 4
+        val tileWidthPx = with(LocalDensity.current) { tileWidth.toPx() }
+
+        fun moveItem(route: String, delta: Int) {
+            val from = localOrder.indexOf(route)
+            val target = (from + delta).coerceIn(0, localOrder.lastIndex)
+            if (from >= 0 && target != from) {
+                localOrder.removeAt(from)
+                localOrder.add(target, route)
+                onOrderChange(localOrder.toList())
+            }
+        }
+
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedRectangle(22.dp, RoundedCornerStyle.Continuous),
+            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.22f),
+        ) {
+            Row(
+                modifier = Modifier.padding(trackPadding),
+                horizontalArrangement = Arrangement.spacedBy(gap),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                localOrder.forEachIndexed { index, route ->
+                    val item = bottomNavItems.firstOrNull { it.route == route }
+                        ?: return@forEachIndexed
+                    key(route) {
+                        BottomBarOrderTile(
+                            item = item,
+                            index = index,
+                            dragging = draggingRoute == route,
+                            dragOffset = if (draggingRoute == route) dragOffset else 0f,
+                            width = tileWidth,
+                            widthPx = tileWidthPx,
+                            onDragStart = {
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                draggingRoute = route
+                                dragOffset = 0f
+                            },
+                            onDrag = { deltaX ->
+                                if (draggingRoute == route) {
+                                    dragOffset += deltaX
+                                    val currentIndex = localOrder.indexOf(route)
+                                    if (currentIndex >= 0) {
+                                        val direction = when {
+                                            dragOffset > tileWidthPx * 0.45f -> 1
+                                            dragOffset < -tileWidthPx * 0.45f -> -1
+                                            else -> 0
+                                        }
+                                        if (direction != 0) {
+                                            val target = (currentIndex + direction)
+                                                .coerceIn(0, localOrder.lastIndex)
+                                            if (target != currentIndex) {
+                                                localOrder.removeAt(currentIndex)
+                                                localOrder.add(target, route)
+                                                dragOffset -= (target - currentIndex) * tileWidthPx
+                                            }
+                                        }
+                                    }
+                                    val limit = tileWidthPx * 0.55f
+                                    dragOffset = dragOffset.coerceIn(-limit, limit)
+                                }
+                            },
+                            onDragEnd = {
+                                if (draggingRoute == route) {
+                                    draggingRoute = null
+                                    dragOffset = 0f
+                                    onOrderChange(localOrder.toList())
+                                }
+                            },
+                            onMoveLeft = if (index > 0) {
+                                { moveItem(route, -1) }
+                            } else {
+                                null
+                            },
+                            onMoveRight = if (index < localOrder.lastIndex) {
+                                { moveItem(route, 1) }
+                            } else {
+                                null
+                            },
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun BottomBarOrderTile(
+    item: BottomNavItem,
+    index: Int,
+    dragging: Boolean,
+    dragOffset: Float,
+    width: Dp,
+    widthPx: Float,
+    onDragStart: () -> Unit,
+    onDrag: (Float) -> Unit,
+    onDragEnd: () -> Unit,
+    onMoveLeft: (() -> Unit)?,
+    onMoveRight: (() -> Unit)?,
+) {
+    val shape = remember { RoundedRectangle(16.dp, RoundedCornerStyle.Continuous) }
+    var previousIndex by remember { mutableIntStateOf(index) }
+    val settleOffset = remember { Animatable(0f) }
+    val scale by animateFloatAsState(
+        targetValue = if (dragging) 1.06f else 1f,
+        animationSpec = spring(dampingRatio = 0.62f, stiffness = 700f),
+        label = "bottomBarOrderTileScale",
+    )
+
+    LaunchedEffect(dragging) {
+        if (dragging) settleOffset.snapTo(0f)
+    }
+
+    LaunchedEffect(index) {
+        val delta = previousIndex - index
+        previousIndex = index
+        if (delta == 0) return@LaunchedEffect
+        if (dragging) {
+            // The dragged tile follows the finger directly; its slot changes
+            // are already compensated by dragOffset in the parent.
+            settleOffset.snapTo(0f)
+        } else {
+            settleOffset.snapTo(delta * widthPx)
+            settleOffset.animateTo(
+                targetValue = 0f,
+                animationSpec = spring(dampingRatio = 0.78f, stiffness = 520f),
+            )
+        }
+    }
+
+    Box(
+        modifier = Modifier
+            .width(width)
+            .height(64.dp)
+            .zIndex(if (dragging) 1f else 0f)
+            .graphicsLayer {
+                translationX = settleOffset.value + if (dragging) dragOffset else 0f
+                scaleX = scale
+                scaleY = scale
+                shadowElevation = if (dragging) 12.dp.toPx() else 0f
+                this.shape = shape
+                clip = false
+            }
+            .clip(shape)
+            .background(
+                if (dragging) {
+                    MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.92f)
+                } else {
+                    Color.Transparent
+                }
+            )
+            .pointerInput(item.route) {
+                detectDragGesturesAfterLongPress(
+                    onDragStart = { onDragStart() },
+                    onDrag = { change, dragAmount ->
+                        change.consume()
+                        onDrag(dragAmount.x)
+                    },
+                    onDragEnd = onDragEnd,
+                    onDragCancel = onDragEnd,
+                )
+            }
+            .semantics(mergeDescendants = true) {
+                contentDescription = "${item.label}，第 ${index + 1} 位，长按可拖动排序"
+                customActions = listOfNotNull(
+                    onMoveLeft?.let { move ->
+                        CustomAccessibilityAction("左移") {
+                            move()
+                            true
+                        }
+                    },
+                    onMoveRight?.let { move ->
+                        CustomAccessibilityAction("右移") {
+                            move()
+                            true
+                        }
+                    },
+                )
+            },
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Icon(
+                imageVector = item.selectedIcon,
+                contentDescription = null,
+                tint = if (dragging) {
+                    MaterialTheme.colorScheme.onPrimaryContainer
+                } else {
+                    MaterialTheme.colorScheme.primary
+                },
+                modifier = Modifier.size(22.dp),
+            )
+            Spacer(Modifier.height(4.dp))
+            Text(
+                text = item.label,
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Medium,
+                color = if (dragging) {
+                    MaterialTheme.colorScheme.onPrimaryContainer
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                },
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+    }
 }
 
 @Composable

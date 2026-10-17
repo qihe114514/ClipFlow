@@ -41,8 +41,8 @@ android {
         applicationId = "com.qihe.clipflow"
         minSdk = 29
         targetSdk = 37
-        versionCode = 94
-        versionName = "4.2.0"
+        versionCode = 95
+        versionName = "4.2.1"
         buildConfigField("String", "DOUYIN_API_KEY", "\"$douyinApiKey\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -133,7 +133,7 @@ dependencies {
     implementation("com.composables:icons-lucide:1.1.0")
 
     // Navigation
-    implementation("androidx.navigation:navigation-compose:2.7.7")
+    implementation("androidx.navigation:navigation-compose:2.8.9")
 
     // Retrofit + OkHttp
     implementation("com.squareup.retrofit2:retrofit:2.9.0")

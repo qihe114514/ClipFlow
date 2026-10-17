@@ -120,12 +120,9 @@ fun AboutScreen(navController: NavHostController) {
         }
 
 
-        // ========== 开发者信息 ==========
-        ClipFlowSectionHeader(
-            title = "开发者",
-            modifier = Modifier.padding(bottom = 8.dp),
-        )
+        Spacer(Modifier.height(24.dp))
 
+        // ========== 开发者信息 ==========
         GlassCard(modifier = Modifier.fillMaxWidth().secondaryPageEntrance(1)) {
             Column {
                 AboutInfoRow(label = "开发者", value = "其核")
@@ -141,12 +138,14 @@ fun AboutScreen(navController: NavHostController) {
             }
         }
 
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(24.dp))
 
         // ========== 链接 ==========
         ClipFlowSectionHeader(
             title = "链接",
-            modifier = Modifier.padding(bottom = 8.dp),
+            modifier = Modifier
+                .align(Alignment.Start)
+                .padding(bottom = 8.dp),
         )
 
         GlassCard(modifier = Modifier.fillMaxWidth().secondaryPageEntrance(2)) {
@@ -177,12 +176,14 @@ fun AboutScreen(navController: NavHostController) {
             }
         }
 
-        Spacer(Modifier.height(32.dp))
+        Spacer(Modifier.height(24.dp))
 
         // ========== 更新检测 ==========
         ClipFlowSectionHeader(
             title = "更新",
-            modifier = Modifier.padding(bottom = 8.dp),
+            modifier = Modifier
+                .align(Alignment.Start)
+                .padding(bottom = 8.dp),
         )
 
         GlassCard(modifier = Modifier.fillMaxWidth().secondaryPageEntrance(3)) {
@@ -352,15 +353,9 @@ fun AboutScreen(navController: NavHostController) {
             }
         }
 
-        Spacer(Modifier.height(16.dp))
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(24.dp))
 
         // ========== 开源与须知 ==========
-        ClipFlowSectionHeader(
-            title = "开源与须知",
-            modifier = Modifier.padding(bottom = 8.dp),
-        )
-
         GlassCard(
             modifier = Modifier.fillMaxWidth().secondaryPageEntrance(4),
             onClick = { navController.navigate(Screen.OpenSource.route) }
@@ -399,13 +394,8 @@ fun AboutScreen(navController: NavHostController) {
             }
         }
 
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(24.dp))
         // ========== 隐私 ==========
-        ClipFlowSectionHeader(
-            title = "隐私",
-            modifier = Modifier.padding(bottom = 8.dp),
-        )
-
         GlassCard(modifier = Modifier.fillMaxWidth().secondaryPageEntrance(5)) {
             Column {
                 // 查看隐私政策

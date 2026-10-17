@@ -1,8 +1,6 @@
 package com.qihe.clipflow.navigation
 
-import androidx.activity.compose.PredictiveBackHandler
 import androidx.compose.animation.*
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.rememberPagerState
@@ -13,7 +11,6 @@ import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -24,6 +21,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.backdrops.layerBackdrop as contentLayerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop as rememberContentLayerBackdrop
 import com.kyant.backdrop.backdrops.layerBackdrop
@@ -56,7 +54,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
 @Composable
@@ -82,12 +79,6 @@ fun ClipFlowNavHost() {
     val currentRoute = currentDestination?.route?.substringBefore("?")
     val currentRouteState = rememberUpdatedState(currentRoute)
     val secondaryRoute = isSecondaryRoute(currentRoute)
-    var predictiveBackProgress by remember { mutableFloatStateOf(0f) }
-    val settledBackProgress by animateFloatAsState(
-        targetValue = predictiveBackProgress,
-        animationSpec = tween(120, easing = SecondaryPageEasing),
-        label = "predictiveBackProgress",
-    )
 
     // ========== 隐私政策同意检查 ==========
     // null = still reading DataStore. Do not show the consent sheet until the
@@ -131,8 +122,8 @@ fun ClipFlowNavHost() {
     }
     val primaryRoutes = remember(primaryItems) { primaryItems.map { it.route } }
     val showBottomBar = currentRoute in primaryRoutes
-    val showTopBar = currentRoute != null
-    val showTopBarBlur = showTopBar && currentRoute != Screen.History.route
+    val showPrimaryTopBar = currentRoute in primaryRoutes
+    val showPrimaryTopBarBlur = showPrimaryTopBar && currentRoute != Screen.History.route
     val pagerState = rememberPagerState(
         initialPage = primaryPageIndex(currentRoute ?: defaultPage, primaryItems),
         pageCount = { primaryItems.size },
@@ -230,16 +221,7 @@ fun ClipFlowNavHost() {
                         navController = navController,
                         startDestination = primaryRoutes.firstOrNull { it == defaultPage }
                             ?: primaryRoutes.first(),
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .graphicsLayer {
-                                if (secondaryRoute) {
-                                    translationX = size.width * settledBackProgress
-                                    scaleX = 1f - 0.04f * settledBackProgress
-                                    scaleY = 1f - 0.04f * settledBackProgress
-                                    alpha = 1f - 0.15f * settledBackProgress
-                                }
-                            },
+                        modifier = Modifier.fillMaxSize(),
                     enterTransition = {
                             val to = targetState.destination.route?.substringBefore("?")
                             if (to in primaryRoutes) {
@@ -314,11 +296,46 @@ fun ClipFlowNavHost() {
                                 }
                             )
                         ) { Spacer(Modifier.fillMaxSize()) }
-                        composable(Screen.History.route) { HistoryScreen(navController) }
-                        composable(Screen.Settings.route) { SettingsScreen(navController) }
-                        composable(Screen.Personalization.route) { PersonalizationScreen(navController) }
-                        composable(Screen.About.route) { AboutScreen(navController) }
-                        composable(Screen.OpenSource.route) { OpenSourceScreen() }
+                        composable(Screen.History.route) {
+                            SecondaryPageChrome(
+                                route = Screen.History.route,
+                                navController = navController,
+                                backdrop = sceneBackdrop,
+                                showTopBarBlur = false,
+                            ) { HistoryScreen(navController) }
+                        }
+                        composable(Screen.Settings.route) {
+                            SecondaryPageChrome(
+                                route = Screen.Settings.route,
+                                navController = navController,
+                                backdrop = sceneBackdrop,
+                                showTopBarBlur = true,
+                            ) { SettingsScreen(navController) }
+                        }
+                        composable(Screen.Personalization.route) {
+                            SecondaryPageChrome(
+                                route = Screen.Personalization.route,
+                                navController = navController,
+                                backdrop = sceneBackdrop,
+                                showTopBarBlur = true,
+                            ) { PersonalizationScreen(navController) }
+                        }
+                        composable(Screen.About.route) {
+                            SecondaryPageChrome(
+                                route = Screen.About.route,
+                                navController = navController,
+                                backdrop = sceneBackdrop,
+                                showTopBarBlur = true,
+                            ) { AboutScreen(navController) }
+                        }
+                        composable(Screen.OpenSource.route) {
+                            SecondaryPageChrome(
+                                route = Screen.OpenSource.route,
+                                navController = navController,
+                                backdrop = sceneBackdrop,
+                                showTopBarBlur = true,
+                            ) { OpenSourceScreen() }
+                        }
                     }
                 }
             }
@@ -357,7 +374,7 @@ fun ClipFlowNavHost() {
             }
         }
 
-        if (showTopBarBlur) {
+        if (showPrimaryTopBarBlur) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -371,7 +388,7 @@ fun ClipFlowNavHost() {
             }
         }
 
-        if (showTopBar) {
+        if (showPrimaryTopBar) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -414,20 +431,49 @@ fun ClipFlowNavHost() {
                 )
             }
         }
+        }
+    }
+}
 
-            PredictiveBackHandler(
-                enabled = secondaryRoute && navController.previousBackStackEntry != null,
-            ) { progress ->
-                try {
-                    progress.collect { event ->
-                        predictiveBackProgress = event.progress
-                    }
-                    navController.popBackStack()
-                } catch (_: CancellationException) {
-                    // The gesture was cancelled; keep the current destination.
-                } finally {
-                    predictiveBackProgress = 0f
-                }
+/**
+ * Secondary pages own their top bar so the whole page (including the bar)
+ * follows the navigation transition and the predictive back gesture.
+ */
+@Composable
+private fun SecondaryPageChrome(
+    route: String,
+    navController: NavHostController,
+    backdrop: Backdrop,
+    showTopBarBlur: Boolean,
+    content: @Composable () -> Unit,
+) {
+    Box(Modifier.fillMaxSize()) {
+        content()
+        if (showTopBarBlur) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(TOP_BAR_BLUR_HEIGHT_DP.dp)
+                    .align(Alignment.TopCenter)
+            ) {
+                ProgressiveTopBarBlur(
+                    backdrop = backdrop,
+                    modifier = Modifier.matchParentSize(),
+                )
+            }
+        }
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(PROGRESSIVE_TOPBAR_CONTENT_START_DP.dp)
+                .align(Alignment.TopCenter)
+        ) {
+            CompositionLocalProvider(LocalLiquidBackdrop provides backdrop) {
+                ClipFlowTopBar(
+                    currentRoute = route,
+                    navController = navController,
+                    modifier = Modifier.align(Alignment.TopCenter),
+                )
             }
         }
     }
