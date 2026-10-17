@@ -11,7 +11,7 @@ The reference is the running app, not an invented concept screen. Every promo fr
 - **Surface**: Kyant Backdrop glass for the top bar, bottom bar, cards, dialogs, download panels and controls. Dialogs and sheets render their own local backdrop; they never sample the activity behind their window.
 - **Shape**: continuous-curvature (G2 / squircle) corners for cards, inputs, thumbnails, dialogs and grouped containers. No mixed rounded-rectangle styles.
 - **Icons**: Lucide line icons at a 24dp / 2dp-stroke rhythm. Brand marks (Douyin, Bilibili, Xiaohongshu) use matching linear weight; no filled or hairline icons mixed into the same row.
-- **Color**: dynamic color extracted from the visible wallpaper, falling back to system Monet when the wallpaper is off. Platform accents remain recognizable: Douyin cyan, Xiaohongshu red, Bilibili blue.
+- **Color**: dynamic color extracted from the visible wallpaper. With the wallpaper off, Android 12+ falls back to system Monet while Android 10 / 11 uses the built-in brand palette. Platform accents remain recognizable: Douyin cyan, Xiaohongshu red, Bilibili blue.
 - **Wallpaper**: user images sit behind the UI with adjustable opacity and contrast. When the wallpaper is off, cards become solid theme surfaces with a subtle dashed boundary for contrast.
 - **Motion**: parallax between primary tabs, scale/fade for secondary pages, spring feedback on tab icons, press feedback on cards, and predictive-back transitions on Android 14+. Motion should explain hierarchy, not decorate idle screens.
 
@@ -35,7 +35,7 @@ Dynamic color may replace the blue/purple pair on themed screens; keep platform 
 
 ## Layout
 
-- 24dp page gutters; grouped cards separated by section labels with glass chips.
+- 20dp page gutters; grouped cards separated by section labels with glass chips.
 - Buttons keep at least 8dp spacing from adjacent controls; primary actions span the content width.
 - Bottom bar respects gesture navigation insets and stays readable over bright wallpapers.
 - Secondary pages use a back affordance in the top-left and a single right-aligned action cluster.
