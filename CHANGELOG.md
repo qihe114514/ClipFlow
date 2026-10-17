@@ -1,5 +1,12 @@
 # ClipFlow 更新日志
 
+## v4.1.1（2026-10-17）
+### 签名修复
+
+- 恢复使用历史版本一致的 ClipFlow release 证书（SHA-256 `56a8b875...`），修复覆盖安装时提示“签名不一致”的问题。
+- 本地构建优先读取 `signing/clipflow-release.keystore`；CI 继续从 Secret 还原同一证书。
+- 版本号 4.1.1（versionCode 93）。
+
 ## v4.1.0（2026-10-17）
 ### 液态玻璃与界面统一
 

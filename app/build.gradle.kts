@@ -23,6 +23,15 @@ val douyinApiKey = localProperties.getProperty(
     "bp_live_0316aed1002cb08aedb8f6966a09140cafbe83a6db97ea3d7700339e40ae8ca2"
 )
 
+// The published builds are signed with ClipFlow's long-lived release
+// certificate (SHA-256 56a8b875...). Keep that keystore in the project so a
+// local build can never silently fall back to a freshly generated debug key.
+// CI restores the same key to ~/.android/debug.keystore from a secret.
+val clipFlowReleaseKeystore = listOf(
+    rootProject.file("signing/clipflow-release.keystore"),
+    rootProject.file("签名/ClipFlow-release-signing.keystore"),
+).firstOrNull { it.exists() }
+
 android {
     namespace = "com.qihe.clipflow"
     compileSdk = 37
@@ -32,8 +41,8 @@ android {
         applicationId = "com.qihe.clipflow"
         minSdk = 29
         targetSdk = 37
-        versionCode = 92
-        versionName = "4.1.0"
+        versionCode = 93
+        versionName = "4.1.1"
         buildConfigField("String", "DOUYIN_API_KEY", "\"$douyinApiKey\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -44,7 +53,8 @@ android {
 
     signingConfigs {
         create("release") {
-            storeFile = file(System.getProperty("user.home") + "/.android/debug.keystore")
+            storeFile = clipFlowReleaseKeystore
+                ?: file(System.getProperty("user.home") + "/.android/debug.keystore")
             storePassword = "android"
             keyAlias = "androiddebugkey"
             keyPassword = "android"
