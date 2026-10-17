@@ -21,11 +21,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.backdrops.layerBackdrop as contentLayerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop as rememberContentLayerBackdrop
-import com.kyant.backdrop.backdrops.layerBackdrop
-import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.qihe.clipflow.data.preferences.AppPreferences
 import com.qihe.clipflow.ui.components.PrivacyConsentDialog
 import com.qihe.clipflow.util.IncomingShare
@@ -78,8 +75,6 @@ fun ClipFlowNavHost() {
     val currentDestination = navBackStackEntry?.destination
     val currentRoute = currentDestination?.route?.substringBefore("?")
     val currentRouteState = rememberUpdatedState(currentRoute)
-    val secondaryRoute = isSecondaryRoute(currentRoute)
-
     // ========== 隐私政策同意检查 ==========
     // null = still reading DataStore. Do not show the consent sheet until the
     // stored value is known, otherwise agreed users see it flash on cold start.
@@ -122,8 +117,8 @@ fun ClipFlowNavHost() {
     }
     val primaryRoutes = remember(primaryItems) { primaryItems.map { it.route } }
     val showBottomBar = currentRoute in primaryRoutes
-    val showPrimaryTopBar = currentRoute in primaryRoutes
-    val showPrimaryTopBarBlur = showPrimaryTopBar && currentRoute != Screen.History.route
+    val showTopBar = currentRoute != null
+    val showTopBarBlur = showTopBar && currentRoute != Screen.History.route
     val pagerState = rememberPagerState(
         initialPage = primaryPageIndex(currentRoute ?: defaultPage, primaryItems),
         pageCount = { primaryItems.size },
@@ -214,7 +209,7 @@ fun ClipFlowNavHost() {
                         stateHolder = pagerStateHolder,
                         currentRoute = currentRoute,
                         sourceUrl = currentSourceUrl,
-                        visible = currentRoute in primaryRoutes,
+                        visible = true,
                     )
 
                     NavHost(
@@ -297,44 +292,19 @@ fun ClipFlowNavHost() {
                             )
                         ) { Spacer(Modifier.fillMaxSize()) }
                         composable(Screen.History.route) {
-                            SecondaryPageChrome(
-                                route = Screen.History.route,
-                                navController = navController,
-                                backdrop = sceneBackdrop,
-                                showTopBarBlur = false,
-                            ) { HistoryScreen(navController) }
+                            BackgroundWallpaperLayer { HistoryScreen(navController) }
                         }
                         composable(Screen.Settings.route) {
-                            SecondaryPageChrome(
-                                route = Screen.Settings.route,
-                                navController = navController,
-                                backdrop = sceneBackdrop,
-                                showTopBarBlur = true,
-                            ) { SettingsScreen(navController) }
+                            BackgroundWallpaperLayer { SettingsScreen(navController) }
                         }
                         composable(Screen.Personalization.route) {
-                            SecondaryPageChrome(
-                                route = Screen.Personalization.route,
-                                navController = navController,
-                                backdrop = sceneBackdrop,
-                                showTopBarBlur = true,
-                            ) { PersonalizationScreen(navController) }
+                            BackgroundWallpaperLayer { PersonalizationScreen(navController) }
                         }
                         composable(Screen.About.route) {
-                            SecondaryPageChrome(
-                                route = Screen.About.route,
-                                navController = navController,
-                                backdrop = sceneBackdrop,
-                                showTopBarBlur = true,
-                            ) { AboutScreen(navController) }
+                            BackgroundWallpaperLayer { AboutScreen(navController) }
                         }
                         composable(Screen.OpenSource.route) {
-                            SecondaryPageChrome(
-                                route = Screen.OpenSource.route,
-                                navController = navController,
-                                backdrop = sceneBackdrop,
-                                showTopBarBlur = true,
-                            ) { OpenSourceScreen() }
+                            BackgroundWallpaperLayer { OpenSourceScreen() }
                         }
                     }
                 }
@@ -374,7 +344,7 @@ fun ClipFlowNavHost() {
             }
         }
 
-        if (showPrimaryTopBarBlur) {
+        if (showTopBarBlur) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -388,7 +358,7 @@ fun ClipFlowNavHost() {
             }
         }
 
-        if (showPrimaryTopBar) {
+        if (showTopBar) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -435,46 +405,3 @@ fun ClipFlowNavHost() {
     }
 }
 
-/**
- * Secondary pages own their top bar so the whole page (including the bar)
- * follows the navigation transition and the predictive back gesture.
- */
-@Composable
-private fun SecondaryPageChrome(
-    route: String,
-    navController: NavHostController,
-    backdrop: Backdrop,
-    showTopBarBlur: Boolean,
-    content: @Composable () -> Unit,
-) {
-    Box(Modifier.fillMaxSize()) {
-        content()
-        if (showTopBarBlur) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(TOP_BAR_BLUR_HEIGHT_DP.dp)
-                    .align(Alignment.TopCenter)
-            ) {
-                ProgressiveTopBarBlur(
-                    backdrop = backdrop,
-                    modifier = Modifier.matchParentSize(),
-                )
-            }
-        }
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(PROGRESSIVE_TOPBAR_CONTENT_START_DP.dp)
-                .align(Alignment.TopCenter)
-        ) {
-            CompositionLocalProvider(LocalLiquidBackdrop provides backdrop) {
-                ClipFlowTopBar(
-                    currentRoute = route,
-                    navController = navController,
-                    modifier = Modifier.align(Alignment.TopCenter),
-                )
-            }
-        }
-    }
-}

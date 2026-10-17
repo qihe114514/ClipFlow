@@ -63,6 +63,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlin.math.roundToInt
 
 data class SettingsUiState(
     val savePath: String = "",
@@ -352,7 +353,7 @@ private fun BottomBarOrderEditor(
     val normalized = remember(order) { orderedBottomNavItems(order).map { it.route } }
     val localOrder = remember { mutableStateListOf<String>().apply { addAll(normalized) } }
     var draggingRoute by remember { mutableStateOf<String?>(null) }
-    var dragOffset by remember { mutableFloatStateOf(0f) }
+    var dragPosition by remember { mutableFloatStateOf(0f) }
     val haptic = LocalHapticFeedback.current
 
     LaunchedEffect(normalized) {
@@ -365,8 +366,9 @@ private fun BottomBarOrderEditor(
     BoxWithConstraints(Modifier.fillMaxWidth()) {
         val gap = 6.dp
         val trackPadding = 6.dp
-        val tileWidth = (maxWidth - trackPadding * 2 - gap * 3) / 4
-        val tileWidthPx = with(LocalDensity.current) { tileWidth.toPx() }
+        val itemCount = normalized.size.coerceAtLeast(1)
+        val tileWidth = (maxWidth - trackPadding * 2 - gap * (itemCount - 1)) / itemCount
+        val slotWidthPx = with(LocalDensity.current) { (tileWidth + gap).toPx() }
 
         fun moveItem(route: String, delta: Int) {
             val from = localOrder.indexOf(route)
@@ -396,42 +398,36 @@ private fun BottomBarOrderEditor(
                             item = item,
                             index = index,
                             dragging = draggingRoute == route,
-                            dragOffset = if (draggingRoute == route) dragOffset else 0f,
+                            dragTranslation = if (draggingRoute == route) {
+                                (dragPosition - index) * slotWidthPx
+                            } else {
+                                0f
+                            },
                             width = tileWidth,
-                            widthPx = tileWidthPx,
+                            slotWidthPx = slotWidthPx,
                             onDragStart = {
                                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                 draggingRoute = route
-                                dragOffset = 0f
+                                dragPosition = localOrder.indexOf(route)
+                                    .coerceAtLeast(0)
+                                    .toFloat()
                             },
                             onDrag = { deltaX ->
                                 if (draggingRoute == route) {
-                                    dragOffset += deltaX
-                                    val currentIndex = localOrder.indexOf(route)
-                                    if (currentIndex >= 0) {
-                                        val direction = when {
-                                            dragOffset > tileWidthPx * 0.45f -> 1
-                                            dragOffset < -tileWidthPx * 0.45f -> -1
-                                            else -> 0
-                                        }
-                                        if (direction != 0) {
-                                            val target = (currentIndex + direction)
-                                                .coerceIn(0, localOrder.lastIndex)
-                                            if (target != currentIndex) {
-                                                localOrder.removeAt(currentIndex)
-                                                localOrder.add(target, route)
-                                                dragOffset -= (target - currentIndex) * tileWidthPx
-                                            }
-                                        }
+                                    dragPosition = (dragPosition + deltaX / slotWidthPx)
+                                        .coerceIn(0f, localOrder.lastIndex.toFloat())
+                                    val target = dragPosition.roundToInt()
+                                        .coerceIn(0, localOrder.lastIndex)
+                                    val current = localOrder.indexOf(route)
+                                    if (current >= 0 && target != current) {
+                                        localOrder.removeAt(current)
+                                        localOrder.add(target, route)
                                     }
-                                    val limit = tileWidthPx * 0.55f
-                                    dragOffset = dragOffset.coerceIn(-limit, limit)
                                 }
                             },
                             onDragEnd = {
                                 if (draggingRoute == route) {
                                     draggingRoute = null
-                                    dragOffset = 0f
                                     onOrderChange(localOrder.toList())
                                 }
                             },
@@ -458,9 +454,9 @@ private fun BottomBarOrderTile(
     item: BottomNavItem,
     index: Int,
     dragging: Boolean,
-    dragOffset: Float,
+    dragTranslation: Float,
     width: Dp,
-    widthPx: Float,
+    slotWidthPx: Float,
     onDragStart: () -> Unit,
     onDrag: (Float) -> Unit,
     onDragEnd: () -> Unit,
@@ -469,15 +465,31 @@ private fun BottomBarOrderTile(
 ) {
     val shape = remember { RoundedRectangle(16.dp, RoundedCornerStyle.Continuous) }
     var previousIndex by remember { mutableIntStateOf(index) }
+    var lastDragTranslation by remember { mutableFloatStateOf(0f) }
     val settleOffset = remember { Animatable(0f) }
+    val releaseOffset = remember { Animatable(0f) }
     val scale by animateFloatAsState(
         targetValue = if (dragging) 1.06f else 1f,
         animationSpec = spring(dampingRatio = 0.62f, stiffness = 700f),
         label = "bottomBarOrderTileScale",
     )
 
+    SideEffect {
+        if (dragging) lastDragTranslation = dragTranslation
+    }
+
     LaunchedEffect(dragging) {
-        if (dragging) settleOffset.snapTo(0f)
+        if (dragging) {
+            settleOffset.snapTo(0f)
+            releaseOffset.snapTo(0f)
+        } else if (lastDragTranslation != 0f) {
+            releaseOffset.snapTo(lastDragTranslation)
+            lastDragTranslation = 0f
+            releaseOffset.animateTo(
+                targetValue = 0f,
+                animationSpec = spring(dampingRatio = 0.72f, stiffness = 560f),
+            )
+        }
     }
 
     LaunchedEffect(index) {
@@ -485,11 +497,11 @@ private fun BottomBarOrderTile(
         previousIndex = index
         if (delta == 0) return@LaunchedEffect
         if (dragging) {
-            // The dragged tile follows the finger directly; its slot changes
-            // are already compensated by dragOffset in the parent.
+            // The dragged tile follows the finger directly; the parent keeps
+            // dragPosition in slot units, so no extra compensation is needed.
             settleOffset.snapTo(0f)
         } else {
-            settleOffset.snapTo(delta * widthPx)
+            settleOffset.snapTo(delta * slotWidthPx)
             settleOffset.animateTo(
                 targetValue = 0f,
                 animationSpec = spring(dampingRatio = 0.78f, stiffness = 520f),
@@ -503,7 +515,8 @@ private fun BottomBarOrderTile(
             .height(64.dp)
             .zIndex(if (dragging) 1f else 0f)
             .graphicsLayer {
-                translationX = settleOffset.value + if (dragging) dragOffset else 0f
+                translationX = settleOffset.value + releaseOffset.value +
+                    if (dragging) dragTranslation else 0f
                 scaleX = scale
                 scaleY = scale
                 shadowElevation = if (dragging) 12.dp.toPx() else 0f
