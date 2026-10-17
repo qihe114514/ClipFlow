@@ -253,8 +253,9 @@ fun ClipFlowNavHost() {
                             if (to in primaryRoutes) {
                                 EnterTransition.None
                             } else {
-                                fadeIn(tween(280, easing = SecondaryPageEasing)) +
-                                    slideInHorizontally(tween(280, easing = SecondaryPageEasing)) { it / 3 }
+                                fadeIn(tween(300, easing = SecondaryPageEasing)) +
+                                    slideInHorizontally(tween(300, easing = SecondaryPageEasing)) { it / 3 } +
+                                    scaleIn(tween(300, easing = SecondaryPageEasing), initialScale = 0.965f)
                         }
                     },
                     exitTransition = {
@@ -262,8 +263,9 @@ fun ClipFlowNavHost() {
                         if (from in primaryRoutes) {
                             ExitTransition.None
                         } else {
-                            fadeOut(tween(280, easing = SecondaryPageEasing)) +
-                                slideOutHorizontally(tween(280, easing = SecondaryPageEasing)) { -it / 6 }
+                            fadeOut(tween(220, easing = SecondaryPageEasing)) +
+                                slideOutHorizontally(tween(220, easing = SecondaryPageEasing)) { -it / 6 } +
+                                scaleOut(tween(220, easing = SecondaryPageEasing), targetScale = 0.985f)
                         }
                     },
                     popEnterTransition = {
@@ -271,8 +273,9 @@ fun ClipFlowNavHost() {
                         if (to in primaryRoutes) {
                             EnterTransition.None
                         } else {
-                            fadeIn(tween(280, easing = SecondaryPageEasing)) +
-                                slideInHorizontally(tween(280, easing = SecondaryPageEasing)) { -it / 6 }
+                            fadeIn(tween(300, easing = SecondaryPageEasing)) +
+                                slideInHorizontally(tween(300, easing = SecondaryPageEasing)) { -it / 6 } +
+                                scaleIn(tween(300, easing = SecondaryPageEasing), initialScale = 0.98f)
                         }
                     },
                     popExitTransition = {
@@ -280,8 +283,9 @@ fun ClipFlowNavHost() {
                         if (from in primaryRoutes) {
                             ExitTransition.None
                         } else {
-                            fadeOut(tween(280, easing = SecondaryPageEasing)) +
-                                slideOutHorizontally(tween(280, easing = SecondaryPageEasing)) { it / 3 }
+                            fadeOut(tween(220, easing = SecondaryPageEasing)) +
+                                slideOutHorizontally(tween(220, easing = SecondaryPageEasing)) { it / 3 } +
+                                scaleOut(tween(220, easing = SecondaryPageEasing), targetScale = 1.015f)
                         }
                     }
                     ) {
@@ -333,28 +337,30 @@ fun ClipFlowNavHost() {
             val pillVisible by DownloadPillState.visible.collectAsState()
             val pillProgress by DownloadPillState.progress.collectAsState()
             val pillSpeed by DownloadPillState.speedText.collectAsState()
-            DownloadPill(
-                progress = pillProgress,
-                speedText = pillSpeed,
-                visible = pillVisible,
-                onClick = {
-                    val route = when (DownloadPillState.sourceRoute) {
-                        "xiaohongshu" -> Screen.Xiaohongshu.route
-                        "bilibili" -> Screen.Bilibili.route
-                        else -> Screen.Douyin.route
-                    }
-                    navController.navigate(route) {
-                        popUpTo(navController.graph.findStartDestination().id) { saveState = true }
-                        launchSingleTop = true
-                        restoreState = true
-                    }
-                    DownloadPillState.performClick()
-                },
-                modifier = Modifier
-                    .align(Alignment.TopStart)
-                    .statusBarsPadding()
-                    .padding(top = 8.dp)
-            )
+            CompositionLocalProvider(LocalLiquidBackdrop provides sceneBackdrop) {
+                DownloadPill(
+                    progress = pillProgress,
+                    speedText = pillSpeed,
+                    visible = pillVisible,
+                    onClick = {
+                        val route = when (DownloadPillState.sourceRoute) {
+                            "xiaohongshu" -> Screen.Xiaohongshu.route
+                            "bilibili" -> Screen.Bilibili.route
+                            else -> Screen.Douyin.route
+                        }
+                        navController.navigate(route) {
+                            popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                        DownloadPillState.performClick()
+                    },
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .statusBarsPadding()
+                        .padding(top = 8.dp)
+                )
+            }
         }
             }
         }

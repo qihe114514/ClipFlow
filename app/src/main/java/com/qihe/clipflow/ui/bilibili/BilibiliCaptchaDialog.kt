@@ -9,7 +9,6 @@ import android.webkit.WebView
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -22,7 +21,8 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.qihe.clipflow.data.bilibili.BilibiliCaptchaChallenge
 import com.qihe.clipflow.data.bilibili.BilibiliCaptchaResult
-import com.qihe.clipflow.ui.component.LiquidButton
+import com.qihe.clipflow.ui.components.DialogSecondaryButton
+import com.qihe.clipflow.ui.components.GlassDialogCard
 import org.json.JSONObject
 
 @Composable
@@ -40,39 +40,39 @@ fun BilibiliCaptchaDialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false)
     ) {
-        Surface(
+        GlassDialogCard(
             modifier = Modifier.fillMaxWidth(0.92f),
-            tonalElevation = 6.dp
+            contentPadding = androidx.compose.foundation.layout.PaddingValues(20.dp),
         ) {
-            androidx.compose.foundation.layout.Column {
-                Text(
-                    text = "Complete verification",
-                    modifier = Modifier.fillMaxWidth(),
-                    style = MaterialTheme.typography.titleMedium
-                )
-                AndroidView(
-                    factory = {
-                        WebView(context).apply {
-                            settings.javaScriptEnabled = true
-                            settings.domStorageEnabled = true
-                            settings.allowFileAccess = false
-                            settings.allowContentAccess = false
-                            settings.cacheMode = WebSettings.LOAD_NO_CACHE
-                            addJavascriptInterface(bridge, "ClipFlowCaptcha")
-                            loadDataWithBaseURL(
-                                "https://static.geetest.com/",
-                                captchaHtml(challenge),
-                                "text/html",
-                                "UTF-8",
-                                null
-                            )
-                        }
-                    },
-                    update = {},
-                    modifier = Modifier.fillMaxWidth().height(340.dp)
-                )
-                LiquidButton(onClick = onDismiss) { Text("Cancel") }
-            }
+            Text(
+                text = "完成人机验证",
+                modifier = Modifier.fillMaxWidth(),
+                style = MaterialTheme.typography.titleMedium
+            )
+            androidx.compose.foundation.layout.Spacer(Modifier.height(12.dp))
+            AndroidView(
+                factory = {
+                    WebView(context).apply {
+                        settings.javaScriptEnabled = true
+                        settings.domStorageEnabled = true
+                        settings.allowFileAccess = false
+                        settings.allowContentAccess = false
+                        settings.cacheMode = WebSettings.LOAD_NO_CACHE
+                        addJavascriptInterface(bridge, "ClipFlowCaptcha")
+                        loadDataWithBaseURL(
+                            "https://static.geetest.com/",
+                            captchaHtml(challenge),
+                            "text/html",
+                            "UTF-8",
+                            null
+                        )
+                    }
+                },
+                update = {},
+                modifier = Modifier.fillMaxWidth().height(340.dp)
+            )
+            androidx.compose.foundation.layout.Spacer(Modifier.height(12.dp))
+            DialogSecondaryButton(text = "取消", onClick = onDismiss, modifier = Modifier.fillMaxWidth())
         }
     }
     DisposableEffect(bridge) {

@@ -12,15 +12,11 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.AccountCircle
-import androidx.compose.material.icons.outlined.QrCode2
-import androidx.compose.material.icons.outlined.Refresh
-import androidx.compose.material.icons.outlined.Sms
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -62,6 +58,12 @@ import com.qihe.clipflow.data.bilibili.isBilibiliPhoneValid
 import com.qihe.clipflow.data.bilibili.isBilibiliSmsCodeValid
 import com.qihe.clipflow.data.bilibili.BilibiliApiClient
 import com.qihe.clipflow.ui.component.LiquidButton
+import com.qihe.clipflow.ui.components.DialogDangerButton
+import com.qihe.clipflow.ui.components.DialogSecondaryButton
+import com.qihe.clipflow.ui.components.GlassDialogActions
+import com.qihe.clipflow.ui.components.GlassDialogCard
+import com.qihe.clipflow.ui.components.GlassIconButton
+import com.qihe.clipflow.ui.icons.ClipFlowIcons
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -73,14 +75,19 @@ fun BilibiliAccountAction() {
     var showAccount by remember { mutableStateOf(false) }
     val account = BilibiliSessionStore.session()?.account
 
-    LiquidButton(
-        onClick = { if (account == null) showLogin = true else showAccount = true },
-        modifier = Modifier.size(40.dp),
-        contentPadding = PaddingValues(0.dp),
-    ) {
-        if (account?.avatar.isNullOrBlank()) {
-            Icon(Icons.Outlined.AccountCircle, contentDescription = "Bilibili account")
-        } else {
+    if (account?.avatar.isNullOrBlank()) {
+        GlassIconButton(
+            icon = ClipFlowIcons.Account,
+            contentDescription = "Bilibili account",
+            onClick = { if (account == null) showLogin = true else showAccount = true },
+        )
+    } else {
+        LiquidButton(
+            onClick = { showAccount = true },
+            modifier = Modifier.size(40.dp),
+            surfaceColor = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.30f),
+            contentPadding = PaddingValues(0.dp),
+        ) {
             Image(
                 painter = rememberAsyncImagePainter(account.avatar),
                 contentDescription = "Bilibili avatar",
@@ -193,12 +200,11 @@ private fun BilibiliLoginDialog(onSuccess: () -> Unit, onDismiss: () -> Unit) {
             dismissOnClickOutside = false
         )
     ) {
-        Surface(
+        GlassDialogCard(
             modifier = Modifier.fillMaxWidth(0.94f).heightIn(max = dialogHeight),
-            shape = RoundedCornerShape(24.dp),
-            tonalElevation = 6.dp
+            contentPadding = PaddingValues(20.dp),
         ) {
-            Column(modifier = Modifier.padding(20.dp).verticalScroll(rememberScrollState())) {
+            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                 Text("登录 B 站", style = MaterialTheme.typography.titleLarge)
                 Spacer(Modifier.height(12.dp))
                 TabRow(selectedTabIndex = selectedTab.ordinal) {
@@ -209,7 +215,7 @@ private fun BilibiliLoginDialog(onSuccess: () -> Unit, onDismiss: () -> Unit) {
                             errorMessage = null
                         },
                         text = { Text("手机号登录") },
-                        icon = { Icon(Icons.Outlined.Sms, contentDescription = null) }
+                        icon = { Icon(ClipFlowIcons.Message, contentDescription = null) }
                     )
                     Tab(
                         selected = selectedTab == BilibiliLoginTab.Qr,
@@ -219,7 +225,7 @@ private fun BilibiliLoginDialog(onSuccess: () -> Unit, onDismiss: () -> Unit) {
                             qrRefreshKey += 1
                         },
                         text = { Text("二维码登录") },
-                        icon = { Icon(Icons.Outlined.QrCode2, contentDescription = null) }
+                        icon = { Icon(ClipFlowIcons.QrCode, contentDescription = null) }
                     )
                 }
                 Spacer(Modifier.height(16.dp))
@@ -282,8 +288,8 @@ private fun BilibiliLoginDialog(onSuccess: () -> Unit, onDismiss: () -> Unit) {
                     )
                 }
                 Spacer(Modifier.height(12.dp))
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                    LiquidButton(onClick = onDismiss) { Text("取消") }
+                GlassDialogActions {
+                    DialogSecondaryButton(text = "取消", onClick = onDismiss)
                 }
             }
         }
@@ -401,11 +407,14 @@ private fun QrLoginContent(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Icon(Icons.Outlined.QrCode2, contentDescription = null)
+            Icon(ClipFlowIcons.QrCode, contentDescription = null)
+            Spacer(Modifier.width(10.dp))
             Text("使用 B 站手机客户端扫码登录", modifier = Modifier.weight(1f))
-            LiquidButton(onClick = onRefresh, modifier = Modifier.size(40.dp), contentPadding = PaddingValues(0.dp)) {
-                Icon(Icons.Outlined.Refresh, contentDescription = "刷新二维码")
-            }
+            GlassIconButton(
+                icon = ClipFlowIcons.Refresh,
+                contentDescription = "刷新二维码",
+                onClick = onRefresh,
+            )
         }
         val currentBitmap = bitmap
         if (currentBitmap != null) {
@@ -430,17 +439,18 @@ private fun BilibiliAccountDialog(
     onLogout: () -> Unit
 ) {
     Dialog(onDismissRequest = onDismiss) {
-        Card(shape = MaterialTheme.shapes.extraLarge) {
-            Column(modifier = Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text(account.name, style = MaterialTheme.typography.titleLarge)
-                Text("硬币 ${account.coins}")
-                Row(horizontalArrangement = Arrangement.spacedBy(20.dp)) {
-                    Text("${account.following} 关注")
-                    Text("${account.followers} 粉丝")
-                }
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                    LiquidButton(onClick = onLogout) { Text("退出登录") }
-                }
+        GlassDialogCard(modifier = Modifier.fillMaxWidth()) {
+            Text(account.name, style = MaterialTheme.typography.titleLarge)
+            Spacer(Modifier.height(4.dp))
+            Text(
+                "硬币 ${account.coins} · ${account.following} 关注 · ${account.followers} 粉丝",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(20.dp))
+            GlassDialogActions {
+                DialogSecondaryButton(text = "关闭", onClick = onDismiss)
+                DialogDangerButton(text = "退出登录", onClick = onLogout)
             }
         }
     }

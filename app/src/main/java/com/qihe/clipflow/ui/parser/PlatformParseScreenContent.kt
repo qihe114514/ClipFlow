@@ -13,10 +13,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.ErrorOutline
-import androidx.compose.material.icons.outlined.ContentPaste
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -37,6 +33,7 @@ import com.qihe.clipflow.ui.components.ParseInfoCard
 import com.qihe.clipflow.ui.component.LiquidButton
 import com.qihe.clipflow.ui.component.LiquidButtonTint
 import com.qihe.clipflow.ui.component.liquid.PROGRESSIVE_TOPBAR_CONTENT_START_DP
+import com.qihe.clipflow.ui.icons.ClipFlowIcons
 
 /** Shared parser-page layout. Platform screens only provide labels, color, and actions. */
 @Composable
@@ -161,19 +158,12 @@ fun PlatformParseInputCard(
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 val hasInput = inputUrl.isNotBlank()
-                LiquidButton(
+                com.qihe.clipflow.ui.components.GlassIconButton(
+                    icon = if (hasInput) ClipFlowIcons.Close else ClipFlowIcons.Paste,
+                    contentDescription = if (hasInput) "清空" else "粘贴",
                     onClick = { onClearOrPaste(hasInput) },
-                    modifier = Modifier.size(44.dp),
-                    contentPadding = PaddingValues(0.dp),
-                    tint = LiquidButtonTint,
-                ) {
-                    Icon(
-                        imageVector = if (hasInput) Icons.Filled.Close else Icons.Outlined.ContentPaste,
-                        contentDescription = if (hasInput) "清空" else "粘贴",
-                        tint = Color.White,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
+                    size = 44.dp,
+                )
                 GlassButton(
                     text = if (isParsing) "解析中..." else "开始解析",
                     onClick = onParse,
@@ -194,7 +184,7 @@ private fun ParseErrorCard(message: String) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
-                imageVector = Icons.Filled.ErrorOutline,
+                imageVector = ClipFlowIcons.Error,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.error,
                 modifier = Modifier.size(20.dp)

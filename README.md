@@ -16,7 +16,7 @@
 
 [下载最新版 APK](https://github.com/qihe114514/ClipFlow/releases/latest) · [查看所有版本](https://github.com/qihe114514/ClipFlow/releases)
 
-当前版本：**v4.0.1**（versionCode **91**）· 最低支持：**Android 10**
+当前版本：**v4.1.0**（versionCode **92**）· 最低支持：**Android 10**
 
 ## 主要功能
 
@@ -36,6 +36,7 @@
 | 网络请求 | Retrofit 2 + OkHttp 4 |
 | JSON 解析 | Gson |
 | 图片加载 | Coil |
+| 图标 | Lucide（ISC） |
 | 本地存储 | Room (SQLite) |
 | 导航 | Navigation Compose |
 | 最低 SDK | Android 10 (API 29) |

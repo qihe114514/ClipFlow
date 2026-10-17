@@ -5,19 +5,19 @@ import android.net.Uri
 import android.provider.Settings
 import androidx.browser.customtabs.CustomTabsIntent
 import java.io.File
+import androidx.compose.foundation.background
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -28,7 +28,8 @@ import com.qihe.clipflow.data.preferences.AppPreferences
 import com.qihe.clipflow.navigation.Screen
 import com.qihe.clipflow.ui.component.liquid.PROGRESSIVE_TOPBAR_CONTENT_START_DP
 import com.qihe.clipflow.ui.components.GlassCard
-import com.qihe.clipflow.ui.components.withTitleShadow
+import com.qihe.clipflow.ui.icons.ClipFlowIcons
+import com.qihe.clipflow.ui.components.withAdaptiveTitleShadow
 import com.qihe.clipflow.ui.component.LiquidButton
 import com.qihe.clipflow.ui.component.secondaryPageEntrance
 import com.qihe.clipflow.ui.components.PrivacyConsentDialog
@@ -61,18 +62,33 @@ fun AboutScreen(navController: NavHostController) {
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         // 应用图标
-        Icon(
-            imageVector = Icons.Filled.WaterDrop,
-            contentDescription = null,
-            modifier = Modifier.size(72.dp),
-            tint = MaterialTheme.colorScheme.primary
-        )
+        Box(
+            modifier = Modifier
+                .size(76.dp)
+                .clip(CircleShape)
+                .background(
+                    Brush.linearGradient(
+                        listOf(
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.30f),
+                            MaterialTheme.colorScheme.secondary.copy(alpha = 0.20f),
+                        )
+                    )
+                ),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = ClipFlowIcons.WaterDrop,
+                contentDescription = null,
+                modifier = Modifier.size(38.dp),
+                tint = MaterialTheme.colorScheme.primary,
+            )
+        }
 
         Spacer(Modifier.height(14.dp))
 
         Text(
             text = "ClipFlow",
-            style = MaterialTheme.typography.displayMedium.withTitleShadow(),
+            style = MaterialTheme.typography.displayMedium.withAdaptiveTitleShadow(),
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface
         )
@@ -161,7 +177,7 @@ fun AboutScreen(navController: NavHostController) {
             Column {
                 // B站
                 ExternalLinkRow(
-                    icon = Icons.Filled.SmartDisplay,
+                    icon = ClipFlowIcons.Film,
                     label = "B站主页",
                     url = "https://space.bilibili.com/1049283248",
                     context = context
@@ -169,7 +185,7 @@ fun AboutScreen(navController: NavHostController) {
                 Spacer(Modifier.height(10.dp))
                 // 抖音
                 ExternalLinkRow(
-                    icon = Icons.Filled.MusicNote,
+                    icon = ClipFlowIcons.Audio,
                     label = "抖音主页",
                     url = "https://www.douyin.com/user/MS4wLjABAAAAuUtKOArTFKTBm4C6o5MwDQuGMNZ9-0CWZfUay6U9wUI",
                     context = context
@@ -177,7 +193,7 @@ fun AboutScreen(navController: NavHostController) {
                 Spacer(Modifier.height(10.dp))
                 // GitHub
                 ExternalLinkRow(
-                    icon = Icons.Filled.Code,
+                    icon = ClipFlowIcons.Code,
                     label = "GitHub 开源仓库",
                     url = "https://github.com/qihe114514/ClipFlow",
                     context = context
@@ -208,7 +224,7 @@ fun AboutScreen(navController: NavHostController) {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
-                        imageVector = Icons.Filled.SystemUpdate,
+                        imageVector = ClipFlowIcons.Refresh,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(22.dp)
@@ -275,7 +291,7 @@ fun AboutScreen(navController: NavHostController) {
                             )
                         } else {
                             Icon(
-                                imageVector = Icons.Filled.Refresh,
+                                imageVector = ClipFlowIcons.Refresh,
                                 contentDescription = "检查更新",
                                 modifier = Modifier.size(16.dp)
                             )
@@ -390,7 +406,7 @@ fun AboutScreen(navController: NavHostController) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(
-                    imageVector = Icons.Filled.Code,
+                    imageVector = ClipFlowIcons.Code,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(22.dp)
@@ -409,7 +425,7 @@ fun AboutScreen(navController: NavHostController) {
                     )
                 }
                 Icon(
-                    imageVector = Icons.Filled.ChevronRight,
+                    imageVector = ClipFlowIcons.ChevronRight,
                     contentDescription = "查看",
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(20.dp)
@@ -439,7 +455,7 @@ fun AboutScreen(navController: NavHostController) {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
-                        imageVector = Icons.Filled.Description,
+                        imageVector = ClipFlowIcons.FileText,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(22.dp)
@@ -457,7 +473,7 @@ fun AboutScreen(navController: NavHostController) {
                         contentPadding = PaddingValues(0.dp),
                     ) {
                         Icon(
-                            imageVector = Icons.Filled.OpenInNew,
+                            imageVector = ClipFlowIcons.ExternalLink,
                             contentDescription = "查看",
                             modifier = Modifier.size(16.dp)
                         )
@@ -477,7 +493,7 @@ fun AboutScreen(navController: NavHostController) {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
-                        imageVector = Icons.Filled.GppBad,
+                        imageVector = ClipFlowIcons.Security,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.error,
                         modifier = Modifier.size(22.dp)
@@ -501,7 +517,7 @@ fun AboutScreen(navController: NavHostController) {
                         contentPadding = PaddingValues(0.dp),
                     ) {
                         Icon(
-                            imageVector = Icons.Filled.Close,
+                            imageVector = ClipFlowIcons.Close,
                             contentDescription = "撤销",
                             modifier = Modifier.size(16.dp)
                         )

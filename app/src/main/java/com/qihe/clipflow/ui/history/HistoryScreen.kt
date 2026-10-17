@@ -12,9 +12,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -40,6 +37,12 @@ import com.qihe.clipflow.navigation.navigateToPrimary
 import com.qihe.clipflow.ui.components.GlassCard
 import com.qihe.clipflow.ui.components.GlassTextField
 import com.qihe.clipflow.ui.components.TypeBadge
+import com.qihe.clipflow.ui.components.DialogDangerButton
+import com.qihe.clipflow.ui.components.DialogSecondaryButton
+import com.qihe.clipflow.ui.components.GlassDialogActions
+import com.qihe.clipflow.ui.components.GlassDialogCard
+import com.qihe.clipflow.ui.components.GlassIconButton
+import com.qihe.clipflow.ui.icons.ClipFlowIcons
 import com.qihe.clipflow.ui.component.LiquidButton
 import com.qihe.clipflow.ui.component.SecondaryPageSection
 import com.qihe.clipflow.ui.component.secondaryPageEntrance
@@ -110,26 +113,20 @@ fun HistoryScreen(
             )
 
             // 导入按钮
-            LiquidButton(
+            GlassIconButton(
+                icon = ClipFlowIcons.Upload,
+                contentDescription = "导入",
                 onClick = { importLauncher.launch(arrayOf("application/json")) },
-                modifier = Modifier.size(44.dp),
-                contentPadding = PaddingValues(0.dp),
-            ) {
-                Icon(Icons.Outlined.FileUpload, contentDescription = "导入", Modifier.size(20.dp))
-            }
+                size = 44.dp,
+            )
 
             // 选择模式切换
-            LiquidButton(
+            GlassIconButton(
+                icon = if (uiState.isSelectionMode) ClipFlowIcons.Close else ClipFlowIcons.CheckAll,
+                contentDescription = "选择",
                 onClick = { viewModel.toggleSelectionMode() },
-                modifier = Modifier.size(44.dp),
-                contentPadding = PaddingValues(0.dp),
-            ) {
-                Icon(
-                    imageVector = if (uiState.isSelectionMode) Icons.Filled.Close else Icons.Outlined.Checklist,
-                    contentDescription = "选择",
-                    modifier = Modifier.size(20.dp)
-                )
-            }
+                size = 44.dp,
+            )
         }
 
         Spacer(Modifier.height(8.dp))
@@ -151,12 +148,12 @@ fun HistoryScreen(
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     if (uiState.selectedIds.size == uiState.items.size && uiState.items.isNotEmpty()) {
-                        LiquidButton(onClick = { viewModel.clearSelection() }, modifier = Modifier.size(28.dp), contentPadding = PaddingValues(0.dp)) {
-                            Icon(Icons.Filled.SelectAll, "取消全选", Modifier.size(18.dp))
+                        LiquidButton(onClick = { viewModel.clearSelection() }, modifier = Modifier.size(34.dp), contentPadding = PaddingValues(0.dp)) {
+                            Icon(ClipFlowIcons.CheckAll, "取消全选", Modifier.size(18.dp))
                         }
                     } else {
-                        LiquidButton(onClick = { viewModel.selectAll() }, modifier = Modifier.size(28.dp), contentPadding = PaddingValues(0.dp)) {
-                            Icon(Icons.Outlined.SelectAll, "全选", Modifier.size(18.dp))
+                        LiquidButton(onClick = { viewModel.selectAll() }, modifier = Modifier.size(34.dp), contentPadding = PaddingValues(0.dp)) {
+                            Icon(ClipFlowIcons.CheckAll, "全选", Modifier.size(18.dp))
                         }
                     }
                     Spacer(Modifier.width(4.dp))
@@ -172,7 +169,7 @@ fun HistoryScreen(
                     modifier = Modifier.size(32.dp),
                     contentPadding = PaddingValues(0.dp),
                 ) {
-                    Icon(Icons.Filled.Delete, "删除", tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(20.dp))
+                    Icon(ClipFlowIcons.Delete, "删除", tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(20.dp))
                 }
             }
         }
@@ -185,7 +182,7 @@ fun HistoryScreen(
                 onClick = { exportLauncher.launch("clipflow_history.json") },
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Icon(Icons.Outlined.FileDownload, null, Modifier.size(18.dp))
+                Icon(ClipFlowIcons.FileDown, null, Modifier.size(18.dp))
                 Spacer(Modifier.width(6.dp))
                 Text("导出选中记录")
             }
@@ -196,7 +193,7 @@ fun HistoryScreen(
         if (uiState.items.isEmpty()) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(Icons.Outlined.History, null, Modifier.size(64.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f))
+                    Icon(ClipFlowIcons.History, null, Modifier.size(64.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f))
                     Spacer(Modifier.height(16.dp))
                     Text(
                         if (uiState.searchQuery.isNotEmpty()) "没有匹配的记录" else "暂无解析历史",
@@ -276,22 +273,26 @@ fun HistoryScreen(
     // ========== 删除确认弹窗 ==========
     if (uiState.showDeleteConfirm) {
         Dialog(onDismissRequest = { viewModel.cancelDelete() }) {
-            Card(shape = MaterialTheme.shapes.extraLarge) {
-                Column(modifier = Modifier.padding(24.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Filled.Warning, contentDescription = null)
-                        Spacer(Modifier.width(12.dp))
-                        Text("确认删除", style = MaterialTheme.typography.titleLarge)
-                    }
-                    Spacer(Modifier.height(16.dp))
-                    Text("确定要删除选中的 ${uiState.selectedIds.size} 条记录吗？此操作不可撤销。")
-                    Spacer(Modifier.height(20.dp))
-                    Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {
-                        LiquidButton(onClick = { viewModel.cancelDelete() }) { Text("取消") }
-                        LiquidButton(onClick = { viewModel.confirmDelete() }) {
-                            Text("删除", color = MaterialTheme.colorScheme.error)
-                        }
-                    }
+            GlassDialogCard(modifier = Modifier.fillMaxWidth()) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = ClipFlowIcons.Warning,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.error,
+                    )
+                    Spacer(Modifier.width(12.dp))
+                    Text("确认删除", style = MaterialTheme.typography.titleLarge)
+                }
+                Spacer(Modifier.height(14.dp))
+                Text(
+                    "确定要删除选中的 ${uiState.selectedIds.size} 条记录吗？此操作不可撤销。",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(22.dp))
+                GlassDialogActions {
+                    DialogSecondaryButton(text = "取消", onClick = { viewModel.cancelDelete() })
+                    DialogDangerButton(text = "删除", onClick = { viewModel.confirmDelete() })
                 }
             }
         }

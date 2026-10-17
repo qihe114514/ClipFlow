@@ -1,15 +1,7 @@
 package com.qihe.clipflow.navigation
 
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.LiveTv
-import androidx.compose.material.icons.filled.MusicNote
-import androidx.compose.material.icons.filled.Shop
-import androidx.compose.material.icons.outlined.Home
-import androidx.compose.material.icons.outlined.LiveTv
-import androidx.compose.material.icons.outlined.MusicNote
-import androidx.compose.material.icons.outlined.Shop
 import androidx.compose.ui.graphics.vector.ImageVector
+import com.qihe.clipflow.ui.icons.ClipFlowIcons
 import android.net.Uri
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
@@ -58,26 +50,26 @@ val bottomNavItems = listOf(
     BottomNavItem(
         label = "主页",
         route = Screen.Home.route,
-        selectedIcon = Icons.Filled.Home,
-        unselectedIcon = Icons.Outlined.Home
+        selectedIcon = ClipFlowIcons.Home,
+        unselectedIcon = ClipFlowIcons.Home
     ),
     BottomNavItem(
         label = "抖音",
         route = Screen.Douyin.route,
-        selectedIcon = Icons.Filled.MusicNote,
-        unselectedIcon = Icons.Outlined.MusicNote
+        selectedIcon = ClipFlowIcons.Douyin,
+        unselectedIcon = ClipFlowIcons.Douyin
     ),
     BottomNavItem(
         label = "小红书",
         route = Screen.Xiaohongshu.route,
-        selectedIcon = Icons.Filled.Shop,
-        unselectedIcon = Icons.Outlined.Shop
+        selectedIcon = ClipFlowIcons.Xiaohongshu,
+        unselectedIcon = ClipFlowIcons.Xiaohongshu
     ),
     BottomNavItem(
         label = "B站",
         route = Screen.Bilibili.route,
-        selectedIcon = Icons.Filled.LiveTv,
-        unselectedIcon = Icons.Outlined.LiveTv
+        selectedIcon = ClipFlowIcons.Bilibili,
+        unselectedIcon = ClipFlowIcons.Bilibili
     )
 )
 

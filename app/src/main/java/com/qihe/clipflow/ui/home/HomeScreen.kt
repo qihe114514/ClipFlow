@@ -1,38 +1,68 @@
 package com.qihe.clipflow.ui.home
 
-import androidx.compose.animation.*
-import androidx.compose.foundation.layout.*
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.qihe.clipflow.navigation.Screen
-import com.qihe.clipflow.ui.components.GlassCard
-import com.qihe.clipflow.ui.components.withTitleShadow
+import com.qihe.clipflow.ui.component.SecondaryPageEasing
 import com.qihe.clipflow.ui.component.liquid.PROGRESSIVE_TOPBAR_CONTENT_START_DP
+import com.qihe.clipflow.ui.components.GlassCard
+import com.qihe.clipflow.ui.components.withAdaptiveTitleShadow
+import com.qihe.clipflow.ui.icons.ClipFlowIcons
+import com.qihe.clipflow.ui.theme.ClipFlowMotion
 import com.qihe.clipflow.ui.theme.DouyinAccent
 import com.qihe.clipflow.ui.theme.XiaohongshuAccent
 
+private data class Feature(
+    val title: String,
+    val desc: String,
+    val icon: ImageVector,
+)
+
 private val features = listOf(
-    Triple("无水印解析", "原画品质下载", Icons.Outlined.HighQuality),
-    Triple("实况支持", "Live Photo 完整保存", Icons.Outlined.Animation),
-    Triple("相册入库", "自动归入系统相册", Icons.Outlined.PhotoLibrary),
-    Triple("Material You", "跟随系统壁纸变色", Icons.Outlined.Palette),
-    Triple("历史回溯", "解析记录永不丢失", Icons.Outlined.History)
+    Feature("无水印解析", "原画品质下载", ClipFlowIcons.Sparkles),
+    Feature("实况支持", "Live Photo 完整保存", ClipFlowIcons.Film),
+    Feature("相册入库", "自动归入系统相册", ClipFlowIcons.Images),
+    Feature("Material You", "跟随系统壁纸变色", ClipFlowIcons.Palette),
+    Feature("历史回溯", "解析记录永不丢失", ClipFlowIcons.History),
 )
 
 @Composable
@@ -47,18 +77,33 @@ fun HomeScreen(navController: NavHostController) {
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         // ========== 品牌区 ==========
-        Icon(
-            imageVector = Icons.Filled.WaterDrop,
-            contentDescription = null,
-            modifier = Modifier.size(64.dp),
-            tint = MaterialTheme.colorScheme.primary
-        )
+        Box(
+            modifier = Modifier
+                .size(76.dp)
+                .clip(CircleShape)
+                .background(
+                    Brush.linearGradient(
+                        listOf(
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.30f),
+                            MaterialTheme.colorScheme.secondary.copy(alpha = 0.20f),
+                        )
+                    )
+                ),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = ClipFlowIcons.WaterDrop,
+                contentDescription = null,
+                modifier = Modifier.size(38.dp),
+                tint = MaterialTheme.colorScheme.primary,
+            )
+        }
 
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(14.dp))
 
         Text(
             text = "ClipFlow",
-            style = MaterialTheme.typography.displayMedium.withTitleShadow(),
+            style = MaterialTheme.typography.displayMedium.withAdaptiveTitleShadow(),
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface
         )
@@ -72,106 +117,32 @@ fun HomeScreen(navController: NavHostController) {
             textAlign = TextAlign.Center
         )
 
-        Spacer(Modifier.height(36.dp))
+        Spacer(Modifier.height(34.dp))
 
-        // ========== 功能卡片 抖音 ==========
-        GlassCard(
+        HomePlatformCard(
+            title = "抖音解析",
+            subtitle = "视频 · 图集 · 实况",
+            icon = ClipFlowIcons.Douyin,
+            accent = DouyinAccent,
             onClick = { navController.navigate(Screen.Douyin.route) },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Surface(
-                    shape = MaterialTheme.shapes.medium,
-                    color = DouyinAccent.copy(alpha = 0.12f),
-                    modifier = Modifier.size(56.dp)
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            imageVector = Icons.Filled.MusicNote,
-                            contentDescription = null,
-                            tint = DouyinAccent,
-                            modifier = Modifier.size(30.dp)
-                        )
-                    }
-                }
-                Spacer(Modifier.width(18.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "抖音解析",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        text = "支持视频 · 图集 · 实况",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                Icon(
-                    imageVector = Icons.Filled.ChevronRight,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
-                )
-            }
-        }
+        )
 
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(14.dp))
 
-        // ========== 功能卡片 小红书 ==========
-        GlassCard(
+        HomePlatformCard(
+            title = "小红书解析",
+            subtitle = "图片 · 视频无水印",
+            icon = ClipFlowIcons.Xiaohongshu,
+            accent = XiaohongshuAccent,
             onClick = { navController.navigate(Screen.Xiaohongshu.route) },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Surface(
-                    shape = MaterialTheme.shapes.medium,
-                    color = XiaohongshuAccent.copy(alpha = 0.12f),
-                    modifier = Modifier.size(56.dp)
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            imageVector = Icons.Filled.Favorite,
-                            contentDescription = null,
-                            tint = XiaohongshuAccent,
-                            modifier = Modifier.size(30.dp)
-                        )
-                    }
-                }
-                Spacer(Modifier.width(18.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "小红书解析",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        text = "笔记图片 · 视频无水印",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                Icon(
-                    imageVector = Icons.Filled.ChevronRight,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
-                )
-            }
-        }
+        )
 
-        Spacer(Modifier.height(32.dp))
+        Spacer(Modifier.height(30.dp))
 
         // ========== 特色标签 ==========
         Text(
             text = "核心特性",
-            style = MaterialTheme.typography.titleMedium.withTitleShadow(),
+            style = MaterialTheme.typography.titleMedium.withAdaptiveTitleShadow(),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.fillMaxWidth()
         )
@@ -181,32 +152,97 @@ fun HomeScreen(navController: NavHostController) {
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            items(features) { (title, desc, icon) ->
+            items(features) { feature ->
                 GlassCard(
-                    modifier = Modifier.width(140.dp).heightIn(min = 115.dp)
+                    modifier = Modifier.width(142.dp).heightIn(min = 118.dp),
+                    cornerRadius = 20.dp,
                 ) {
                     Icon(
-                        imageVector = icon,
+                        imageVector = feature.icon,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(24.dp)
                     )
-                    Spacer(Modifier.height(8.dp))
+                    Spacer(Modifier.height(10.dp))
                     Text(
-                        text = title,
+                        text = feature.title,
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.SemiBold,
                         maxLines = 1
                     )
-                    Spacer(Modifier.height(2.dp))
+                    Spacer(Modifier.height(3.dp))
                     Text(
-                        text = desc,
+                        text = feature.desc,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun HomePlatformCard(
+    title: String,
+    subtitle: String,
+    icon: ImageVector,
+    accent: androidx.compose.ui.graphics.Color,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var visible by remember { mutableStateOf(false) }
+    androidx.compose.runtime.LaunchedEffect(Unit) { visible = true }
+    AnimatedVisibility(
+        visible = visible,
+        enter = fadeIn(tween(ClipFlowMotion.StandardMillis, easing = SecondaryPageEasing)) +
+            slideInVertically(
+                tween(ClipFlowMotion.StandardMillis, easing = SecondaryPageEasing)
+            ) { it / 6 },
+    ) {
+        GlassCard(
+            onClick = onClick,
+            modifier = modifier.fillMaxWidth(),
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Surface(
+                    shape = MaterialTheme.shapes.medium,
+                    color = accent.copy(alpha = 0.14f),
+                    modifier = Modifier.size(56.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = icon,
+                            contentDescription = null,
+                            tint = accent,
+                            modifier = Modifier.size(28.dp)
+                        )
+                    }
+                }
+                Spacer(Modifier.width(16.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Spacer(Modifier.height(3.dp))
+                    Text(
+                        text = subtitle,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Icon(
+                    imageVector = ClipFlowIcons.ChevronRight,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f)
+                )
             }
         }
     }

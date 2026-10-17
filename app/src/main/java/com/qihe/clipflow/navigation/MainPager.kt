@@ -7,11 +7,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.saveable.SaveableStateHolder
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.qihe.clipflow.ui.bilibili.BilibiliScreen
 import com.qihe.clipflow.ui.douyin.DouyinScreen
 import com.qihe.clipflow.ui.home.HomeScreen
 import com.qihe.clipflow.ui.xiaohongshu.XiaohongshuScreen
+import kotlin.math.abs
 
 @Composable
 fun MainPager(
@@ -23,6 +26,7 @@ fun MainPager(
     sourceUrl: String?,
     visible: Boolean,
 ) {
+    val density = LocalDensity.current
     HorizontalPager(
         state = pagerState,
         modifier = Modifier
@@ -33,18 +37,36 @@ fun MainPager(
         key = { page -> pages[page].route },
     ) { page ->
         val route = pages[page].route
+        val pageOffset = (
+            (pagerState.currentPage - page) + pagerState.currentPageOffsetFraction
+            ).coerceIn(-1f, 1f)
+        val distance = abs(pageOffset)
         stateHolder.SaveableStateProvider(route) {
-            when (route) {
-                Screen.Home.route -> HomeScreen(navController)
-                Screen.Douyin.route -> DouyinScreen(
-                    sourceUrl = sourceUrl.takeIf { currentRoute == route },
-                )
-                Screen.Xiaohongshu.route -> XiaohongshuScreen(
-                    sourceUrl = sourceUrl.takeIf { currentRoute == route },
-                )
-                Screen.Bilibili.route -> BilibiliScreen(
-                    sourceUrl = sourceUrl.takeIf { currentRoute == route },
-                )
+            androidx.compose.foundation.layout.Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .graphicsLayer {
+                        // Continuous depth parallax between primary tabs.
+                        val scale = 1f - 0.045f * distance
+                        scaleX = scale
+                        scaleY = scale
+                        alpha = (1f - 0.18f * distance).coerceIn(0f, 1f)
+                        translationY = with(density) { 10.dp.toPx() } * distance
+                        translationX = -pageOffset * with(density) { 18.dp.toPx() }
+                    }
+            ) {
+                when (route) {
+                    Screen.Home.route -> HomeScreen(navController)
+                    Screen.Douyin.route -> DouyinScreen(
+                        sourceUrl = sourceUrl.takeIf { currentRoute == route },
+                    )
+                    Screen.Xiaohongshu.route -> XiaohongshuScreen(
+                        sourceUrl = sourceUrl.takeIf { currentRoute == route },
+                    )
+                    Screen.Bilibili.route -> BilibiliScreen(
+                        sourceUrl = sourceUrl.takeIf { currentRoute == route },
+                    )
+                }
             }
         }
     }

@@ -19,12 +19,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.BookmarkBorder
-import androidx.compose.material.icons.filled.ChatBubbleOutline
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.OpenInBrowser
-import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -57,6 +51,11 @@ import com.qihe.clipflow.ui.theme.ImageTypeBadge
 import com.qihe.clipflow.ui.theme.LiveTypeBadge
 import com.qihe.clipflow.ui.theme.VideoTypeBadge
 import com.qihe.clipflow.ui.component.LiquidButton
+import com.qihe.clipflow.ui.components.DialogPrimaryButton
+import com.qihe.clipflow.ui.components.DialogSecondaryButton
+import com.qihe.clipflow.ui.components.GlassDialogActions
+import com.qihe.clipflow.ui.components.GlassDialogCard
+import com.qihe.clipflow.ui.icons.ClipFlowIcons
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.first
@@ -95,19 +94,24 @@ fun ParseInfoCard(
     }
     if (showSaveDialog) {
         Dialog(onDismissRequest = { showSaveDialog = false }) {
-            androidx.compose.material3.Card(shape = MaterialTheme.shapes.extraLarge) {
-                Column(modifier = Modifier.padding(24.dp)) {
-                    Text("保存封面到相册？", style = MaterialTheme.typography.titleLarge)
-                    Spacer(Modifier.height(12.dp))
-                    Text("是否将封面保存到系统相册？")
-                    Spacer(Modifier.height(20.dp))
-                    Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {
-                        LiquidButton(onClick = { showSaveDialog = false }) { Text("不好喵") }
-                        LiquidButton(onClick = {
+            GlassDialogCard(modifier = Modifier.fillMaxWidth()) {
+                Text("保存封面到相册？", style = MaterialTheme.typography.titleLarge)
+                Spacer(Modifier.height(10.dp))
+                Text(
+                    "是否将封面保存到系统相册？",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(22.dp))
+                GlassDialogActions {
+                    DialogSecondaryButton(text = "不了", onClick = { showSaveDialog = false })
+                    DialogPrimaryButton(
+                        text = "保存",
+                        onClick = {
                             showSaveDialog = false
                             scope.launch { saveCoverToGallery(context, cover) }
-                        }) { Text("好的喵") }
-                    }
+                        },
+                    )
                 }
             }
         }
@@ -137,10 +141,10 @@ fun ParseInfoCard(
             stats?.let {
                 Spacer(Modifier.height(8.dp))
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-                    StatItem(Icons.Filled.Favorite, formatCount(it.diggCount))
-                    StatItem(Icons.Filled.ChatBubbleOutline, formatCount(it.commentCount))
-                    StatItem(Icons.Filled.BookmarkBorder, formatCount(it.collectCount))
-                    StatItem(Icons.Filled.Share, formatCount(it.shareCount))
+                    StatItem(ClipFlowIcons.Favorite, formatCount(it.diggCount))
+                    StatItem(ClipFlowIcons.Comment, formatCount(it.commentCount))
+                    StatItem(ClipFlowIcons.Bookmark, formatCount(it.collectCount))
+                    StatItem(ClipFlowIcons.Share, formatCount(it.shareCount))
                 }
             }
         }
@@ -199,7 +203,7 @@ private fun ParseAuthorRow(authorName: String, authorAvatar: String, contentType
                 modifier = Modifier.size(32.dp),
                 contentPadding = PaddingValues(0.dp),
             ) {
-                Icon(Icons.Filled.OpenInBrowser, "打开原链接", modifier = Modifier.size(16.dp))
+                Icon(ClipFlowIcons.ExternalLink, "打开原链接", modifier = Modifier.size(16.dp))
             }
         }
     }

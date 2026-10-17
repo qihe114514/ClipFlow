@@ -23,15 +23,6 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AutoAwesome
-import androidx.compose.material.icons.filled.BlurOn
-import androidx.compose.material.icons.filled.ExpandLess
-import androidx.compose.material.icons.filled.ExpandMore
-import androidx.compose.material.icons.filled.Image
-import androidx.compose.material.icons.filled.Palette
-import androidx.compose.material.icons.filled.Restore
-import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -39,6 +30,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -49,6 +41,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -61,16 +54,20 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.qihe.clipflow.R
 import com.qihe.clipflow.data.preferences.AppPreferences
+import com.kyant.backdrop.backdrops.layerBackdrop
+import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.qihe.clipflow.ui.component.ContrastPreset
 import com.qihe.clipflow.ui.component.IntensityPreset
 import com.qihe.clipflow.ui.component.LiquidButton
+import com.qihe.clipflow.ui.component.LocalLiquidBackdrop
 import com.qihe.clipflow.ui.component.LiquidToggle
 import com.qihe.clipflow.ui.component.secondaryPageEntrance
 import com.qihe.clipflow.ui.component.liquid.PROGRESSIVE_TOPBAR_CONTENT_START_DP
 import com.qihe.clipflow.ui.component.wallpaperOpacityPercent
 import com.qihe.clipflow.ui.components.GlassCard
-import com.qihe.clipflow.ui.components.withTitleShadow
+import com.qihe.clipflow.ui.components.withAdaptiveTitleShadow
 import com.qihe.clipflow.ui.settings.SectionHeader
+import com.qihe.clipflow.ui.icons.ClipFlowIcons
 import com.qihe.clipflow.ui.theme.ThemeMode
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -209,7 +206,7 @@ fun PersonalizationScreen(
         )
 
         SectionHeader(title = "外观模式")
-        GlassCard(modifier = Modifier.fillMaxWidth().secondaryPageEntrance(1), cornerRadius = 20.dp) {
+        GlassCard(modifier = Modifier.fillMaxWidth().secondaryPageEntrance(1)) {
             ThemeModeButtons(
                 selectedKey = uiState.themeMode,
                 onSelect = viewModel::setThemeMode,
@@ -234,7 +231,7 @@ fun PersonalizationScreen(
         }
 
         SectionHeader(title = "背景壁纸")
-        GlassCard(modifier = Modifier.fillMaxWidth().secondaryPageEntrance(2), cornerRadius = 20.dp) {
+        GlassCard(modifier = Modifier.fillMaxWidth().secondaryPageEntrance(2)) {
             WallpaperSourceRow(
                 hasCustomWallpaper = uiState.wallpaperUri.isNotEmpty(),
                 onChoose = { imagePickerLauncher.launch(arrayOf("image/*")) },
@@ -259,31 +256,38 @@ fun PersonalizationScreen(
         }
 
         SectionHeader(title = "玻璃效果")
-        GlassCard(modifier = Modifier.fillMaxWidth().secondaryPageEntrance(3), cornerRadius = 20.dp) {
+        GlassCard(modifier = Modifier.fillMaxWidth().secondaryPageEntrance(3)) {
             GlassSummaryRow(
-                icon = Icons.Filled.BlurOn,
+                icon = ClipFlowIcons.WaterDrop,
                 label = "卡片",
                 value = "效果${presetLabel(uiState.cardPreset)} · 模糊${blurPresetLabel(IntensityPreset.fromKey(uiState.cardBlurPreset))}",
             )
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.22f))
             GlassSummaryRow(
-                icon = Icons.Filled.AutoAwesome,
+                icon = ClipFlowIcons.Sparkles,
                 label = "按钮",
                 value = "效果${presetLabel(uiState.buttonPreset)} · 模糊${blurPresetLabel(IntensityPreset.fromKey(uiState.buttonBlurPreset))}",
             )
             Spacer(Modifier.height(14.dp))
+            val chevronRotation by androidx.compose.animation.core.animateFloatAsState(
+                targetValue = if (advancedExpanded) 180f else 0f,
+                animationSpec = com.qihe.clipflow.ui.theme.ClipFlowMotion.settleSpring(),
+                label = "advancedChevron",
+            )
             LiquidButton(
                 onClick = { advancedExpanded = !advancedExpanded },
                 modifier = Modifier.fillMaxWidth(),
                 height = 40.dp,
                 contentPadding = PaddingValues(horizontal = 14.dp),
             ) {
-                Icon(Icons.Filled.Tune, null, Modifier.size(18.dp))
+                Icon(ClipFlowIcons.Sliders, null, Modifier.size(18.dp))
                 Text("高级微调", style = MaterialTheme.typography.labelLarge, modifier = Modifier.weight(1f))
                 Icon(
-                    if (advancedExpanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
-                    null,
-                    Modifier.size(18.dp),
+                    imageVector = ClipFlowIcons.ChevronDown,
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(18.dp)
+                        .graphicsLayer { rotationZ = chevronRotation },
                 )
             }
             if (advancedExpanded) {
@@ -310,41 +314,45 @@ fun PersonalizationScreen(
     }
 
     if (showResetSheet) {
-        ModalBottomSheet(onDismissRequest = { showResetSheet = false }) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp, vertical = 8.dp)
-                    .padding(bottom = 24.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                Text("恢复默认", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
-                Text(
-                    "将恢复跟随系统、动态配色、默认壁纸和全部玻璃效果参数。",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ModalBottomSheet(
+            onDismissRequest = { showResetSheet = false },
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.98f),
+            shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+            tonalElevation = 0.dp,
+        ) {
+            // A bottom sheet lives in its own window; never let its buttons
+            // sample the activity scene behind it.
+            CompositionLocalProvider(LocalLiquidBackdrop provides null) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp, vertical = 8.dp)
+                        .padding(bottom = 24.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    LiquidButton(
-                        onClick = { showResetSheet = false },
-                        modifier = Modifier.weight(1f),
-                        height = 44.dp,
+                    Text("恢复默认", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
+                    Text(
+                        "将恢复跟随系统、动态配色、默认壁纸和全部玻璃效果参数。",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
                     ) {
-                        Text("取消", style = MaterialTheme.typography.labelLarge)
-                    }
-                    LiquidButton(
-                        onClick = {
-                            viewModel.resetAll()
-                            showResetSheet = false
-                        },
-                        modifier = Modifier.weight(1f),
-                        tint = MaterialTheme.colorScheme.error,
-                        height = 44.dp,
-                    ) {
-                        Text("恢复默认", style = MaterialTheme.typography.labelLarge, color = Color.White)
+                        com.qihe.clipflow.ui.components.DialogSecondaryButton(
+                            text = "取消",
+                            onClick = { showResetSheet = false },
+                            modifier = Modifier.weight(1f),
+                        )
+                        com.qihe.clipflow.ui.components.DialogDangerButton(
+                            text = "恢复默认",
+                            onClick = {
+                                viewModel.resetAll()
+                                showResetSheet = false
+                            },
+                            modifier = Modifier.weight(1f),
+                        )
                     }
                 }
             }
@@ -358,12 +366,21 @@ private fun AppearancePreview(state: PersonalizationUiState, onReset: () -> Unit
     val opacityPreset = IntensityPreset.fromKey(state.wallpaperOpacityPreset)
     val overlayAlpha = 1f - wallpaperOpacityPercent(opacityPreset) / 100f
 
+    val previewBackdrop = rememberLayerBackdrop()
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .height(144.dp)
             .clip(RoundedCornerShape(20.dp)),
     ) {
+        // Capture the preview scene locally so the glass card below refracts the
+        // wallpaper preview rather than the page behind the preview.
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .layerBackdrop(previewBackdrop),
+        ) {
             if (opacityPreset == IntensityPreset.OFF) {
                 Box(
                     modifier = Modifier
@@ -386,6 +403,8 @@ private fun AppearancePreview(state: PersonalizationUiState, onReset: () -> Unit
                         .background(MaterialTheme.colorScheme.background.copy(alpha = overlayAlpha)),
                 )
             }
+        }
+        CompositionLocalProvider(LocalLiquidBackdrop provides previewBackdrop) {
             Column(
                 modifier = Modifier
                     .align(Alignment.BottomStart)
@@ -393,7 +412,7 @@ private fun AppearancePreview(state: PersonalizationUiState, onReset: () -> Unit
                     .padding(12.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                GlassCard(modifier = Modifier.fillMaxWidth(), cornerRadius = 14.dp) {
+                GlassCard(modifier = Modifier.fillMaxWidth(), cornerRadius = 16.dp) {
                     Text("当前外观", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold)
                     Text(
                         "${ThemeMode.fromKey(state.themeMode).label} · ${if (state.dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) "动态配色" else "应用配色"}",
@@ -404,13 +423,14 @@ private fun AppearancePreview(state: PersonalizationUiState, onReset: () -> Unit
                 LiquidButton(
                     onClick = onReset,
                     modifier = Modifier.align(Alignment.End),
-                    height = 32.dp,
+                    height = 34.dp,
                     contentPadding = PaddingValues(horizontal = 12.dp),
                 ) {
-                    Icon(Icons.Filled.Restore, null, Modifier.size(14.dp))
+                    Icon(ClipFlowIcons.Restore, null, Modifier.size(14.dp))
                     Text("恢复默认", style = MaterialTheme.typography.labelSmall)
                 }
             }
+        }
     }
 }
 
@@ -436,7 +456,7 @@ private fun WallpaperSourceRow(
             height = 36.dp,
             contentPadding = PaddingValues(0.dp),
         ) {
-            Icon(Icons.Filled.Image, contentDescription = "选择图片", modifier = Modifier.size(18.dp))
+            Icon(ClipFlowIcons.Image, contentDescription = "选择图片", modifier = Modifier.size(18.dp))
         }
         if (hasCustomWallpaper) {
             Spacer(Modifier.size(8.dp))
@@ -447,7 +467,7 @@ private fun WallpaperSourceRow(
                 height = 36.dp,
                 contentPadding = PaddingValues(0.dp),
             ) {
-                Icon(Icons.Filled.Restore, contentDescription = "恢复默认图片", modifier = Modifier.size(18.dp))
+                Icon(ClipFlowIcons.Restore, contentDescription = "恢复默认图片", modifier = Modifier.size(18.dp))
             }
         }
     }
@@ -481,7 +501,7 @@ private fun AdvancedGlassControls(
     onEffectSelect: (String) -> Unit,
     onBlurSelect: (String) -> Unit,
 ) {
-    Text(title, style = MaterialTheme.typography.titleSmall.withTitleShadow(), fontWeight = FontWeight.SemiBold)
+    Text(title, style = MaterialTheme.typography.titleSmall.withAdaptiveTitleShadow(), fontWeight = FontWeight.SemiBold)
     Spacer(Modifier.height(10.dp))
     ControlLabel("玻璃效果")
     Spacer(Modifier.height(6.dp))
@@ -517,7 +537,7 @@ private fun ThemeModeButtons(selectedKey: String, onSelect: (String) -> Unit) {
                 Text(
                     mode.label,
                     style = MaterialTheme.typography.labelMedium,
-                    color = if (selected) Color.White else Color.Unspecified,
+                    color = if (selected) MaterialTheme.colorScheme.onPrimary else Color.Unspecified,
                 )
             }
         }
@@ -549,7 +569,7 @@ private fun PresetButtons(
                 Text(
                     labelOf(preset),
                     style = MaterialTheme.typography.labelLarge,
-                    color = if (selected) Color.White else Color.Unspecified,
+                    color = if (selected) MaterialTheme.colorScheme.onPrimary else Color.Unspecified,
                 )
             }
         }
@@ -571,7 +591,7 @@ private fun ContrastButtons(selectedKey: String, onSelect: (String) -> Unit) {
                 Text(
                     preset.label,
                     style = MaterialTheme.typography.labelLarge,
-                    color = if (selected) Color.White else Color.Unspecified,
+                    color = if (selected) MaterialTheme.colorScheme.onPrimary else Color.Unspecified,
                 )
             }
         }

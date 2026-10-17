@@ -7,18 +7,21 @@ import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.window.Dialog
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -32,6 +35,12 @@ import androidx.compose.ui.unit.dp
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import com.qihe.clipflow.data.preferences.AppPreferences
 import com.qihe.clipflow.navigation.ClipFlowNavHost
+import com.qihe.clipflow.ui.components.DialogDangerButton
+import com.qihe.clipflow.ui.components.DialogPrimaryButton
+import com.qihe.clipflow.ui.components.DialogSecondaryButton
+import com.qihe.clipflow.ui.components.GlassDialogActions
+import com.qihe.clipflow.ui.components.GlassDialogCard
+import com.qihe.clipflow.ui.icons.ClipFlowIcons
 import com.qihe.clipflow.ui.theme.ClipFlowTheme
 import com.qihe.clipflow.ui.theme.ThemeMode
 import com.qihe.clipflow.ui.theme.resolveDarkTheme
@@ -105,96 +114,135 @@ private fun StartupUpdateCheck() {
     }
 
     updateInfo?.let { info ->
-        AlertDialog(
+        Dialog(
             onDismissRequest = {
                 if (!downloadState.isDownloading) updateInfo = null
-            },
-            title = { Text("发现新版本 v${info.latestVersion}") },
-            text = {
-                Column {
-                    if (info.releaseNotes.isNotBlank()) {
-                        Text(info.releaseNotes)
-                        Spacer(Modifier.height(12.dp))
-                    }
-                    downloadError?.let {
-                        Text(it, color = androidx.compose.material3.MaterialTheme.colorScheme.error)
-                    }
-                    if (downloadState.isDownloading) {
-                        LinearProgressIndicator(
-                            progress = { downloadState.progress },
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                        Spacer(Modifier.height(4.dp))
-                        Text("${(downloadState.progress * 100).toInt()}%  ${downloadState.speedText}")
-                    } else if (downloadedApk != null) {
-                        Text("下载完成，可以安装更新")
-                    }
+            }
+        ) {
+            GlassDialogCard(modifier = Modifier.fillMaxWidth()) {
+                Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = ClipFlowIcons.Refresh,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                    )
+                    Text(
+                        text = "发现新版本 v${info.latestVersion}",
+                        style = MaterialTheme.typography.titleLarge,
+                        modifier = Modifier.padding(start = 10.dp),
+                    )
                 }
-            },
-            confirmButton = {
-                when {
-                    downloadedApk != null -> Button(
-                        onClick = {
-                            downloadedApk?.let { file ->
-                                if (context.packageManager.canRequestPackageInstalls()) {
-                                    UpdateManager.installApk(context, file)
-                                } else {
-                                    context.startActivity(
-                                        Intent(
-                                            Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
-                                            Uri.parse("package:${context.packageName}")
-                                        )
-                                    )
-                                }
-                            }
-                        }
-                    ) {
-                        Text("安装更新")
-                    }
-                    downloadState.isDownloading -> TextButton(onClick = {
-                        downloadJob?.cancel()
-                        downloadJob = null
-                        downloadManager.reset()
-                        downloadedApk = null
-                        downloadError = "已取消下载"
-                    }) {
-                        Text("取消下载")
-                    }
-                    else -> TextButton(
-                        onClick = {
-                            downloadError = null
-                            downloadedApk = null
-                            downloadManager.reset()
-                            downloadJob = scope.launch {
-                                downloadManager.downloadWithProgress(
-                                    info.downloadUrl,
-                                    info.fileName,
-                                    onProgress = {}
-                                ).onSuccess { file ->
-                                    if (UpdateManager.verifyPackage(context, file, info)) {
-                                        downloadedApk = file
-                                    } else {
-                                        file.delete()
-                                        downloadError = "安装包校验失败，已删除，请重试"
+                if (info.releaseNotes.isNotBlank()) {
+                    Spacer(Modifier.height(12.dp))
+                    Text(
+                        text = info.releaseNotes,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 7,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                    )
+                }
+                downloadError?.let {
+                    Spacer(Modifier.height(10.dp))
+                    Text(
+                        text = it,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
+                if (downloadState.isDownloading) {
+                    Spacer(Modifier.height(16.dp))
+                    LinearProgressIndicator(
+                        progress = { downloadState.progress },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(999.dp)),
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        text = "${(downloadState.progress * 100).toInt()}%  ${downloadState.speedText}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                } else if (downloadedApk != null) {
+                    Spacer(Modifier.height(14.dp))
+                    Text(
+                        text = "下载完成，可以安装更新",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
+                Spacer(Modifier.height(22.dp))
+                GlassDialogActions {
+                    when {
+                        downloadedApk != null -> {
+                            DialogSecondaryButton(
+                                text = "稍后",
+                                onClick = { updateInfo = null },
+                            )
+                            DialogPrimaryButton(
+                                text = "安装更新",
+                                onClick = {
+                                    downloadedApk?.let { file ->
+                                        if (context.packageManager.canRequestPackageInstalls()) {
+                                            UpdateManager.installApk(context, file)
+                                        } else {
+                                            context.startActivity(
+                                                Intent(
+                                                    Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
+                                                    Uri.parse("package:${context.packageName}")
+                                                )
+                                            )
+                                        }
                                     }
-                                }.onFailure { error ->
-                                    downloadError = error.message ?: "下载失败"
-                                }
-                            }
+                                },
+                            )
                         }
-                    ) {
-                        Text("下载更新")
+                        downloadState.isDownloading -> {
+                            DialogDangerButton(
+                                text = "取消下载",
+                                onClick = {
+                                    downloadJob?.cancel()
+                                    downloadJob = null
+                                    downloadManager.reset()
+                                    downloadedApk = null
+                                    downloadError = "已取消下载"
+                                },
+                            )
+                        }
+                        else -> {
+                            DialogSecondaryButton(
+                                text = "稍后",
+                                onClick = { updateInfo = null },
+                            )
+                            DialogPrimaryButton(
+                                text = "下载更新",
+                                onClick = {
+                                    downloadError = null
+                                    downloadedApk = null
+                                    downloadManager.reset()
+                                    downloadJob = scope.launch {
+                                        downloadManager.downloadWithProgress(
+                                            info.downloadUrl,
+                                            info.fileName,
+                                            onProgress = {}
+                                        ).onSuccess { file ->
+                                            if (UpdateManager.verifyPackage(context, file, info)) {
+                                                downloadedApk = file
+                                            } else {
+                                                file.delete()
+                                                downloadError = "安装包校验失败，已删除，请重试"
+                                            }
+                                        }.onFailure { error ->
+                                            downloadError = error.message ?: "下载失败"
+                                        }
+                                    }
+                                },
+                            )
+                        }
                     }
-                }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = { updateInfo = null },
-                    enabled = !downloadState.isDownloading
-                ) {
-                    Text("稍后")
                 }
             }
-        )
+        }
     }
 }

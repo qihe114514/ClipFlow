@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -28,7 +27,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import com.qihe.clipflow.ui.component.LiquidButton
+import com.qihe.clipflow.ui.components.DialogPrimaryButton
+import com.qihe.clipflow.ui.components.DialogSecondaryButton
+import com.qihe.clipflow.ui.components.GlassDialogActions
+import com.qihe.clipflow.ui.components.GlassDialogCard
 
 private const val UMENG_POLICY_URL = "https://www.umeng.com/page/policy"
 
@@ -46,17 +48,13 @@ fun PrivacyConsentDialog(
             dismissOnClickOutside = viewOnly
         )
     ) {
-        Card(
+        GlassDialogCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .fillMaxHeight(0.85f),
-            shape = MaterialTheme.shapes.extraLarge
+            contentPadding = androidx.compose.foundation.layout.PaddingValues(24.dp),
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(24.dp)
-            ) {
+            Column(modifier = Modifier.fillMaxSize()) {
                 Text(
                     text = "隐私政策",
                     style = MaterialTheme.typography.headlineSmall,
@@ -133,29 +131,21 @@ fun PrivacyConsentDialog(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 if (viewOnly) {
-                    LiquidButton(
+                    DialogPrimaryButton(
+                        text = "关闭",
                         onClick = { onDisagree?.invoke() },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text("关闭")
-                    }
-                } else {
-                    Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        LiquidButton(
+                    )
+                } else {
+                    GlassDialogActions {
+                        DialogSecondaryButton(
+                            text = "不同意",
                             onClick = { onDisagree?.invoke() },
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Text("不同意")
-                        }
-                        LiquidButton(
+                        )
+                        DialogPrimaryButton(
+                            text = "同意",
                             onClick = { onAgree?.invoke() },
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Text("同意")
-                        }
+                        )
                     }
                 }
             }

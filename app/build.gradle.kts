@@ -32,8 +32,8 @@ android {
         applicationId = "com.qihe.clipflow"
         minSdk = 29
         targetSdk = 37
-        versionCode = 91
-        versionName = "4.0.1"
+        versionCode = 92
+        versionName = "4.1.0"
         buildConfigField("String", "DOUYIN_API_KEY", "\"$douyinApiKey\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -117,8 +117,10 @@ dependencies {
     implementation("androidx.compose.ui:ui-graphics")
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.material3:material3")
-    implementation("androidx.compose.material:material-icons-extended")
     implementation("androidx.compose.animation:animation")
+
+    // Lucide icon set (ISC) — unified 24dp stroke iconography across the app
+    implementation("com.composables:icons-lucide:1.1.0")
 
     // Navigation
     implementation("androidx.navigation:navigation-compose:2.7.7")

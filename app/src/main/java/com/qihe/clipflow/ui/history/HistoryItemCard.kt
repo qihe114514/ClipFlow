@@ -13,11 +13,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.LiveTv
-import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -35,6 +30,7 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.qihe.clipflow.data.local.HistoryEntity
 import com.qihe.clipflow.ui.components.GlassCard
+import com.qihe.clipflow.ui.icons.ClipFlowIcons
 import com.qihe.clipflow.ui.components.TypeBadge
 import com.qihe.clipflow.ui.theme.DouyinAccent
 import com.qihe.clipflow.ui.theme.VideoTypeBadge
@@ -76,9 +72,9 @@ fun HistoryItemCard(
                     val isDouyin = item.platform == "douyin"
                     Icon(
                         imageVector = when (item.platform) {
-                            "douyin" -> Icons.Filled.MusicNote
-                            "xiaohongshu" -> Icons.Filled.Favorite
-                            else -> Icons.Filled.LiveTv
+                            "douyin" -> ClipFlowIcons.Douyin
+                            "xiaohongshu" -> ClipFlowIcons.Xiaohongshu
+                            else -> ClipFlowIcons.Bilibili
                         },
                         contentDescription = null,
                         tint = when (item.platform) {
@@ -117,7 +113,7 @@ fun HistoryItemCard(
                 }
             }
             if (!isSelectionMode) {
-                Icon(Icons.Filled.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.25f), modifier = Modifier.size(20.dp))
+                Icon(ClipFlowIcons.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.25f), modifier = Modifier.size(20.dp))
             }
         }
     }

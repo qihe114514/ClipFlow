@@ -5,8 +5,6 @@ import android.content.Intent
 import android.net.Uri
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.OpenInNew
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -17,6 +15,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.PaddingValues
 import com.qihe.clipflow.ui.component.LiquidButton
+import com.qihe.clipflow.ui.components.GlassIconButton
+import com.qihe.clipflow.ui.icons.ClipFlowIcons
 
 @Composable
 fun AboutInfoRow(label: String, value: String) {
@@ -41,7 +41,9 @@ fun ExternalLinkRow(
         Icon(icon, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(22.dp))
         Spacer(Modifier.width(14.dp))
         Text(label, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, modifier = Modifier.weight(1f))
-        LiquidButton(
+        GlassIconButton(
+            icon = ClipFlowIcons.ExternalLink,
+            contentDescription = "打开",
             onClick = {
                 try {
                     CustomTabsIntent.Builder().setShowTitle(true).build().launchUrl(context, Uri.parse(url))
@@ -49,8 +51,7 @@ fun ExternalLinkRow(
                     context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
                 }
             },
-            modifier = Modifier.size(36.dp),
-            contentPadding = PaddingValues(0.dp),
-        ) { Icon(Icons.Filled.OpenInNew, "打开", modifier = Modifier.size(16.dp)) }
+            size = 36.dp,
+        )
     }
 }

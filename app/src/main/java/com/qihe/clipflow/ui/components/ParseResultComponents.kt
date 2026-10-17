@@ -1,6 +1,7 @@
 package com.qihe.clipflow.ui.components
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -8,12 +9,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Image
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowUp
-import androidx.compose.material.icons.filled.MusicNote
-import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -25,6 +20,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -33,6 +29,7 @@ import com.qihe.clipflow.data.api.model.ContentType
 import com.qihe.clipflow.data.api.model.VideoBackupItem
 import com.qihe.clipflow.util.DownloadState
 import com.qihe.clipflow.ui.component.LiquidButton
+import com.qihe.clipflow.ui.icons.ClipFlowIcons
 
 @Composable
 fun DownloadOptionsCard(
@@ -72,9 +69,9 @@ private fun DownloadOptionRow(item: ContentItem, state: DownloadState?, onDownlo
     ) {
         Icon(
             imageVector = when (item.type) {
-                ContentType.VIDEO, ContentType.LIVE_VIDEO -> Icons.Filled.Videocam
-                ContentType.AUDIO -> Icons.Filled.MusicNote
-                else -> Icons.Filled.Image
+                ContentType.VIDEO, ContentType.LIVE_VIDEO -> ClipFlowIcons.Video
+                ContentType.AUDIO -> ClipFlowIcons.Audio
+                else -> ClipFlowIcons.Image
             },
             contentDescription = null,
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -111,9 +108,20 @@ private fun BackupDownloadOptions(
     onDownloadBackupUrl: ((String, String) -> Unit)?
 ) {
     var expanded by remember { mutableStateOf(false) }
+    val chevronRotation by animateFloatAsState(
+        targetValue = if (expanded) 180f else 0f,
+        animationSpec = com.qihe.clipflow.ui.theme.ClipFlowMotion.settleSpring(),
+        label = "backupChevron",
+    )
     DashedDivider(modifier = Modifier.padding(vertical = 4.dp))
     LiquidButton(onClick = { expanded = !expanded }, modifier = Modifier.fillMaxWidth()) {
-        Icon(if (expanded) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown, null, modifier = Modifier.size(18.dp))
+        Icon(
+            imageVector = ClipFlowIcons.ChevronDown,
+            contentDescription = null,
+            modifier = Modifier
+                .size(18.dp)
+                .graphicsLayer { rotationZ = chevronRotation },
+        )
         Spacer(Modifier.size(4.dp))
         Text("备用画质 (${videoBackups.size})", style = MaterialTheme.typography.labelMedium)
     }

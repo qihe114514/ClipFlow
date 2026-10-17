@@ -35,13 +35,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ExpandMore
-import androidx.compose.material.icons.filled.Pause
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Replay
-import androidx.compose.material.icons.filled.VolumeOff
-import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -73,6 +66,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogWindowProvider
+import com.qihe.clipflow.ui.icons.ClipFlowIcons
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
@@ -517,7 +511,7 @@ private fun ImagePreviewPage(
                 Text("图片加载失败", color = Color.White)
                 Spacer(Modifier.height(12.dp))
                 LiquidButton(onClick = onRetry) {
-                    Icon(Icons.Filled.Replay, contentDescription = null)
+                    Icon(ClipFlowIcons.Replay, contentDescription = null)
                     Spacer(Modifier.width(6.dp))
                     Text("重试")
                 }
@@ -609,9 +603,9 @@ private fun VideoControls(
                     contentPadding = PaddingValues(0.dp),
                 ) {
                     val icon = when {
-                        isPlaying -> Icons.Filled.Pause
-                        playbackEnded -> Icons.Filled.Replay
-                        else -> Icons.Filled.PlayArrow
+                        isPlaying -> ClipFlowIcons.Pause
+                        playbackEnded -> ClipFlowIcons.Replay
+                        else -> ClipFlowIcons.Play
                     }
                     val description = when {
                         isPlaying -> "暂停"
@@ -636,7 +630,7 @@ private fun VideoControls(
                     contentPadding = PaddingValues(0.dp),
                 ) {
                     Icon(
-                        imageVector = if (isMuted) Icons.Filled.VolumeOff else Icons.Filled.VolumeUp,
+                        imageVector = if (isMuted) ClipFlowIcons.VolumeOff else ClipFlowIcons.VolumeOn,
                         contentDescription = if (isMuted) "取消静音" else "静音"
                     )
                 }
@@ -661,7 +655,7 @@ private fun SpeedMenu(
             contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
         ) {
             Text("${selectedSpeed}x", color = Color.White)
-            Icon(Icons.Filled.ExpandMore, contentDescription = "倍速", tint = Color.White)
+            Icon(ClipFlowIcons.ChevronDown, contentDescription = "倍速", tint = Color.White)
         }
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             speeds.forEach { speed ->

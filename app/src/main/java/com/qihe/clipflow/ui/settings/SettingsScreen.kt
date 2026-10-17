@@ -9,13 +9,11 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -29,10 +27,12 @@ import com.qihe.clipflow.data.preferences.AppPreferences
 import com.qihe.clipflow.navigation.Screen
 import com.qihe.clipflow.util.CacheCleaner
 import com.qihe.clipflow.ui.components.GlassCard
-import com.qihe.clipflow.ui.components.withTitleShadow
+import com.qihe.clipflow.ui.icons.ClipFlowIcons
+import com.qihe.clipflow.ui.components.withAdaptiveTitleShadow
 import com.qihe.clipflow.ui.component.SecondaryPageSection
 import com.qihe.clipflow.ui.component.secondaryPageEntrance
 import com.qihe.clipflow.ui.component.LiquidButton
+import com.qihe.clipflow.ui.components.GlassIconButton
 import com.qihe.clipflow.ui.component.liquid.PROGRESSIVE_TOPBAR_CONTENT_START_DP
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -138,21 +138,29 @@ fun SettingsScreen(
         GlassCard(modifier = Modifier.fillMaxWidth().secondaryPageEntrance(0)) {
             Column {
                 PathRow(
-                    icon = Icons.Filled.Videocam,
+                    icon = ClipFlowIcons.Video,
                     label = "视频",
                     path = rememberDestinationLabel(uiState.videoSavePath, "Movies/ClipFlow（默认）"),
                     onCustomize = { videoDirLauncher.launch(null) },
                     onReset = { viewModel.resetVideoSavePath() }
                 )
+                HorizontalDivider(
+                    modifier = Modifier.padding(vertical = 8.dp),
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.20f),
+                )
                 PathRow(
-                    icon = Icons.Filled.Image,
+                    icon = ClipFlowIcons.Image,
                     label = "图片",
                     path = rememberDestinationLabel(uiState.imageSavePath, "Pictures/ClipFlow（默认）"),
                     onCustomize = { imageDirLauncher.launch(null) },
                     onReset = { viewModel.resetImageSavePath() }
                 )
+                HorizontalDivider(
+                    modifier = Modifier.padding(vertical = 8.dp),
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.20f),
+                )
                 PathRow(
-                    icon = Icons.Filled.MusicNote,
+                    icon = ClipFlowIcons.Audio,
                     label = "音乐",
                     path = rememberDestinationLabel(uiState.audioSavePath, "Music/ClipFlow（默认）"),
                     onCustomize = { audioDirLauncher.launch(null) },
@@ -167,13 +175,13 @@ fun SettingsScreen(
             onClick = { navController.navigate(Screen.Personalization.route) },
         ) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Filled.Palette, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
+                Icon(ClipFlowIcons.Palette, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
                 Spacer(Modifier.width(14.dp))
                 Column(Modifier.weight(1f)) {
                     Text("壁纸与玻璃效果", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
-                    Text("背景壁纸、玻璃模糊/折射/色差", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("壁纸、模糊与折射", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-                Icon(Icons.Filled.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f))
+                Icon(ClipFlowIcons.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f))
             }
         }
 
@@ -182,9 +190,25 @@ fun SettingsScreen(
             Column {
                 Text("打开软件默认页面", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
                 Spacer(Modifier.height(8.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
                     listOf("home" to "主页", "douyin" to "抖音", "xiaohongshu" to "小红书", "bilibili" to "B站").forEach { (key, label) ->
-                        FilterChip(selected = uiState.defaultPage == key, onClick = { viewModel.setDefaultPage(key) }, label = { Text(label) })
+                        val selected = uiState.defaultPage == key
+                        LiquidButton(
+                            onClick = { viewModel.setDefaultPage(key) },
+                            modifier = Modifier.weight(1f),
+                            tint = if (selected) MaterialTheme.colorScheme.primary else Color.Unspecified,
+                            height = 36.dp,
+                            contentPadding = PaddingValues(horizontal = 4.dp),
+                        ) {
+                            Text(
+                                text = label,
+                                style = MaterialTheme.typography.labelMedium,
+                                color = if (selected) MaterialTheme.colorScheme.onPrimary else Color.Unspecified,
+                            )
+                        }
                     }
                 }
                 Spacer(Modifier.height(16.dp))
@@ -207,14 +231,15 @@ fun SettingsScreen(
                             LiquidButton(onClick = {
                                 val o = uiState.bottomBarOrder.toMutableList(); val t = o[index]; o[index] = o[index - 1]; o[index - 1] = t; viewModel.setBottomBarOrder(o)
                             }, modifier = Modifier.size(32.dp), contentPadding = PaddingValues(0.dp)) {
-                                Icon(Icons.Filled.KeyboardArrowUp, "上移", Modifier.size(18.dp))
+                                Icon(ClipFlowIcons.ArrowUp, "上移", Modifier.size(18.dp))
                             }
                         }
                         if (index < uiState.bottomBarOrder.size - 1) {
+                            Spacer(Modifier.width(4.dp))
                             LiquidButton(onClick = {
                                 val o = uiState.bottomBarOrder.toMutableList(); val t = o[index]; o[index] = o[index + 1]; o[index + 1] = t; viewModel.setBottomBarOrder(o)
                             }, modifier = Modifier.size(32.dp), contentPadding = PaddingValues(0.dp)) {
-                                Icon(Icons.Filled.KeyboardArrowDown, "下移", Modifier.size(18.dp))
+                                Icon(ClipFlowIcons.ArrowDown, "下移", Modifier.size(18.dp))
                             }
                         }
                     }
@@ -226,7 +251,7 @@ fun SettingsScreen(
         GlassCard(modifier = Modifier.fillMaxWidth().secondaryPageEntrance(3)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Icon(
-                    Icons.Filled.CleaningServices,
+                    ClipFlowIcons.Delete,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(24.dp)
@@ -269,12 +294,12 @@ fun SettingsScreen(
             onClick = { navController.navigate(Screen.About.route) },
         ) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Outlined.Info, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
+                Icon(ClipFlowIcons.Info, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
                 Spacer(Modifier.width(14.dp))
                 Text("关于 ClipFlow", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium, modifier = Modifier.weight(1f))
                 Text("v${BuildConfig.VERSION_NAME}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(Modifier.width(8.dp))
-                Icon(Icons.Filled.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f))
+                Icon(ClipFlowIcons.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f))
             }
         }
         TextButton(
@@ -296,7 +321,7 @@ fun SettingsScreen(
 
 @Composable
 fun SectionHeader(title: String) {
-    Text(title, style = MaterialTheme.typography.titleSmall.withTitleShadow(), fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(top = 4.dp))
+    Text(title, style = MaterialTheme.typography.titleSmall.withAdaptiveTitleShadow(), fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(top = 4.dp))
 }
 
 @Composable
@@ -331,31 +356,56 @@ private fun PathRow(
     onReset: () -> Unit
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+        modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(icon, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
-        Spacer(Modifier.width(10.dp))
+        androidx.compose.material3.Surface(
+            shape = androidx.compose.foundation.shape.CircleShape,
+            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+            modifier = Modifier.size(36.dp),
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(icon, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
+            }
+        }
+        Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
             Text(label, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
-            Text(path, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(
+                path,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+            )
         }
+        Spacer(Modifier.width(6.dp))
         LiquidButton(
             onClick = onCustomize,
-            modifier = Modifier.size(40.dp),
-            shape = { androidx.compose.foundation.shape.CircleShape },
+            modifier = Modifier.size(36.dp),
+            surfaceColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.34f),
             contentPadding = PaddingValues(0.dp),
         ) {
-            Text("自定义", style = MaterialTheme.typography.labelSmall)
+            Icon(
+                imageVector = ClipFlowIcons.FolderOpen,
+                contentDescription = "自定义${label}保存目录",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(18.dp),
+            )
         }
-        Spacer(Modifier.width(8.dp))
+        Spacer(Modifier.width(6.dp))
         LiquidButton(
             onClick = onReset,
-            modifier = Modifier.size(40.dp),
-            shape = { androidx.compose.foundation.shape.CircleShape },
+            modifier = Modifier.size(36.dp),
+            surfaceColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.34f),
             contentPadding = PaddingValues(0.dp),
         ) {
-            Text("默认", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error)
+            Icon(
+                imageVector = ClipFlowIcons.Restore,
+                contentDescription = "恢复${label}默认目录",
+                tint = MaterialTheme.colorScheme.error,
+                modifier = Modifier.size(18.dp),
+            )
         }
     }
 }
