@@ -26,6 +26,7 @@ import androidx.navigation.NavHostController
 import com.qihe.clipflow.data.preferences.AppPreferences
 import com.qihe.clipflow.navigation.Screen
 import com.qihe.clipflow.util.CacheCleaner
+import com.qihe.clipflow.ui.components.ClipFlowSectionHeader
 import com.qihe.clipflow.ui.components.GlassCard
 import com.qihe.clipflow.ui.icons.ClipFlowIcons
 import com.qihe.clipflow.ui.components.withAdaptiveTitleShadow
@@ -221,7 +222,7 @@ fun SettingsScreen(
                 uiState.bottomBarOrder.forEachIndexed { index, key ->
                     val label = when (key) { "home" -> "主页"; "douyin" -> "抖音"; "xiaohongshu" -> "小红书"; "bilibili" -> "B站"; else -> key }
                     Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Surface(shape = MaterialTheme.shapes.extraSmall, color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f), modifier = Modifier.size(24.dp)) {
+                        Surface(shape = com.kyant.shapes.RoundedRectangle(8.dp, com.kyant.shapes.RoundedCornerStyle.Continuous), color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f), modifier = Modifier.size(24.dp)) {
                             Box(contentAlignment = Alignment.Center) { Text("${index + 1}", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold) }
                         }
                         Spacer(Modifier.width(10.dp))
@@ -321,7 +322,10 @@ fun SettingsScreen(
 
 @Composable
 fun SectionHeader(title: String) {
-    Text(title, style = MaterialTheme.typography.titleSmall.withAdaptiveTitleShadow(), fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(top = 4.dp))
+    ClipFlowSectionHeader(
+        title = title,
+        modifier = Modifier.padding(top = 4.dp),
+    )
 }
 
 @Composable

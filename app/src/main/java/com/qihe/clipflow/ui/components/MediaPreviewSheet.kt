@@ -410,7 +410,7 @@ fun MediaPreviewSheet(
                             color = Color.White,
                             modifier = Modifier
                                 .align(Alignment.Center)
-                                .background(Color.Black.copy(alpha = 0.55f), MaterialTheme.shapes.medium)
+                                .background(Color.Black.copy(alpha = 0.55f), com.kyant.shapes.RoundedRectangle(12.dp, com.kyant.shapes.RoundedCornerStyle.Continuous))
                                 .padding(horizontal = 20.dp, vertical = 10.dp)
                         )
                     }

@@ -41,8 +41,8 @@ android {
         applicationId = "com.qihe.clipflow"
         minSdk = 29
         targetSdk = 37
-        versionCode = 93
-        versionName = "4.1.1"
+        versionCode = 94
+        versionName = "4.2.0"
         buildConfigField("String", "DOUYIN_API_KEY", "\"$douyinApiKey\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -164,6 +164,9 @@ dependencies {
 
     // Browser (CustomTabs)
     implementation("androidx.browser:browser:1.8.0")
+
+    // Palette extraction for wallpaper-derived dynamic colors
+    implementation("androidx.palette:palette-ktx:1.0.0")
 
     // Coil
     implementation("io.coil-kt:coil-compose:2.6.0")

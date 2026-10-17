@@ -72,6 +72,10 @@ object ClipFlowIcons {
     val Douyin = Lucide.Music2
     val Xiaohongshu = Lucide.BookHeart
     val Bilibili = Lucide.Tv
+    val DouyinBrand = BrandIcons.Douyin
+    val BilibiliBrand = BrandIcons.Bilibili
+    val DouyinLine = BrandIcons.DouyinLine
+    val BilibiliLine = BrandIcons.BilibiliLine
 
     val Back = Lucide.ArrowLeft
     val Close = Lucide.X

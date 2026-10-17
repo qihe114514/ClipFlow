@@ -71,7 +71,7 @@ fun LiquidBottomTabs(
     content: @Composable RowScope.() -> Unit,
 ) {
     val isLightTheme = MaterialTheme.colorScheme.surface.luminance() >= 0.5f
-    val accentColor = if (isLightTheme) Color(0xFF0088FF) else Color(0xFF0091FF)
+    val accentColor = MaterialTheme.colorScheme.primary
     val containerColor = if (isLightTheme) {
         Color(0xFFFAFAFA).copy(0.4f)
     } else {

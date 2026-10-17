@@ -3,7 +3,7 @@ package com.qihe.clipflow.ui.component
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.height
@@ -18,7 +18,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
@@ -28,6 +31,7 @@ import com.kyant.backdrop.effects.blur
 import com.kyant.backdrop.effects.lens
 import com.kyant.backdrop.effects.vibrancy
 import com.kyant.shapes.Capsule
+import com.qihe.clipflow.ui.icons.ClipFlowIcons
 
 /**
  * 液态玻璃开关（参照 AndroidLiquidGlass 示例 app 的 LiquidToggle）：
@@ -48,7 +52,11 @@ fun LiquidToggle(
         )
     }
     val density = LocalDensity.current
-    val trackColor = if (checked) Color(0xFF0088FF) else Color.White.copy(alpha = 0.35f)
+    val trackColor = if (checked) {
+        MaterialTheme.colorScheme.primary
+    } else {
+        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.30f)
+    }
 
     BoxWithConstraints(
         modifier = modifier
@@ -64,7 +72,11 @@ fun LiquidToggle(
                 },
                 onDrawSurface = { drawRect(trackColor.copy(alpha = 0.9f)) },
             )
-            .clickable { onCheckedChange(!checked) },
+            .toggleable(
+                value = checked,
+                role = Role.Switch,
+                onValueChange = onCheckedChange,
+            ),
         contentAlignment = Alignment.CenterStart,
     ) {
         val knobSizePx = with(density) { 24.dp.toPx() }
@@ -75,7 +87,17 @@ fun LiquidToggle(
                 .graphicsLayer { translationX = travelPx * knobProgress.value }
                 .size(24.dp)
                 .clip(CircleShape)
-                .background(Color.White.copy(alpha = 0.92f))
-        )
+                .background(Color.White.copy(alpha = 0.96f)),
+            contentAlignment = Alignment.Center,
+        ) {
+            if (checked) {
+                Icon(
+                    imageVector = ClipFlowIcons.Check,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(14.dp),
+                )
+            }
+        }
     }
 }

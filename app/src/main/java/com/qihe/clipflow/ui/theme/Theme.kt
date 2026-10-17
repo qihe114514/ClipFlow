@@ -1,8 +1,12 @@
 package com.qihe.clipflow.ui.theme
 
 import android.app.Activity
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.net.Uri
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
@@ -10,11 +14,18 @@ import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
+import androidx.palette.graphics.Palette
+import com.qihe.clipflow.R
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 enum class ThemeMode(val key: String, val label: String) {
     SYSTEM("system", "跟随系统"),
@@ -79,15 +90,38 @@ private val DarkColorScheme = darkColorScheme(
 fun ClipFlowTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     dynamicColor: Boolean = true,
+    wallpaperUri: String = "",
+    wallpaperEnabled: Boolean = false,
     content: @Composable () -> Unit
 ) {
-    val colorScheme = when {
-        shouldUseDynamicColor(dynamicColor, Build.VERSION.SDK_INT) -> {
-            val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+    val context = LocalContext.current
+    val baseScheme = if (darkTheme) DarkColorScheme else LightColorScheme
+
+    // Dynamic color sources, in priority order:
+    // 1. A visible wallpaper -> extract its palette.
+    // 2. Wallpaper off -> system Monet (Android 12+), else brand colors.
+    val wallpaperScheme by produceState<ColorScheme?>(
+        initialValue = null,
+        dynamicColor,
+        wallpaperEnabled,
+        wallpaperUri,
+        darkTheme,
+    ) {
+        value = if (dynamicColor && wallpaperEnabled) {
+            withContext(Dispatchers.IO) {
+                extractWallpaperScheme(context, wallpaperUri, darkTheme)
+            }
+        } else {
+            null
         }
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
+    }
+
+    val colorScheme = when {
+        !dynamicColor -> baseScheme
+        wallpaperEnabled -> wallpaperScheme ?: baseScheme
+        shouldUseDynamicColor(true, Build.VERSION.SDK_INT) ->
+            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+        else -> baseScheme
     }
 
     val view = LocalView.current
@@ -106,5 +140,103 @@ fun ClipFlowTheme(
         colorScheme = colorScheme,
         typography = ClipFlowTypography,
         content = content
+    )
+}
+
+private fun extractWallpaperScheme(
+    context: android.content.Context,
+    wallpaperUri: String,
+    darkTheme: Boolean,
+): ColorScheme? {
+    val bitmap = runCatching { loadWallpaperBitmap(context, wallpaperUri) }.getOrNull() ?: return null
+    val palette = runCatching { Palette.from(bitmap).clearFilters().generate() }.getOrNull() ?: return null
+
+    val seed = palette.vibrantSwatch?.rgb
+        ?: palette.dominantSwatch?.rgb
+        ?: palette.mutedSwatch?.rgb
+        ?: return null
+    val secondarySeed = palette.mutedSwatch?.rgb
+        ?: palette.darkVibrantSwatch?.rgb
+        ?: seed
+    val tertiarySeed = palette.lightVibrantSwatch?.rgb
+        ?: palette.darkMutedSwatch?.rgb
+        ?: secondarySeed
+
+    val base = if (darkTheme) DarkColorScheme else LightColorScheme
+    val primary = adjustSeed(Color(seed), darkTheme)
+    val secondary = adjustSeed(Color(secondarySeed), darkTheme)
+    val tertiary = adjustSeed(Color(tertiarySeed), darkTheme)
+
+    val primaryContainer = if (darkTheme) {
+        blend(base.surface, primary, 0.30f)
+    } else {
+        blend(base.surface, primary, 0.20f)
+    }
+    val secondaryContainer = if (darkTheme) {
+        blend(base.surface, secondary, 0.26f)
+    } else {
+        blend(base.surface, secondary, 0.16f)
+    }
+
+    return base.copy(
+        primary = primary,
+        onPrimary = onColorFor(primary),
+        primaryContainer = primaryContainer,
+        onPrimaryContainer = if (darkTheme) blend(primary, Color.White, 0.72f) else blend(primary, Color.Black, 0.62f),
+        secondary = secondary,
+        onSecondary = onColorFor(secondary),
+        secondaryContainer = secondaryContainer,
+        onSecondaryContainer = if (darkTheme) blend(secondary, Color.White, 0.72f) else blend(secondary, Color.Black, 0.62f),
+        tertiary = tertiary,
+        onTertiary = onColorFor(tertiary),
+        tertiaryContainer = if (darkTheme) blend(base.surface, tertiary, 0.30f) else blend(base.surface, tertiary, 0.20f),
+        onTertiaryContainer = if (darkTheme) blend(tertiary, Color.White, 0.72f) else blend(tertiary, Color.Black, 0.62f),
+        surfaceTint = primary,
+    )
+}
+
+private fun loadWallpaperBitmap(
+    context: android.content.Context,
+    wallpaperUri: String,
+): Bitmap? {
+    val source = if (wallpaperUri.isBlank()) {
+        BitmapFactory.decodeResource(context.resources, R.drawable.default_wallpaper)
+    } else {
+        context.contentResolver.openInputStream(Uri.parse(wallpaperUri))?.use {
+            BitmapFactory.decodeStream(it)
+        }
+    } ?: return null
+
+    // Palette extraction only needs a small sample; keep it off the main thread.
+    val longest = maxOf(source.width, source.height)
+    if (longest <= 192) return source
+    val scale = 192f / longest
+    val width = (source.width * scale).toInt().coerceAtLeast(1)
+    val height = (source.height * scale).toInt().coerceAtLeast(1)
+    return Bitmap.createScaledBitmap(source, width, height, true)
+}
+
+private fun adjustSeed(color: Color, darkTheme: Boolean): Color {
+    var result = color
+    if (darkTheme) {
+        if (result.luminance() < 0.45f) result = blend(result, Color.White, 0.35f)
+        if (result.luminance() > 0.86f) result = blend(result, Color.Black, 0.15f)
+    } else {
+        if (result.luminance() > 0.62f) result = blend(result, Color.Black, 0.32f)
+        if (result.luminance() < 0.16f) result = blend(result, Color.White, 0.22f)
+    }
+    return result
+}
+
+private fun onColorFor(background: Color): Color =
+    if (background.luminance() > 0.55f) Color(0xFF141414) else Color.White
+
+private fun blend(from: Color, to: Color, fraction: Float): Color {
+    val f = fraction.coerceIn(0f, 1f)
+    return Color(
+        red = from.red + (to.red - from.red) * f,
+        green = from.green + (to.green - from.green) * f,
+        blue = from.blue + (to.blue - from.blue) * f,
+        alpha = 1f,
     )
 }

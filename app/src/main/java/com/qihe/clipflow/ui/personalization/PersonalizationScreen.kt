@@ -215,9 +215,14 @@ fun PersonalizationScreen(
                 Spacer(Modifier.height(14.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
-                        Text("动态配色", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
+                        Text("动态取色", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
                         Text(
-                            "使用系统取色",
+                            when {
+                                !uiState.dynamicColor -> "已关闭，使用应用默认配色"
+                                IntensityPreset.fromKey(uiState.wallpaperOpacityPreset) != IntensityPreset.OFF ->
+                                    "从当前壁纸提取主题色"
+                                else -> "跟随系统取色"
+                            },
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -317,7 +322,7 @@ fun PersonalizationScreen(
         ModalBottomSheet(
             onDismissRequest = { showResetSheet = false },
             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.98f),
-            shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+            shape = com.kyant.shapes.RoundedRectangle(28.dp, com.kyant.shapes.RoundedCornerStyle.Continuous),
             tonalElevation = 0.dp,
         ) {
             // A bottom sheet lives in its own window; never let its buttons
@@ -372,7 +377,7 @@ private fun AppearancePreview(state: PersonalizationUiState, onReset: () -> Unit
         modifier = Modifier
             .fillMaxWidth()
             .height(144.dp)
-            .clip(RoundedCornerShape(20.dp)),
+            .clip(com.kyant.shapes.RoundedRectangle(20.dp, com.kyant.shapes.RoundedCornerStyle.Continuous)),
     ) {
         // Capture the preview scene locally so the glass card below refracts the
         // wallpaper preview rather than the page behind the preview.

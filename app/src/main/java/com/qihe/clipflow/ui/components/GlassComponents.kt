@@ -6,6 +6,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -19,7 +20,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
@@ -35,6 +35,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -46,6 +47,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.backdrops.layerBackdrop
@@ -54,6 +56,9 @@ import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.blur
 import com.kyant.backdrop.effects.colorControls
 import com.kyant.backdrop.effects.lens
+import com.kyant.backdrop.effects.vibrancy
+import com.kyant.shapes.Capsule
+import com.kyant.shapes.RoundedCornerStyle
 import com.kyant.shapes.RoundedRectangle
 import com.qihe.clipflow.ui.component.LiquidButton
 import com.qihe.clipflow.ui.component.LocalGlassStyle
@@ -113,12 +118,13 @@ fun GlassCard(
     modifier: Modifier = Modifier,
     onClick: (() -> Unit)? = null,
     cornerRadius: Dp = ClipFlowDimens.RadiusCard,
+    contentPadding: PaddingValues = PaddingValues(ClipFlowDimens.Space20),
     content: @Composable ColumnScope.() -> Unit
 ) {
     val backdrop = LocalLiquidBackdrop.current ?: rememberLayerBackdrop()
     val glassStyle = LocalGlassStyle.current
     val glass = glassStyle.card
-    val shape = RoundedCornerShape(cornerRadius)
+    val shape = RoundedRectangle(cornerRadius, RoundedCornerStyle.Continuous)
     val density = LocalDensity.current
     val wallpaperEnabled = LocalWallpaperEnabled.current
     val isDarkSurface = MaterialTheme.colorScheme.surface.luminance() < 0.5f
@@ -164,7 +170,7 @@ fun GlassCard(
                 } else {
                     Modifier.drawBackdrop(
                         backdrop = backdrop,
-                        shape = { RoundedRectangle(cornerRadius) },
+                        shape = { RoundedRectangle(cornerRadius, RoundedCornerStyle.Continuous) },
                         effects = {
                             colorControls(
                                 contrast = glassStyle.contrast,
@@ -193,11 +199,41 @@ fun GlassCard(
                         )
                 } else Modifier
             )
-            .padding(ClipFlowDimens.Space20),
+            .padding(contentPadding),
         content = content
     )
 }
 
+
+/**
+ * Section label that stays readable over a busy wallpaper: a small dark glass
+ * chip with white text. With the wallpaper off it falls back to the current
+ * accent color with no extra decoration.
+ */
+@Composable
+fun ClipFlowSectionHeader(
+    title: String,
+    modifier: Modifier = Modifier,
+) {
+    val wallpaperEnabled = LocalWallpaperEnabled.current
+    val shape = RoundedRectangle(10.dp, RoundedCornerStyle.Continuous)
+    Surface(
+        modifier = modifier,
+        shape = shape,
+        color = if (wallpaperEnabled) Color.Black.copy(alpha = 0.30f) else Color.Transparent,
+    ) {
+        Text(
+            text = title,
+            modifier = Modifier.padding(
+                horizontal = if (wallpaperEnabled) 10.dp else 0.dp,
+                vertical = if (wallpaperEnabled) 4.dp else 0.dp,
+            ),
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.SemiBold,
+            color = if (wallpaperEnabled) Color.White else MaterialTheme.colorScheme.primary,
+        )
+    }
+}
 /**
  * 玻璃拟态输入框
  */
@@ -213,7 +249,7 @@ fun GlassTextField(
     val backdrop = LocalLiquidBackdrop.current ?: rememberLayerBackdrop()
     val glassStyle = LocalGlassStyle.current
     val glass = glassStyle.card
-    val shape = RoundedCornerShape(ClipFlowDimens.RadiusControl)
+    val shape = RoundedRectangle(ClipFlowDimens.RadiusControl, RoundedCornerStyle.Continuous)
     val surfaceColor = MaterialTheme.colorScheme.surfaceVariant
     val borderColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f)
     val textColor = MaterialTheme.colorScheme.onSurface
@@ -226,7 +262,7 @@ fun GlassTextField(
                 } else {
                     Modifier.drawBackdrop(
                         backdrop = backdrop,
-                        shape = { RoundedRectangle(ClipFlowDimens.RadiusControl) },
+                        shape = { RoundedRectangle(ClipFlowDimens.RadiusControl, RoundedCornerStyle.Continuous) },
                         effects = {
                             colorControls(contrast = glassStyle.contrast, saturation = 1.35f)
                             if (glass.extraBlur > 0f) blur(glass.extraBlur.dp.toPx())
@@ -291,6 +327,64 @@ fun GlassButton(
     }
 }
 
+
+/**
+ * Decorative liquid-glass orb for the brand mark. It samples the wallpaper
+ * through the same backdrop as the cards and uses the adaptive top-bar colors
+ * so the download glyph stays readable in light and dark themes.
+ */
+@Composable
+fun GlassOrb(
+    icon: ImageVector,
+    contentDescription: String?,
+    modifier: Modifier = Modifier,
+    size: Dp = 76.dp,
+) {
+    val backdrop = LocalLiquidBackdrop.current ?: rememberLayerBackdrop()
+    val glass = LocalGlassStyle.current.button
+    val wallpaperEnabled = LocalWallpaperEnabled.current
+    val isLightTheme = MaterialTheme.colorScheme.surface.luminance() >= 0.5f
+    val surfaceColor = when {
+        !wallpaperEnabled && isLightTheme -> Color.White.copy(alpha = 0.66f)
+        !wallpaperEnabled -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.42f)
+        else -> Color.Black.copy(alpha = 0.30f)
+    }
+    val glyphTint = if (wallpaperEnabled) Color.White else MaterialTheme.colorScheme.onSurface
+    val borderColor = if (wallpaperEnabled) {
+        Color.White.copy(alpha = 0.34f)
+    } else {
+        MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f)
+    }
+
+    Box(
+        modifier = modifier
+            .size(size)
+            .shadow(8.dp, CircleShape, clip = false)
+            .drawBackdrop(
+                backdrop = backdrop,
+                shape = { Capsule() },
+                effects = {
+                    if (!glass.isOff) {
+                        vibrancy()
+                        blur(2.dp.toPx())
+                        if (glass.extraBlur > 0f) blur(glass.extraBlur.dp.toPx())
+                        lens(glass.lensBlur.dp.toPx(), glass.refraction.dp.toPx())
+                    }
+                },
+                onDrawSurface = { drawRect(surfaceColor) },
+            )
+            .border(1.dp, borderColor, CircleShape)
+            .clip(CircleShape),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = contentDescription,
+            tint = glyphTint,
+            modifier = Modifier.size(size * 0.5f),
+        )
+    }
+}
 /**
  * Adaptive circular glass action used in the top bar.
  * - wallpaper visible: dark scrim + white glyph (works over photos)
@@ -350,7 +444,7 @@ fun GlassDialogCard(
     content: @Composable ColumnScope.() -> Unit
 ) {
     val isLightTheme = MaterialTheme.colorScheme.surface.luminance() >= 0.5f
-    val shape = RoundedCornerShape(ClipFlowDimens.RadiusDialog)
+    val shape = RoundedRectangle(ClipFlowDimens.RadiusDialog, RoundedCornerStyle.Continuous)
     val density = LocalDensity.current
     val backdrop = rememberLayerBackdrop()
     val primary = MaterialTheme.colorScheme.primary
@@ -504,7 +598,7 @@ fun DialogDangerButton(
 fun TypeBadge(text: String, color: Color, modifier: Modifier = Modifier) {
     Surface(
         modifier = modifier,
-        shape = RoundedCornerShape(8.dp),
+        shape = RoundedRectangle(8.dp, RoundedCornerStyle.Continuous),
         color = color.copy(alpha = 0.15f)
     ) {
         Text(

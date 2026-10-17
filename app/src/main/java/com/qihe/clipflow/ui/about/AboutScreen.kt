@@ -27,6 +27,8 @@ import com.qihe.clipflow.BuildConfig
 import com.qihe.clipflow.data.preferences.AppPreferences
 import com.qihe.clipflow.navigation.Screen
 import com.qihe.clipflow.ui.component.liquid.PROGRESSIVE_TOPBAR_CONTENT_START_DP
+import com.qihe.clipflow.ui.components.ClipFlowSectionHeader
+import com.qihe.clipflow.ui.components.GlassOrb
 import com.qihe.clipflow.ui.components.GlassCard
 import com.qihe.clipflow.ui.icons.ClipFlowIcons
 import com.qihe.clipflow.ui.components.withAdaptiveTitleShadow
@@ -62,27 +64,11 @@ fun AboutScreen(navController: NavHostController) {
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         // 应用图标
-        Box(
-            modifier = Modifier
-                .size(76.dp)
-                .clip(CircleShape)
-                .background(
-                    Brush.linearGradient(
-                        listOf(
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.30f),
-                            MaterialTheme.colorScheme.secondary.copy(alpha = 0.20f),
-                        )
-                    )
-                ),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(
-                imageVector = ClipFlowIcons.WaterDrop,
-                contentDescription = null,
-                modifier = Modifier.size(38.dp),
-                tint = MaterialTheme.colorScheme.primary,
-            )
-        }
+        GlassOrb(
+            icon = ClipFlowIcons.Download,
+            contentDescription = null,
+            size = 76.dp,
+        )
 
         Spacer(Modifier.height(14.dp))
 
@@ -135,14 +121,9 @@ fun AboutScreen(navController: NavHostController) {
 
 
         // ========== 开发者信息 ==========
-        Text(
-            text = "开发者",
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 8.dp)
+        ClipFlowSectionHeader(
+            title = "开发者",
+            modifier = Modifier.padding(bottom = 8.dp),
         )
 
         GlassCard(modifier = Modifier.fillMaxWidth().secondaryPageEntrance(1)) {
@@ -163,14 +144,9 @@ fun AboutScreen(navController: NavHostController) {
         Spacer(Modifier.height(16.dp))
 
         // ========== 链接 ==========
-        Text(
-            text = "链接",
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 8.dp)
+        ClipFlowSectionHeader(
+            title = "链接",
+            modifier = Modifier.padding(bottom = 8.dp),
         )
 
         GlassCard(modifier = Modifier.fillMaxWidth().secondaryPageEntrance(2)) {
@@ -204,14 +180,9 @@ fun AboutScreen(navController: NavHostController) {
         Spacer(Modifier.height(32.dp))
 
         // ========== 更新检测 ==========
-        Text(
-            text = "更新",
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 8.dp)
+        ClipFlowSectionHeader(
+            title = "更新",
+            modifier = Modifier.padding(bottom = 8.dp),
         )
 
         GlassCard(modifier = Modifier.fillMaxWidth().secondaryPageEntrance(3)) {
@@ -385,14 +356,9 @@ fun AboutScreen(navController: NavHostController) {
         Spacer(Modifier.height(16.dp))
 
         // ========== 开源与须知 ==========
-        Text(
-            text = "开源与须知",
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 8.dp)
+        ClipFlowSectionHeader(
+            title = "开源与须知",
+            modifier = Modifier.padding(bottom = 8.dp),
         )
 
         GlassCard(
@@ -435,14 +401,9 @@ fun AboutScreen(navController: NavHostController) {
 
         Spacer(Modifier.height(16.dp))
         // ========== 隐私 ==========
-        Text(
-            text = "隐私",
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 8.dp)
+        ClipFlowSectionHeader(
+            title = "隐私",
+            modifier = Modifier.padding(bottom = 8.dp),
         )
 
         GlassCard(modifier = Modifier.fillMaxWidth().secondaryPageEntrance(5)) {

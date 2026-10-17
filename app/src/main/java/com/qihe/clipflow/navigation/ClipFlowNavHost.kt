@@ -36,9 +36,6 @@ import com.qihe.clipflow.ClipFlowApp
 import com.qihe.clipflow.ui.components.DownloadPillState
 import com.qihe.clipflow.ui.component.LocalLiquidBackdrop
 import com.qihe.clipflow.ui.component.liquid.ProgressiveTopBarBlur
-import com.qihe.clipflow.ui.component.liquid.ProgressiveBottomBlur
-import com.qihe.clipflow.ui.component.liquid.BOTTOM_BLUR_HEIGHT_DP
-import com.qihe.clipflow.ui.component.liquid.DETAIL_BOTTOM_BLUR_HEIGHT_DP
 import com.qihe.clipflow.ui.component.liquid.TOP_BAR_BLUR_HEIGHT_DP
 import com.qihe.clipflow.ui.component.liquid.PROGRESSIVE_TOPBAR_CONTENT_START_DP
 import com.qihe.clipflow.ui.history.HistoryScreen
@@ -93,19 +90,20 @@ fun ClipFlowNavHost() {
     )
 
     // ========== 隐私政策同意检查 ==========
-    var isPrivacyCheckReady by remember { mutableStateOf(false) }
-    val privacyAgreed by produceState(initialValue = false) {
+    // null = still reading DataStore. Do not show the consent sheet until the
+    // stored value is known, otherwise agreed users see it flash on cold start.
+    val privacyAgreedState by produceState<Boolean?>(initialValue = null) {
         prefs.privacyAgreed.collect { value = it }
     }
+    val privacyAgreed = privacyAgreedState == true
 
-    LaunchedEffect(privacyAgreed) {
-        isPrivacyCheckReady = true
-        if (privacyAgreed) {
+    LaunchedEffect(privacyAgreedState) {
+        if (privacyAgreedState == true) {
             (context.applicationContext as ClipFlowApp).initUmengIfNeeded()
         }
     }
 
-    if (!privacyAgreed && isPrivacyCheckReady) {
+    if (privacyAgreedState == false) {
         val scope = rememberCoroutineScope()
         PrivacyConsentDialog(
             onAgree = {
@@ -135,11 +133,6 @@ fun ClipFlowNavHost() {
     val showBottomBar = currentRoute in primaryRoutes
     val showTopBar = currentRoute != null
     val showTopBarBlur = showTopBar && currentRoute != Screen.History.route
-    val showDetailBottomBlur = currentRoute in setOf(
-        Screen.History.route,
-        Screen.Settings.route,
-        Screen.Personalization.route,
-    )
     val pagerState = rememberPagerState(
         initialPage = primaryPageIndex(currentRoute ?: defaultPage, primaryItems),
         pageCount = { primaryItems.size },
@@ -177,7 +170,6 @@ fun ClipFlowNavHost() {
             }
     }
 
-    val bottomBarBackdrop = rememberLayerBackdrop { drawContent() }
     val sceneBackdrop = rememberContentLayerBackdrop { drawContent() }
 
     // ========== 玻璃效果档位（个性化设置 → 全局 CompositionLocal） ==========
@@ -400,46 +392,25 @@ fun ClipFlowNavHost() {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(BOTTOM_BLUR_HEIGHT_DP.dp)
-                    .align(Alignment.BottomCenter)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .matchParentSize()
-                        .then(
-                            Modifier.layerBackdrop(bottomBarBackdrop)
-                        )
-                ) {
-                    ProgressiveBottomBlur(
-                        backdrop = sceneBackdrop,
-                        modifier = Modifier.matchParentSize(),
-                    )
-                }
-            }
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
                     .align(Alignment.BottomCenter)
             ) {
                 FloatingBottomBar(
                     prefs = prefs,
-                    backdrop = bottomBarBackdrop,
-                    primaryPagerState = primaryPagerState,
-                    modifier = Modifier.align(Alignment.BottomCenter),
-                )
-            }
-        }
-
-        if (showDetailBottomBlur) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(DETAIL_BOTTOM_BLUR_HEIGHT_DP.dp)
-                    .align(Alignment.BottomCenter)
-            ) {
-                ProgressiveBottomBlur(
                     backdrop = sceneBackdrop,
-                    modifier = Modifier.matchParentSize(),
+                    primaryPagerState = primaryPagerState,
+                    onTabSelected = { index ->
+                        val route = primaryItems.getOrNull(index)?.route
+                        if (route != null) {
+                            if (currentRoute == route) {
+                                primaryPagerState.animateToPage(index)
+                            } else {
+                                // Route is the single source of truth; the pager
+                                // follows it through the currentRoute effect.
+                                navController.navigateToPrimary(route)
+                            }
+                        }
+                    },
+                    modifier = Modifier.align(Alignment.BottomCenter),
                 )
             }
         }

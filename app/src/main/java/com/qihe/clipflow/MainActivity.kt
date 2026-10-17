@@ -14,7 +14,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
+import com.kyant.shapes.Capsule
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -40,6 +40,7 @@ import com.qihe.clipflow.ui.components.DialogPrimaryButton
 import com.qihe.clipflow.ui.components.DialogSecondaryButton
 import com.qihe.clipflow.ui.components.GlassDialogActions
 import com.qihe.clipflow.ui.components.GlassDialogCard
+import com.qihe.clipflow.ui.component.IntensityPreset
 import com.qihe.clipflow.ui.icons.ClipFlowIcons
 import com.qihe.clipflow.ui.theme.ClipFlowTheme
 import com.qihe.clipflow.ui.theme.ThemeMode
@@ -62,11 +63,16 @@ class MainActivity : ComponentActivity() {
             val preferences = remember { AppPreferences(applicationContext) }
             val themeModeKey by preferences.themeMode.collectAsState(initial = ThemeMode.SYSTEM.key)
             val dynamicColor by preferences.dynamicColor.collectAsState(initial = true)
+            val wallpaperUri by preferences.wallpaperUri.collectAsState(initial = "")
+            val wallpaperOpacityKey by preferences.wallpaperOpacityPreset.collectAsState(initial = IntensityPreset.MEDIUM.key)
+            val wallpaperEnabled = IntensityPreset.fromKey(wallpaperOpacityKey) != IntensityPreset.OFF
             val isSystemDark = isSystemInDarkTheme()
             val privacyAgreed by preferences.privacyAgreed.collectAsState(initial = false)
             ClipFlowTheme(
                 darkTheme = resolveDarkTheme(ThemeMode.fromKey(themeModeKey), isSystemDark),
                 dynamicColor = dynamicColor,
+                wallpaperUri = wallpaperUri,
+                wallpaperEnabled = wallpaperEnabled,
             ) {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     // 合规：同意隐私政策前不发起任何网络请求（含更新检查）。
@@ -156,7 +162,7 @@ private fun StartupUpdateCheck() {
                         progress = { downloadState.progress },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(999.dp)),
+                            .clip(Capsule()),
                     )
                     Spacer(Modifier.height(8.dp))
                     Text(

@@ -136,6 +136,7 @@ fun FloatingBottomBar(
     prefs: AppPreferences,
     backdrop: Backdrop,
     primaryPagerState: PrimaryPagerState,
+    onTabSelected: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val bottomBarOrder by produceState(initialValue = listOf("home", "douyin", "xiaohongshu", "bilibili")) {
@@ -149,14 +150,14 @@ fun FloatingBottomBar(
             .fillMaxWidth(0.8f)
             .padding(bottom = 12.dp + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()),
         selectedTabIndex = primaryPagerState.selectedPage,
-        onTabSelected = primaryPagerState::animateToPage,
+        onTabSelected = onTabSelected,
         backdrop = backdrop,
         tabsCount = items.size,
     ) {
         items.forEachIndexed { index, item ->
             LiquidBottomTab(
                 selected = index == primaryPagerState.selectedPage,
-                onClick = { primaryPagerState.animateToPage(index) },
+                onClick = { onTabSelected(index) },
             ) {
                 androidx.compose.material3.Icon(
                     imageVector = item.selectedIcon,

@@ -18,7 +18,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
+import com.kyant.shapes.RoundedCornerStyle
+import com.kyant.shapes.RoundedRectangle
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -123,7 +124,7 @@ fun ParseInfoCard(
                 AsyncImage(
                     model = ImageRequest.Builder(context).data(cover).crossfade(true).build(),
                     contentDescription = "封面：点击预览，长按保存图片",
-                    modifier = Modifier.fillMaxWidth().height(200.dp).clip(RoundedCornerShape(12.dp)).combinedClickable(
+                    modifier = Modifier.fillMaxWidth().height(200.dp).clip(RoundedRectangle(12.dp, RoundedCornerStyle.Continuous)).combinedClickable(
                         onClick = { if (availablePreviewItems.isNotEmpty()) showMediaPreview = true },
                         onLongClick = { showSaveDialog = true }
                     ),

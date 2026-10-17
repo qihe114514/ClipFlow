@@ -12,7 +12,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
+import com.kyant.shapes.RoundedCornerStyle
+import com.kyant.shapes.RoundedRectangle
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -57,7 +58,7 @@ fun HistoryItemCard(
                 Spacer(Modifier.width(8.dp))
             }
             Box(
-                modifier = Modifier.size(56.dp).clip(RoundedCornerShape(12.dp))
+                modifier = Modifier.size(56.dp).clip(RoundedRectangle(12.dp, RoundedCornerStyle.Continuous))
                     .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
                 contentAlignment = Alignment.Center
             ) {
@@ -72,9 +73,9 @@ fun HistoryItemCard(
                     val isDouyin = item.platform == "douyin"
                     Icon(
                         imageVector = when (item.platform) {
-                            "douyin" -> ClipFlowIcons.Douyin
+                            "douyin" -> ClipFlowIcons.DouyinBrand
                             "xiaohongshu" -> ClipFlowIcons.Xiaohongshu
-                            else -> ClipFlowIcons.Bilibili
+                            else -> ClipFlowIcons.BilibiliBrand
                         },
                         contentDescription = null,
                         tint = when (item.platform) {

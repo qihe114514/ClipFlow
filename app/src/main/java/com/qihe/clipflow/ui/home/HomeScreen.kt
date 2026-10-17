@@ -44,6 +44,8 @@ import androidx.navigation.NavHostController
 import com.qihe.clipflow.navigation.Screen
 import com.qihe.clipflow.ui.component.SecondaryPageEasing
 import com.qihe.clipflow.ui.component.liquid.PROGRESSIVE_TOPBAR_CONTENT_START_DP
+import com.qihe.clipflow.ui.components.ClipFlowSectionHeader
+import com.qihe.clipflow.ui.components.GlassOrb
 import com.qihe.clipflow.ui.components.GlassCard
 import com.qihe.clipflow.ui.components.withAdaptiveTitleShadow
 import com.qihe.clipflow.ui.icons.ClipFlowIcons
@@ -77,27 +79,11 @@ fun HomeScreen(navController: NavHostController) {
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         // ========== 品牌区 ==========
-        Box(
-            modifier = Modifier
-                .size(76.dp)
-                .clip(CircleShape)
-                .background(
-                    Brush.linearGradient(
-                        listOf(
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.30f),
-                            MaterialTheme.colorScheme.secondary.copy(alpha = 0.20f),
-                        )
-                    )
-                ),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(
-                imageVector = ClipFlowIcons.WaterDrop,
-                contentDescription = null,
-                modifier = Modifier.size(38.dp),
-                tint = MaterialTheme.colorScheme.primary,
-            )
-        }
+        GlassOrb(
+            icon = ClipFlowIcons.Download,
+            contentDescription = null,
+            size = 76.dp,
+        )
 
         Spacer(Modifier.height(14.dp))
 
@@ -122,7 +108,7 @@ fun HomeScreen(navController: NavHostController) {
         HomePlatformCard(
             title = "抖音解析",
             subtitle = "视频 · 图集 · 实况",
-            icon = ClipFlowIcons.Douyin,
+            icon = ClipFlowIcons.DouyinBrand,
             accent = DouyinAccent,
             onClick = { navController.navigate(Screen.Douyin.route) },
         )
@@ -140,12 +126,7 @@ fun HomeScreen(navController: NavHostController) {
         Spacer(Modifier.height(30.dp))
 
         // ========== 特色标签 ==========
-        Text(
-            text = "核心特性",
-            style = MaterialTheme.typography.titleMedium.withAdaptiveTitleShadow(),
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.fillMaxWidth()
-        )
+        ClipFlowSectionHeader(title = "核心特性")
 
         Spacer(Modifier.height(12.dp))
 
@@ -154,8 +135,9 @@ fun HomeScreen(navController: NavHostController) {
         ) {
             items(features) { feature ->
                 GlassCard(
-                    modifier = Modifier.width(142.dp).heightIn(min = 118.dp),
+                    modifier = Modifier.width(146.dp).height(128.dp),
                     cornerRadius = 20.dp,
+                    contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
                 ) {
                     Icon(
                         imageVector = feature.icon,
@@ -176,6 +158,7 @@ fun HomeScreen(navController: NavHostController) {
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 2,
+                        minLines = 2,
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
@@ -211,7 +194,7 @@ private fun HomePlatformCard(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Surface(
-                    shape = MaterialTheme.shapes.medium,
+                    shape = com.kyant.shapes.RoundedRectangle(16.dp, com.kyant.shapes.RoundedCornerStyle.Continuous),
                     color = accent.copy(alpha = 0.14f),
                     modifier = Modifier.size(56.dp)
                 ) {

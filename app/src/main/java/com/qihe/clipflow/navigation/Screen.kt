@@ -56,8 +56,8 @@ val bottomNavItems = listOf(
     BottomNavItem(
         label = "抖音",
         route = Screen.Douyin.route,
-        selectedIcon = ClipFlowIcons.Douyin,
-        unselectedIcon = ClipFlowIcons.Douyin
+        selectedIcon = ClipFlowIcons.DouyinLine,
+        unselectedIcon = ClipFlowIcons.DouyinLine
     ),
     BottomNavItem(
         label = "小红书",
@@ -68,8 +68,8 @@ val bottomNavItems = listOf(
     BottomNavItem(
         label = "B站",
         route = Screen.Bilibili.route,
-        selectedIcon = ClipFlowIcons.Bilibili,
-        unselectedIcon = ClipFlowIcons.Bilibili
+        selectedIcon = ClipFlowIcons.BilibiliLine,
+        unselectedIcon = ClipFlowIcons.BilibiliLine
     )
 )
 
@@ -134,9 +134,12 @@ fun primaryNavigationOptions(route: String): PrimaryNavigationOptions {
         )
     } else {
         PrimaryNavigationOptions(
-            saveState = true,
+            // Primary page state is held by the pager's SaveableStateHolder.
+            // Restoring a saved primary back stack here can resurrect the
+            // previous platform destination and leave the top bar stale.
+            saveState = false,
             launchSingleTop = true,
-            restoreState = true,
+            restoreState = false,
         )
     }
 }

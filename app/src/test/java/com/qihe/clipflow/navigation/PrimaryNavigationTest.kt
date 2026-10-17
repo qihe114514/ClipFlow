@@ -75,12 +75,12 @@ class PrimaryNavigationTest {
     }
 
     @Test
-    fun tabRequestsKeepStateRestoration() {
+    fun tabRequestsKeepSingleTopWithoutRestoringPrimaryBackStack() {
         assertEquals(
             PrimaryNavigationOptions(
-                saveState = true,
+                saveState = false,
                 launchSingleTop = true,
-                restoreState = true,
+                restoreState = false,
             ),
             primaryNavigationOptions(Screen.Douyin.route),
         )
