@@ -345,6 +345,10 @@ fun SectionHeader(title: String) {
  * Bottom-bar order editor: one horizontal strip that mirrors the real bottom
  * bar. Items are picked up with a long press and swap slots while dragging.
  */
+
+internal fun orderTargetIndex(dragPosition: Float, lastIndex: Int): Int =
+    dragPosition.roundToInt().coerceIn(0, lastIndex.coerceAtLeast(0))
+
 @Composable
 private fun BottomBarOrderEditor(
     order: List<String>,
@@ -416,8 +420,7 @@ private fun BottomBarOrderEditor(
                                 if (draggingRoute == route) {
                                     dragPosition = (dragPosition + deltaX / slotWidthPx)
                                         .coerceIn(0f, localOrder.lastIndex.toFloat())
-                                    val target = dragPosition.roundToInt()
-                                        .coerceIn(0, localOrder.lastIndex)
+                                    val target = orderTargetIndex(dragPosition, localOrder.lastIndex)
                                     val current = localOrder.indexOf(route)
                                     if (current >= 0 && target != current) {
                                         localOrder.removeAt(current)
@@ -466,6 +469,7 @@ private fun BottomBarOrderTile(
     val shape = remember { RoundedRectangle(16.dp, RoundedCornerStyle.Continuous) }
     var previousIndex by remember { mutableIntStateOf(index) }
     var lastDragTranslation by remember { mutableFloatStateOf(0f) }
+    var releasing by remember { mutableStateOf(false) }
     val settleOffset = remember { Animatable(0f) }
     val releaseOffset = remember { Animatable(0f) }
     val scale by animateFloatAsState(
@@ -480,15 +484,18 @@ private fun BottomBarOrderTile(
 
     LaunchedEffect(dragging) {
         if (dragging) {
+            releasing = false
             settleOffset.snapTo(0f)
             releaseOffset.snapTo(0f)
         } else if (lastDragTranslation != 0f) {
+            releasing = true
             releaseOffset.snapTo(lastDragTranslation)
             lastDragTranslation = 0f
             releaseOffset.animateTo(
                 targetValue = 0f,
                 animationSpec = spring(dampingRatio = 0.72f, stiffness = 560f),
             )
+            releasing = false
         }
     }
 
@@ -513,7 +520,7 @@ private fun BottomBarOrderTile(
         modifier = Modifier
             .width(width)
             .height(64.dp)
-            .zIndex(if (dragging) 1f else 0f)
+            .zIndex(if (dragging || releasing) 1f else 0f)
             .graphicsLayer {
                 translationX = settleOffset.value + releaseOffset.value +
                     if (dragging) dragTranslation else 0f

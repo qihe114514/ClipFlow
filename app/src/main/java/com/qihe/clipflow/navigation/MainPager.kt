@@ -25,6 +25,7 @@ fun MainPager(
     currentRoute: String?,
     sourceUrl: String?,
     visible: Boolean,
+    interactive: Boolean = visible,
 ) {
     val density = LocalDensity.current
     HorizontalPager(
@@ -32,7 +33,7 @@ fun MainPager(
         modifier = Modifier
             .fillMaxSize()
             .graphicsLayer { alpha = if (visible) 1f else 0f },
-        userScrollEnabled = visible,
+        userScrollEnabled = interactive,
         beyondViewportPageCount = 1,
         key = { page -> pages[page].route },
     ) { page ->

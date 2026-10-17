@@ -51,6 +51,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @Composable
@@ -112,11 +113,30 @@ fun ClipFlowNavHost() {
         prefs.bottomBarOrder.collect { value = it }
     }
 
+    val wallpaperUri by produceState(initialValue = "") {
+        prefs.wallpaperUri.collect { value = it }
+    }
+    val wallpaperOpacityKey by produceState(initialValue = "medium") {
+        prefs.wallpaperOpacityPreset.collect { value = it }
+    }
+
     val primaryItems = remember(bottomBarOrder) {
         orderedBottomNavItems(bottomBarOrder)
     }
     val primaryRoutes = remember(primaryItems) { primaryItems.map { it.route } }
-    val showBottomBar = currentRoute in primaryRoutes
+    var bottomBarVisible by remember { mutableStateOf(currentRoute in primaryRoutes) }
+    LaunchedEffect(currentRoute, primaryRoutes) {
+        if (currentRoute in primaryRoutes) {
+            if (!bottomBarVisible) {
+                // Let the pop exit animation finish before the bar reappears.
+                delay(220)
+                bottomBarVisible = true
+            }
+        } else {
+            bottomBarVisible = false
+        }
+    }
+    val showBottomBar = currentRoute in primaryRoutes && bottomBarVisible
     val showTopBar = currentRoute != null
     val showTopBarBlur = showTopBar && currentRoute != Screen.History.route
     val pagerState = rememberPagerState(
@@ -210,7 +230,9 @@ fun ClipFlowNavHost() {
                         currentRoute = currentRoute,
                         sourceUrl = currentSourceUrl,
                         visible = true,
+                        interactive = currentRoute in primaryRoutes,
                     )
+
 
                     NavHost(
                         navController = navController,
@@ -292,19 +314,19 @@ fun ClipFlowNavHost() {
                             )
                         ) { Spacer(Modifier.fillMaxSize()) }
                         composable(Screen.History.route) {
-                            BackgroundWallpaperLayer { HistoryScreen(navController) }
+                            SecondaryPageBackground(wallpaperUri, wallpaperOpacityKey) { HistoryScreen(navController) }
                         }
                         composable(Screen.Settings.route) {
-                            BackgroundWallpaperLayer { SettingsScreen(navController) }
+                            SecondaryPageBackground(wallpaperUri, wallpaperOpacityKey) { SettingsScreen(navController) }
                         }
                         composable(Screen.Personalization.route) {
-                            BackgroundWallpaperLayer { PersonalizationScreen(navController) }
+                            SecondaryPageBackground(wallpaperUri, wallpaperOpacityKey) { PersonalizationScreen(navController) }
                         }
                         composable(Screen.About.route) {
-                            BackgroundWallpaperLayer { AboutScreen(navController) }
+                            SecondaryPageBackground(wallpaperUri, wallpaperOpacityKey) { AboutScreen(navController) }
                         }
                         composable(Screen.OpenSource.route) {
-                            BackgroundWallpaperLayer { OpenSourceScreen() }
+                            SecondaryPageBackground(wallpaperUri, wallpaperOpacityKey) { OpenSourceScreen() }
                         }
                     }
                 }
@@ -405,3 +427,18 @@ fun ClipFlowNavHost() {
     }
 }
 
+@Composable
+private fun SecondaryPageBackground(
+    wallpaperUri: String,
+    opacityPresetKey: String,
+    content: @Composable () -> Unit,
+) {
+    Box(Modifier.fillMaxSize()) {
+        WallpaperArtwork(
+            wallpaperUri = wallpaperUri,
+            opacityPreset = IntensityPreset.fromKey(opacityPresetKey),
+            modifier = Modifier.fillMaxSize(),
+        )
+        content()
+    }
+}

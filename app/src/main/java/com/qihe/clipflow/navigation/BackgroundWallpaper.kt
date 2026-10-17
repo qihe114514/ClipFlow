@@ -39,12 +39,9 @@ fun BackgroundWallpaperLayer(content: @Composable () -> Unit) {
         launch { prefs.wallpaperOpacityPreset.collect { opacityPresetKey = it } }
     }
 
-    // 采样壁纸平均亮度 → GlassCard 自适应文字颜色
     val opacityPreset = IntensityPreset.fromKey(opacityPresetKey)
     // 透明度档位=关闭 → 不显示壁纸
     val hasWallpaper = opacityPreset != IntensityPreset.OFF
-    // opacityPercent: 100=完全不透明 → overlay alpha 0；越小遮罩越深
-    val overlayAlpha = 1f - wallpaperOpacityPercent(opacityPreset) / 100f
     val wallpaperBackdrop = rememberLayerBackdrop()
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -53,52 +50,11 @@ fun BackgroundWallpaperLayer(content: @Composable () -> Unit) {
                 .fillMaxSize()
                 .layerBackdrop(wallpaperBackdrop)
         ) {
-            if (hasWallpaper) {
-                val useCustom = wallpaperUri.isNotEmpty()
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .clipToBounds()
-                ) {
-                    if (useCustom) {
-                        AsyncImage(
-                            model = ImageRequest.Builder(context)
-                                .data(Uri.parse(wallpaperUri))
-                                .crossfade(true)
-                                .build(),
-                            contentDescription = null,
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Crop,
-                        )
-                    } else {
-                        // 内置默认壁纸
-                        AsyncImage(
-                            model = ImageRequest.Builder(context)
-                                .data(R.drawable.default_wallpaper)
-                                .crossfade(true)
-                                .build(),
-                            contentDescription = null,
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Crop,
-                        )
-                    }
-                }
-
-                // 遮罩：深色模式偏暗，浅色模式偏白；透明度由用户控制
-                val baseColor = MaterialTheme.colorScheme.background
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(baseColor.copy(alpha = overlayAlpha))
-                )
-            } else {
-                // Backdrop effects need an opaque source; otherwise the unblurred content shows through.
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(MaterialTheme.colorScheme.background)
-                )
-            }
+            WallpaperArtwork(
+                wallpaperUri = wallpaperUri,
+                opacityPreset = opacityPreset,
+                modifier = Modifier.fillMaxSize(),
+            )
         }
 
         CompositionLocalProvider(
@@ -108,6 +64,64 @@ fun BackgroundWallpaperLayer(content: @Composable () -> Unit) {
             Box(modifier = Modifier.fillMaxSize()) {
                 content()
             }
+        }
+    }
+}
+
+/** Opaque wallpaper artwork used by the root layer and secondary page covers. */
+@Composable
+fun WallpaperArtwork(
+    wallpaperUri: String,
+    opacityPreset: IntensityPreset,
+    modifier: Modifier = Modifier,
+) {
+    val context = LocalContext.current
+    val hasWallpaper = opacityPreset != IntensityPreset.OFF
+    // opacityPercent: 100=完全不透明 → overlay alpha 0；越小遮罩越深
+    val overlayAlpha = 1f - wallpaperOpacityPercent(opacityPreset) / 100f
+
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+    ) {
+        if (hasWallpaper) {
+            val useCustom = wallpaperUri.isNotEmpty()
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clipToBounds()
+            ) {
+                if (useCustom) {
+                    AsyncImage(
+                        model = ImageRequest.Builder(context)
+                            .data(Uri.parse(wallpaperUri))
+                            .crossfade(true)
+                            .build(),
+                        contentDescription = null,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop,
+                    )
+                } else {
+                    // 内置默认壁纸
+                    AsyncImage(
+                        model = ImageRequest.Builder(context)
+                            .data(R.drawable.default_wallpaper)
+                            .crossfade(true)
+                            .build(),
+                        contentDescription = null,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop,
+                    )
+                }
+            }
+
+            // 遮罩：深色模式偏暗，浅色模式偏白；透明度由用户控制
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.background.copy(alpha = overlayAlpha))
+            )
         }
     }
 }
